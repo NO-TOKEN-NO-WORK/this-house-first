@@ -39,6 +39,23 @@ export const RiskGrade = {
 } as const;
 export type RiskGrade = (typeof RiskGrade)[keyof typeof RiskGrade];
 
+export const GRADE_LABEL: Record<RiskGrade, string> = {
+  1: "1등급",
+  2: "2등급",
+  3: "3등급",
+};
+
+/**
+ * 등급별 대응 지시 (PRD F3) — 담당자 화면이 그대로 표시한다.
+ * 1등급에 전화가 없는 것은 누락이 아니라 설계다: 전화로 '괜찮다'를 신뢰할 수 없는 군이라
+ * 허위 안심을 원천 차단한다 (PRD §12 리스크 대응).
+ */
+export const GRADE_PLAN: Record<RiskGrade, string> = {
+  1: "전화 생략 · 오전 방문",
+  2: "오전 중 전화",
+  3: "15시 이전 전화",
+};
+
 /** 담당자 역할 (PRD §4) */
 export const WorkerRole = {
   /** 생활지원사 */
@@ -81,6 +98,21 @@ export const HOUSEHOLD_STATUS_LABEL: Record<HouseholdStatus, string> = {
   UNREACHABLE: "연락두절",
 };
 
+/**
+ * 아직 담당자의 손이 필요한 상태 — 그날의 목표는 이 수가 0이 되는 것이다 (PRD §11 북극성).
+ * 전화 확인·조치 완료·119 연계·연락두절은 그날 할 일이 끝난 것으로 본다.
+ */
+const OPEN_STATUSES: readonly HouseholdStatus[] = [
+  HouseholdStatus.UNCHECKED,
+  HouseholdStatus.NO_ANSWER_1,
+  HouseholdStatus.VISIT_QUEUED,
+  HouseholdStatus.VISITING,
+];
+
+export function isOpenHouseholdStatus(status: HouseholdStatus): boolean {
+  return OPEN_STATUSES.includes(status);
+}
+
 export function isHouseholdStatus(value: unknown): value is HouseholdStatus {
   return (
     typeof value === "string" &&
@@ -107,6 +139,10 @@ export const CheckKind = {
 } as const;
 export type CheckKind = (typeof CheckKind)[keyof typeof CheckKind];
 
+export function isCheckKind(value: unknown): value is CheckKind {
+  return value === CheckKind.CALL || value === CheckKind.VISIT;
+}
+
 /** 전화 결과 원터치 기록 (PRD F4) */
 export const CallResult = {
   OK: "OK",
@@ -116,6 +152,22 @@ export const CallResult = {
   UNREACHABLE: "UNREACHABLE",
 } as const;
 export type CallResult = (typeof CallResult)[keyof typeof CallResult];
+
+/** 원터치 기록 버튼에 그대로 쓰는 라벨 — UI에서 문자열을 다시 쓰지 않는다 */
+export const CALL_RESULT_LABEL: Record<CallResult, string> = {
+  OK: "정상",
+  NO_ANSWER: "무응답",
+  SYMPTOM: "이상 징후",
+  UNREACHABLE: "연락두절",
+};
+
+export function isCallResult(value: unknown): value is CallResult {
+  // `in`은 프로토타입 체인까지 본다 — "toString"이 통과하면 DB에 쓰레기 결과값이 들어간다
+  return (
+    typeof value === "string" &&
+    Object.prototype.hasOwnProperty.call(CALL_RESULT_LABEL, value)
+  );
+}
 
 /** 방문 결과 기록 (PRD F4) */
 export const VisitResult = {
@@ -128,3 +180,17 @@ export const VisitResult = {
   AIRCON_ISSUE: "AIRCON_ISSUE",
 } as const;
 export type VisitResult = (typeof VisitResult)[keyof typeof VisitResult];
+
+export const VISIT_RESULT_LABEL: Record<VisitResult, string> = {
+  OK: "정상",
+  ACTED: "조치함",
+  EMERGENCY_119: "119 연계",
+  AIRCON_ISSUE: "에어컨 없음·고장",
+};
+
+export function isVisitResult(value: unknown): value is VisitResult {
+  return (
+    typeof value === "string" &&
+    Object.prototype.hasOwnProperty.call(VISIT_RESULT_LABEL, value)
+  );
+}
