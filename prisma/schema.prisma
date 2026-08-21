@@ -29,13 +29,20 @@ model Worker {
 // 건물 — 건축HUB 건축물대장 실데이터 (FR-2)
 model Building {
   id              String    @id @default(cuid())
-  address         String
+  address         String // 지번 주소 (건축물대장 platPlc)
+  roadAddress     String? // 도로명 주소 (newPlatPlc)
   lat             Float
   lng             Float
-  builtYear       Int? // 사용승인 연도 — 1980년 이전 ×2.0 가중 (weights.ts)
-  isDetached      Boolean   @default(false) // 단독주택 여부 ×1.4
-  structure       String? // 구조명 (예: 슬레이트) — 위험 사유 표시용
-  hasTopFloorUnit Boolean   @default(false) // 최상층/옥탑 ×2.0
+  builtYear       Int? // 사용승인 연도 (useAprDay) — 1980년 이전 ×2.0 가중 (weights.ts)
+  isDetached      Boolean   @default(false) // 단독주택 여부 ×1.4 (주용도명 기준, bldg-hub/mapping.ts)
+  structure       String? // 구조명 (예: 벽돌구조·슬레이트) — 위험 사유 표시용
+  hasTopFloorUnit Boolean   @default(false) // 최상층/옥탑 ×2.0 — 대장에는 없는 가구 속성, 시드가 합성
+  // ── 추적 가능성 ("건물은 진짜" 증빙, ADR-0012) — 모두 건축HUB getBrTitleInfo 응답값 ──
+  mgmBldrgstPk    String?   @unique // 건축물대장 관리번호
+  mainPurpose     String? // 주용도명 (mainPurpsCdNm)
+  roof            String? // 지붕명 (roofCdNm)
+  groundFloors    Int? // 지상층수 (grndFlrCnt)
+  bjdongCode      String? // 법정동코드 10자리 (sigunguCd + bjdongCd)
   subjects        Subject[]
 }
 

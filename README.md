@@ -10,6 +10,7 @@
 npm install            # postinstall에서 prisma generate 자동 실행
 cp .env.example .env   # API 키는 필요해지면 채운다 (로컬 개발은 빈 값으로 시작 가능)
 npx prisma db push     # 로컬 SQLite(prisma/dev.db) 생성
+npm run db:seed        # 건축HUB·카카오 실호출로 건물 10동 + 합성 대상자 15명 시드 (PUBLIC_DATA_SERVICE_KEY·KAKAO_REST_KEY 필요)
 npm run dev            # http://localhost:3000
 ```
 
@@ -24,6 +25,7 @@ npm run dev            # http://localhost:3000
 | `npm run lint` | ESLint |
 | `npm test` | Vitest — 스코어링·상태머신 단위 테스트 |
 | `npm run db:push` | 스키마 변경을 로컬 DB에 반영 |
+| `npm run db:seed` | 시드 — 실 건축물대장 건물 + 합성 대상자 (ADR-0012) |
 | `npm run db:studio` | DB 브라우저 |
 
 ## 문서
