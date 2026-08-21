@@ -29,7 +29,18 @@ GitHub 저장소를 Vercel에 연결한다. Framework Preset은 Next.js가 자�
 
 ## 3. 환경변수
 
-Vercel 프로젝트 Settings → Environment Variables에 넣는다.
+Vercel 프로젝트 Settings → Environment Variables에 넣는다. **이걸 빠뜨리면 빌드가
+`Error: Connection url is empty`로 실패한다** — `vercel-build`의 `prisma migrate deploy`
+단계에서 걸리므로 배포 자체가 되지 않는다.
+
+CLI로 넣을 수도 있다:
+
+```bash
+vercel link                                   # 최초 1회
+printf '%s' "$DATABASE_URL" | vercel env add DATABASE_URL production
+printf '%s' "$DATABASE_URL" | vercel env add DATABASE_URL preview
+```
+
 
 | 키 | 값 | 노출 |
 |---|---|---|
@@ -70,7 +81,8 @@ curl -X POST https://<도메인>/api/trigger \
 
 | 증상 | 원인 |
 |---|---|
-| 빌드에서 `DATABASE_URL이 없습니다` | Vercel 환경변수 미설정. Production/Preview 환경 모두 확인 |
+| 빌드 로그에 `Error: Connection url is empty` | **`DATABASE_URL` 미설정.** `prisma migrate deploy`가 연결 문자열을 못 찾은 것이다. Production·Preview·Development 환경 모두에 넣어야 한다 |
+| 런타임에 `DATABASE_URL이 없습니다` | 빌드는 통과했으나 함수 실행 환경에 변수가 없음 |
 | `prisma migrate deploy` 실패 | 마이그레이션이 커밋되지 않았거나 DB가 다른 스키마 상태. `npx prisma migrate status`로 확인 |
 | 지도만 안 뜸 | 카카오 플랫폼에 배포 도메인 미등록 (4번) |
 | 커넥션 부족 | 직접 연결(`db.prisma.io`) 대신 풀러(`pooled.db.prisma.io`) 사용 |
