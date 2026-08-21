@@ -181,7 +181,13 @@ async function declareAlertDay(
     const alertDay = await tx.alertDay.upsert({
       where: { date },
       create: { date, level, feelsLikeMax, regionCode: input.regionCode ?? null },
-      update: { level, feelsLikeMax, regionCode: input.regionCode ?? undefined },
+      update: {
+        level,
+        feelsLikeMax,
+        ...(input.regionCode === undefined
+          ? {}
+          : { regionCode: input.regionCode }),
+      },
     });
 
     const gradeCounts: Record<RiskGrade, number> = { 1: 0, 2: 0, 3: 0 };

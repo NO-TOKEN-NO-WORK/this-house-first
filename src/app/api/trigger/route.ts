@@ -4,6 +4,7 @@ import {
   toPublicDataErrorResponse,
 } from "@/lib/public-data/client";
 import { getHeatForecast } from "@/lib/public-data/kma";
+import { toIsoDate } from "@/lib/trigger/alert-date";
 import { declareTrigger, TriggerError } from "@/lib/trigger/declare";
 
 /**
@@ -29,6 +30,11 @@ function optionalDate(value: string | null, name: string): string | undefined {
   if (value == null) return undefined;
   if (!/^\d{8}$/.test(value)) {
     throw invalidParameter(`${name}는 YYYYMMDD 형식이어야 합니다.`);
+  }
+  try {
+    toIsoDate(value);
+  } catch {
+    throw invalidParameter(`${name}는 실제 달력에 존재하는 날짜여야 합니다.`);
   }
   return value;
 }
@@ -104,11 +110,12 @@ function optionalLevel(raw: unknown): AlertLevel | undefined {
   return raw;
 }
 
-function optionalRegionCode(raw: unknown): string | undefined {
+function optionalRegionCode(raw: unknown): string | null | undefined {
+  if (raw === undefined) return undefined;
+  if (raw === null) return null;
   const value = asString(raw);
-  if (value == null) return undefined;
-  if (!/^\d{10}$/.test(value)) {
-    throw invalidParameter("regionCode는 법정동코드 10자리여야 합니다.");
+  if (value == null || !/^\d{10}$/.test(value)) {
+    throw invalidParameter("regionCode는 10자리 행정구역코드여야 합니다.");
   }
   return value;
 }
@@ -117,7 +124,10 @@ export async function POST(request: Request): Promise<Response> {
   try {
     const query = new URL(request.url).searchParams;
     const body = await readJsonBody(request);
-    const field = (name: string): unknown => body[name] ?? query.get(name) ?? undefined;
+    const field = (name: string): unknown =>
+      Object.prototype.hasOwnProperty.call(body, name)
+        ? body[name]
+        : query.get(name) ?? undefined;
 
     const baseDate = optionalDate(asString(field("baseDate")), "baseDate");
     const baseTime = asString(field("baseTime")) ?? undefined;

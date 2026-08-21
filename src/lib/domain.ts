@@ -25,7 +25,10 @@ export const ALERT_LEVEL_LABEL: Record<AlertLevel, string> = {
 
 /** 외부 입력(HTTP 본문·DB 문자열)이 유효한 경보 단계인지 검사 — SQLite에 enum이 없어 타입만으로는 못 막는다 */
 export function isAlertLevel(value: unknown): value is AlertLevel {
-  return typeof value === "string" && value in ALERT_LEVEL_LABEL;
+  return (
+    typeof value === "string" &&
+    Object.prototype.hasOwnProperty.call(ALERT_LEVEL_LABEL, value)
+  );
 }
 
 /** 위험 등급 (PRD F2) — 1: 초고위험(전화 생략, 오전 방문) / 2: 고위험(오전 전화) / 3: 중위험(15시 이전 전화) */
@@ -79,7 +82,10 @@ export const HOUSEHOLD_STATUS_LABEL: Record<HouseholdStatus, string> = {
 };
 
 export function isHouseholdStatus(value: unknown): value is HouseholdStatus {
-  return typeof value === "string" && value in HOUSEHOLD_STATUS_LABEL;
+  return (
+    typeof value === "string" &&
+    Object.prototype.hasOwnProperty.call(HOUSEHOLD_STATUS_LABEL, value)
+  );
 }
 
 /**

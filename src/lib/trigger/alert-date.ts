@@ -11,9 +11,30 @@ function parts(compact: string): [string, string, string] {
   const m = COMPACT_DATE.exec(compact);
   if (!m) throw new Error(`YYYYMMDD 형식이 아닙니다: ${compact}`);
   const [, y, mo, d] = m as unknown as [string, string, string, string];
+  const year = Number(y);
   const month = Number(mo);
   const day = Number(d);
-  if (month < 1 || month > 12 || day < 1 || day > 31) {
+  const leapYear = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+  const daysInMonth = [
+    31,
+    leapYear ? 29 : 28,
+    31,
+    30,
+    31,
+    30,
+    31,
+    31,
+    30,
+    31,
+    30,
+    31,
+  ];
+  if (
+    month < 1 ||
+    month > 12 ||
+    day < 1 ||
+    day > (daysInMonth[month - 1] ?? 0)
+  ) {
     throw new Error(`날짜 범위를 벗어났습니다: ${compact}`);
   }
   return [y, mo, d];
