@@ -44,6 +44,29 @@ export const WEATHER: Record<AlertLevel, number> = {
 };
 
 /**
+ * 폭염 운영 단계 임계값 (PRD F1).
+ * 출처: 기상청 2026 폭염특보 개편 — 주의보 체감 33℃, 경보 체감 35℃,
+ * 중대경보 체감 38℃ 또는 기온 39℃. 실제 주의보·경보는 2일 지속 조건이 있으나,
+ * 본 앱은 익일 대응 강도를 정하기 위해 일 최고 예보값을 사용한다.
+ */
+export const HEAT_ALERT_THRESHOLD = {
+  ADVISORY_FEELS_LIKE: 33,
+  WARNING_FEELS_LIKE: 35,
+  EMERGENCY_FEELS_LIKE: 38,
+  EMERGENCY_AIR_TEMPERATURE: 39,
+} as const;
+
+/**
+ * 단계별 최소 체감온도 — HEAT_ALERT_THRESHOLD에서 파생한 조회표이며 새 임계값이 아니다.
+ * 수동 발령(ADR-0011 데모 시뮬레이션)에서 체감온도를 생략했을 때 기본값으로 쓴다.
+ */
+export const LEVEL_MIN_FEELS_LIKE: Record<AlertLevel, number> = {
+  [AlertLevel.ADVISORY]: HEAT_ALERT_THRESHOLD.ADVISORY_FEELS_LIKE,
+  [AlertLevel.WARNING]: HEAT_ALERT_THRESHOLD.WARNING_FEELS_LIKE,
+  [AlertLevel.EMERGENCY]: HEAT_ALERT_THRESHOLD.EMERGENCY_FEELS_LIKE,
+};
+
+/**
  * 에어컨 없음·고장 가중 (FR-8: 방문 기록 → 익일 위험도 반영)
  * ⚠️ 잠정 1.5 — PRD에 수치 근거 없음. 합성 데이터 분포 확인 후 팀 캘리브레이션 필요.
  */
@@ -51,10 +74,14 @@ export const AIRCON_BROKEN = 1.5;
 
 /**
  * 등급 컷오프 — score >= CRITICAL이면 1등급, >= HIGH이면 2등급, 그 외 3등급.
- * ⚠️ 잠정 — PRD에 컷오프 근거 없음(ADR-0005 결과 항목).
- * 합성 데이터 15명의 점수 분포 + 담당자 방문 처리 능력(~4가구/일, PRD P3)을 보고
- * D1 오후 캘리브레이션할 것. 참고 범위: 80+·독거·1975 단독주택·비상일 ≈ 31.5점,
- * 65~74·최근 건축 공동주택·비상일 ≈ 2.5점.
+ * ⚠️ 잠정 — PRD에 컷오프 근거 없음(ADR-0005 결과 항목). 수치 자체의 문헌 출처는 없다.
+ *
+ * 캘리브레이션 (2026-08-22, 시드 실데이터: 대구 서구 비산동 건축물대장 10동 × 합성 15명):
+ *   비상일  1등급 3 · 2등급 5 · 3등급 7   ← 1등급 = 전화 생략·방문 대상. 담당자 방문 처리 능력 ~4가구/일(PRD P3) 이내
+ *   경보일  1등급 2 · 2등급 5 · 3등급 8
+ *   주의일  1등급 1 · 2등급 2 · 3등급 12
+ *   점수 범위: 63(86세·독거·거동불편·1959 목조) ~ 2.5(73세·2002 공동주택). 경계 근처: 23.6 / [25] / 31.5, 7.5 / [10] / 10.5
+ * 컷오프 변경 시 `npm run db:seed`가 출력하는 분포로 재확인한다.
  */
 export const GRADE_CUTOFF = {
   CRITICAL: 25,

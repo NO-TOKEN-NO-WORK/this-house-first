@@ -22,14 +22,15 @@ npm run build        # 프로덕션 빌드
 npm run lint         # ESLint
 npm test             # Vitest (스코어링·상태머신 단위 테스트)
 npx prisma db push   # 스키마 → 로컬 SQLite (dev.db) 반영
+npm run db:seed      # 시드 — 건축HUB·카카오 실호출로 건물 10동 + 합성 대상자 15명 (키 필요, ADR-0012)
 npx prisma studio    # DB 브라우저
 ```
 
-최초 세팅: `npm install` → `cp .env.example .env` → `npx prisma db push`
+최초 세팅: `npm install` → `cp .env.example .env`(키 입력) → `npx prisma db push` → `npm run db:seed`
 
 ## 기술 스택 (근거는 각 ADR)
 
-Next.js 16 App Router 모놀리스([ADR-0001](docs/adr/0001-nextjs-fullstack-monolith.md)) · TypeScript strict([0002](docs/adr/0002-typescript-strict.md)) · Tailwind 4([0003](docs/adr/0003-tailwind-css.md)) · SQLite+Prisma([0004](docs/adr/0004-sqlite-prisma.md)) · 규칙 기반 스코어링([0005](docs/adr/0005-rule-based-risk-model.md)) · 수제 SW PWA([0006](docs/adr/0006-pwa-manual-service-worker.md)) · 카카오맵([0007](docs/adr/0007-kakao-map.md)) · 인앱 알림([0008](docs/adr/0008-notification-in-app-first.md)) · Vitest([0009](docs/adr/0009-vitest.md)) · npm+Node20([0010](docs/adr/0010-npm-node20.md)) · 로컬 데모 우선([0011](docs/adr/0011-deploy-local-demo-first.md))
+Next.js 16 App Router 모놀리스([ADR-0001](docs/adr/0001-nextjs-fullstack-monolith.md)) · TypeScript strict([0002](docs/adr/0002-typescript-strict.md)) · Tailwind 4([0003](docs/adr/0003-tailwind-css.md)) · SQLite+Prisma([0004](docs/adr/0004-sqlite-prisma.md)) · 규칙 기반 스코어링([0005](docs/adr/0005-rule-based-risk-model.md)) · 수제 SW PWA([0006](docs/adr/0006-pwa-manual-service-worker.md)) · 카카오맵([0007](docs/adr/0007-kakao-map.md)) · 인앱 알림([0008](docs/adr/0008-notification-in-app-first.md)) · Vitest([0009](docs/adr/0009-vitest.md)) · npm+Node20([0010](docs/adr/0010-npm-node20.md)) · 로컬 데모 우선([0011](docs/adr/0011-deploy-local-demo-first.md)) · 시드 tsx+건축HUB 실호출([0012](docs/adr/0012-seed-runner-tsx.md))
 
 ## 도메인 규칙 (어기면 리뷰 반려)
 
@@ -45,7 +46,7 @@ Next.js 16 App Router 모놀리스([ADR-0001](docs/adr/0001-nextjs-fullstack-mon
 - **실명·실인물 개인정보 데이터 절대 금지.** 대상자는 합성 데이터만. 원칙: "건물은 진짜(실제 건축물대장), 사람은 가짜"
 - 대상자(어르신)용 화면·앱을 만들지 않는다. 사용자는 담당자와 관리자뿐
 - IoT·센서·AI 음성 자동전화 통합을 시도하지 않는다
-- 서버 전용 API 키(`KMA_SERVICE_KEY` 등)를 클라이언트 코드나 `NEXT_PUBLIC_*`으로 노출하지 않는다
+- 서버 전용 API 키(`PUBLIC_DATA_SERVICE_KEY` 등)를 클라이언트 코드나 `NEXT_PUBLIC_*`으로 노출하지 않는다
 - 새 라이브러리·프레임워크·저장소 도입을 ADR 없이 하지 않는다 ([docs/adr/README.md](docs/adr/README.md)의 규칙)
 
 ## 코드 컨벤션
@@ -61,3 +62,13 @@ Next.js 16 App Router 모놀리스([ADR-0001](docs/adr/0001-nextjs-fullstack-mon
 - 커밋: Conventional Commits 경량형 (`feat:`, `fix:`, `docs:`, `chore:`, `test:`)
 - PR 템플릿의 체크리스트(도메인 규칙 준수 여부)를 채운다
 - lockfile은 `package-lock.json`만 커밋 (ADR-0010)
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

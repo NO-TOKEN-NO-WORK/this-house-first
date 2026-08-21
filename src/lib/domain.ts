@@ -23,6 +23,14 @@ export const ALERT_LEVEL_LABEL: Record<AlertLevel, string> = {
   EMERGENCY: "비상",
 };
 
+/** 외부 입력(HTTP 본문·DB 문자열)이 유효한 경보 단계인지 검사 — SQLite에 enum이 없어 타입만으로는 못 막는다 */
+export function isAlertLevel(value: unknown): value is AlertLevel {
+  return (
+    typeof value === "string" &&
+    Object.prototype.hasOwnProperty.call(ALERT_LEVEL_LABEL, value)
+  );
+}
+
 /** 위험 등급 (PRD F2) — 1: 초고위험(전화 생략, 오전 방문) / 2: 고위험(오전 전화) / 3: 중위험(15시 이전 전화) */
 export const RiskGrade = {
   CRITICAL: 1,
@@ -72,6 +80,25 @@ export const HOUSEHOLD_STATUS_LABEL: Record<HouseholdStatus, string> = {
   EMERGENCY_119: "119 연계",
   UNREACHABLE: "연락두절",
 };
+
+export function isHouseholdStatus(value: unknown): value is HouseholdStatus {
+  return (
+    typeof value === "string" &&
+    Object.prototype.hasOwnProperty.call(HOUSEHOLD_STATUS_LABEL, value)
+  );
+}
+
+/**
+ * DB의 String 컬럼을 상태값으로 되읽을 때 쓴다.
+ * 알 수 없는 값이면 던진다 — 조용히 UNCHECKED로 떨어뜨리면 진행 중인 가구를 미확인으로
+ * 되돌리는 사고가 난다 (SQLite에 enum이 없어 여기가 유일한 방어선, ADR-0004).
+ */
+export function parseHouseholdStatus(value: string): HouseholdStatus {
+  if (!isHouseholdStatus(value)) {
+    throw new Error(`알 수 없는 가구 상태값입니다: ${value}`);
+  }
+  return value;
+}
 
 /** 확인 기록 종류 */
 export const CheckKind = {

@@ -22,6 +22,7 @@ flowchart LR
     subgraph ext["외부 API"]
         KMA["기상청<br/>단기예보·특보"]
         HUB["국토부 건축HUB<br/>건축물대장"]
+        MOIS["행안부<br/>연령별 주민등록인구"]
         KAKAO["카카오맵<br/>지도·경로"]
     end
     W --> RH
@@ -30,6 +31,7 @@ flowchart LR
     RH --> DB
     TR --> KMA
     RH --> HUB
+    RH --> MOIS
     A -.->|JS SDK| KAKAO
 ```
 
@@ -43,21 +45,28 @@ src/
 │   ├── manifest.ts           # PWA Web App Manifest (ADR-0006)
 │   ├── today/                # [예정] 담당자: 오늘의 대응 보드 (F3, F4)
 │   ├── admin/                # [예정] 관리자: 관제 대시보드 (F5)
-│   └── api/                  # [예정] Route Handlers
+│   └── api/                  # Route Handlers (공공데이터 프록시 포함)
 ├── components/
 │   └── ServiceWorkerRegistrar.tsx
 ├── lib/
 │   ├── domain.ts             # 도메인 상수·타입 (상태값 단일 원본)
 │   ├── db.ts                 # Prisma 클라이언트 싱글턴 (driver adapter)
+│   ├── bldg-hub/             # 건축HUB 클라이언트·순수 매핑
+│   ├── kakao/                # 서버 전용 주소 지오코딩
 │   ├── scoring/
 │   │   ├── weights.ts        # 가중치 + 출처 주석 (수정은 이 파일에서만)
 │   │   ├── score.ts          # 순수 함수 스코어링 엔진 (FR-3)
 │   │   └── score.test.ts
-│   ├── escalation/           # [예정] 상태머신 전이 함수 (FR-5)
-│   └── trigger/              # [예정] 기상청 폴링·3단계 판정 (FR-1)
+│   ├── escalation/initial.ts # 발령 시 가구 상태 결정 (순수) — transition.ts는 예정 (FR-5)
+│   ├── public-data/          # 공공데이터포털 공통 클라이언트 + 기상청·인구 (서버 전용)
+│   ├── bldg-hub/             # 건축HUB 건축물대장 표제부 클라이언트 + 순수 매핑 (FR-2)
+│   ├── kakao/local.ts        # 카카오 로컬 지오코딩 (서버 전용, ADR-0007)
+│   └── trigger/              # 3단계 판정(heat) · 발령 오케스트레이션(declare) · 날짜 변환
 ├── generated/prisma/         # Prisma 생성 클라이언트 (커밋 안 함, postinstall 자동 생성)
 prisma/
-└── schema.prisma             # 데이터 모델 단일 원본 (ADR-0004)
+├── schema.prisma             # 데이터 모델 단일 원본 (ADR-0004)
+├── seed.ts                   # 시드 진입점 — 건축HUB·카카오 실호출 (ADR-0012)
+└── seed/                     # config(지역·슬롯) · select(순수 선별) · synthetic(합성 인물)
 prisma.config.ts              # Prisma 7 설정 (.env 로딩, DATABASE_URL)
 public/
 └── sw.js                     # 수제 Service Worker (ADR-0006)
@@ -109,8 +118,9 @@ stateDiagram-v2
     RESOLVED --> [*]
 ```
 
+- 발령(`/api/trigger` POST)은 `[*] --> UNCHECKED`와 `[*] --> VISIT_QUEUED` 진입 화살표만 담당한다(`escalation/initial.ts`). 같은 날 재발령해도 진행 중인 상태는 보존한다
 - 방문 결과 `에어컨 없음·고장`은 상태와 별개로 `Subject.airconBroken` 플래그를 세우고 **익일 위험도에 가중**된다(FR-8) + 지원사업 연계 플래그(FR-11)
-- 방문 큐 2건 이상 → 위험도 우선 + 이동시간 최소 순서 제시(FR-7, 카카오모빌리티 경로)
+- 방문 큐 2건 이상 → 위험도 우선 + 이동시간 최소 순서 제시(FR-7, v0는 카카오 도보 경로 API — [ADR-0007](adr/0007-kakao-map.md))
 
 ## 5. 위험도 스코어링 (FR-3)
 
@@ -124,10 +134,11 @@ stateDiagram-v2
 
 | 연동 | 용도 | 인증 | env 키 |
 |---|---|---|---|
-| 기상청 단기예보/특보 (공공데이터포털) | F1 트리거, 기상계수 | 서비스 키 (서버 전용) | `KMA_SERVICE_KEY` |
-| 국토부 건축HUB 건축물대장 | FR-2 건물 취약도 | 서비스 키 (서버 전용) | `BLDG_HUB_SERVICE_KEY` |
+| 기상청 단기예보/특보 (공공데이터포털) | F1 트리거, 기상계수 | 공공데이터포털 서비스 키 (서버 전용) | `PUBLIC_DATA_SERVICE_KEY` |
+| 국토부 건축HUB 건축물대장 | FR-2 건물 취약도 | 공공데이터포털 서비스 키 (서버 전용) | `PUBLIC_DATA_SERVICE_KEY` |
+| 행안부 행정동별 성·연령별 주민등록 인구수 | 지역 고령밀도 | 공공데이터포털 서비스 키 (서버 전용) | `PUBLIC_DATA_SERVICE_KEY` |
 | 카카오맵 JS SDK | F5 지도 | JS 앱 키 (클라이언트) | `NEXT_PUBLIC_KAKAO_MAP_KEY` |
-| 카카오 REST (로컬/모빌리티) | 지오코딩, FR-7 경로 | REST 키 (서버 전용) | `KAKAO_REST_KEY` |
+| 카카오 REST (로컬 주소검색·도보 경로) | 지오코딩 + 법정동코드(`b_code` → 건축HUB 조회 키), FR-7 경로 | REST 키 (서버 전용) | `KAKAO_REST_KEY` |
 
 - 서버 전용 키는 절대 `NEXT_PUBLIC_` 접두사를 붙이지 않는다. 외부 호출은 Route Handler를 거쳐 프록시
 - 키 목록은 [.env.example](../.env.example) 참조. 실제 키는 커밋 금지
@@ -139,7 +150,10 @@ stateDiagram-v2
 | `/` | 진입점 안내 | ✅ 초기화됨 |
 | `/today` | 담당자 대응 보드 + 원터치 기록 (FR-4) | 예정 (D1 밤) |
 | `/admin` | 관리자 지도 대시보드 (FR-6) | 예정 (D2 오전) |
-| `/api/trigger` | 트리거 판정·수동 시뮬레이션 (FR-1, ADR-0011) | 예정 (D1) |
+| `/api/trigger` | `GET` 판정 미리보기 / `POST` 발령 — AlertDay + 당일 평가 + 가구 상태 생성 (FR-1·FR-3) | ✅ 연동됨 |
+| `/api/public-data/weather-warnings` | 기상청 기상특보 목록 | ✅ 연동됨 |
+| `/api/public-data/buildings` | 건축HUB 표제부 정규화 | ✅ 연동됨 |
+| `/api/public-data/population` | 행정동 연령별 인구 정규화 | ✅ 연동됨 |
 | `/api/subjects` | 대상자 목록 + 당일 평가 | 예정 (D1) |
 | `/api/checks` | 확인 기록 생성 → 상태머신 전이 (FR-5) | 예정 (D1) |
 | `/api/visit-queue` | 방문 큐 + 출동 순서 (FR-7) | 예정 (D2) |
@@ -155,7 +169,7 @@ stateDiagram-v2
 
 | PRD §13 | 모듈/디렉터리 |
 |---|---|
-| D1 오전: 합성 데이터 + API 파이프라인 | `prisma/seed.ts`(예정), `src/lib/trigger/`, 건축HUB 클라이언트 |
+| D1 오전: 합성 데이터 + API 파이프라인 | `prisma/seed.ts` + `prisma/seed/`, `src/lib/trigger/`, `src/lib/bldg-hub/`, `src/lib/public-data/` |
 | D1 오후: 스코어링 + 상태머신 | `src/lib/scoring/` (초기화됨), `src/lib/escalation/` |
 | D1 밤: 담당자 모바일 웹 | `src/app/today/` |
 | D2 오전: 관리자 대시보드 | `src/app/admin/`, 카카오맵 컴포넌트 |
