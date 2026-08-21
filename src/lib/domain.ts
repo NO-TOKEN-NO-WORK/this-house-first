@@ -162,7 +162,11 @@ export const CALL_RESULT_LABEL: Record<CallResult, string> = {
 };
 
 export function isCallResult(value: unknown): value is CallResult {
-  return typeof value === "string" && value in CALL_RESULT_LABEL;
+  // `in`은 프로토타입 체인까지 본다 — "toString"이 통과하면 DB에 쓰레기 결과값이 들어간다
+  return (
+    typeof value === "string" &&
+    Object.prototype.hasOwnProperty.call(CALL_RESULT_LABEL, value)
+  );
 }
 
 /** 방문 결과 기록 (PRD F4) */
@@ -185,5 +189,8 @@ export const VISIT_RESULT_LABEL: Record<VisitResult, string> = {
 };
 
 export function isVisitResult(value: unknown): value is VisitResult {
-  return typeof value === "string" && value in VISIT_RESULT_LABEL;
+  return (
+    typeof value === "string" &&
+    Object.prototype.hasOwnProperty.call(VISIT_RESULT_LABEL, value)
+  );
 }
