@@ -43,11 +43,12 @@ src/
 │   ├── layout.tsx            # 루트 레이아웃 (ko, PWA 등록)
 │   ├── page.tsx              # 홈 (진입점 안내)
 │   ├── manifest.ts           # PWA Web App Manifest (ADR-0006)
-│   ├── today/                # [예정] 담당자: 오늘의 대응 보드 (F3, F4)
+│   ├── today/                # 담당자: 오늘의 대응 보드 (F3, F4)
 │   ├── admin/                # [예정] 관리자: 관제 대시보드 (F5)
 │   └── api/                  # Route Handlers (공공데이터 프록시 포함)
 ├── components/
-│   └── ServiceWorkerRegistrar.tsx
+│   ├── ServiceWorkerRegistrar.tsx
+│   └── today/                # 담당자 화면 전용 컴포넌트 (원터치 기록)
 ├── lib/
 │   ├── domain.ts             # 도메인 상수·타입 (상태값 단일 원본)
 │   ├── db.ts                 # Prisma 클라이언트 싱글턴 (driver adapter)
@@ -57,7 +58,9 @@ src/
 │   │   ├── weights.ts        # 가중치 + 출처 주석 (수정은 이 파일에서만)
 │   │   ├── score.ts          # 순수 함수 스코어링 엔진 (FR-3)
 │   │   └── score.test.ts
-│   ├── escalation/initial.ts # 발령 시 가구 상태 결정 (순수) — transition.ts는 예정 (FR-5)
+│   ├── escalation/           # initial(발령 시 진입) · transition(기록 전이, FR-5) — 모두 순수 함수
+│   ├── board/today.ts        # 대응 보드 조회 — /today와 /api/subjects가 공유
+│   ├── http.ts               # 앱 API 공통 오류·검증 헬퍼
 │   ├── public-data/          # 공공데이터포털 공통 클라이언트 + 기상청·인구 (서버 전용)
 │   ├── bldg-hub/             # 건축HUB 건축물대장 표제부 클라이언트 + 순수 매핑 (FR-2)
 │   ├── kakao/local.ts        # 카카오 로컬 지오코딩 (서버 전용, ADR-0007)
@@ -148,14 +151,14 @@ stateDiagram-v2
 | 경로 | 역할 | 상태 |
 |---|---|---|
 | `/` | 진입점 안내 | ✅ 초기화됨 |
-| `/today` | 담당자 대응 보드 + 원터치 기록 (FR-4) | 예정 (D1 밤) |
+| `/today` | 담당자 대응 보드 + 원터치 기록 (FR-4) | ✅ 구현됨 |
 | `/admin` | 관리자 지도 대시보드 (FR-6) | 예정 (D2 오전) |
 | `/api/trigger` | `GET` 판정 미리보기 / `POST` 발령 — AlertDay + 당일 평가 + 가구 상태 생성 (FR-1·FR-3) | ✅ 연동됨 |
 | `/api/public-data/weather-warnings` | 기상청 기상특보 목록 | ✅ 연동됨 |
 | `/api/public-data/buildings` | 건축HUB 표제부 정규화 | ✅ 연동됨 |
 | `/api/public-data/population` | 행정동 연령별 인구 정규화 | ✅ 연동됨 |
-| `/api/subjects` | 대상자 목록 + 당일 평가 | 예정 (D1) |
-| `/api/checks` | 확인 기록 생성 → 상태머신 전이 (FR-5) | 예정 (D1) |
+| `/api/subjects` | 대상자 목록 + 당일 평가 (보드 조회, `/today`와 동일 함수) | ✅ 구현됨 |
+| `/api/checks` | 확인 기록 생성 → 상태머신 전이 (FR-5) | ✅ 구현됨 |
 | `/api/visit-queue` | 방문 큐 + 출동 순서 (FR-7) | 예정 (D2) |
 | `/api/report` | 일일 보고서 (FR-9) | 예정 (Could) |
 
