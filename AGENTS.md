@@ -27,7 +27,7 @@ npm run db:seed      # 시드 — 건축HUB·카카오 실호출로 건물 10동
 npx prisma studio    # DB 브라우저
 ```
 
-최초 세팅: `npm install` → `cp .env.example .env` → DB 발급(`npx create-db@latest`, 출력된 `DATABASE_URL`을 `.env`에) + API 키 입력 → `npm run db:deploy` → `npm run db:seed`
+최초 세팅: `npm install` → `cp .env.example .env` → DB 발급(`npx create-db@latest`, pooled URL은 `DATABASE_URL`, direct URL은 `DIRECT_URL`에 입력) + API 키 입력 → `npm run db:deploy` → `npm run db:seed`
 
 > `create-db`로 받은 DB는 24시간 뒤 삭제된다. 계속 쓰려면 출력된 claim URL로 클레임한다 (ADR-0013).
 

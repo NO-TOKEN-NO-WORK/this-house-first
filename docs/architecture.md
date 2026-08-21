@@ -71,7 +71,7 @@ prisma/
 ├── migrations/               # 마이그레이션 이력 — 배포는 prisma migrate deploy
 ├── seed.ts                   # 시드 진입점 — 건축HUB·카카오 실호출 (ADR-0012)
 └── seed/                     # config(지역·슬롯) · select(순수 선별) · synthetic(합성 인물)
-prisma.config.ts              # Prisma 7 설정 (.env 로딩, DATABASE_URL)
+prisma.config.ts              # Prisma 7 CLI 설정 (.env 로딩, DIRECT_URL)
 public/
 └── sw.js                     # 수제 Service Worker (ADR-0006)
 ```
@@ -168,7 +168,7 @@ stateDiagram-v2
 - **접근성(담당자 앱)**: 기본 글자 크기 상향, 터치 타깃 최소 48px, 화면당 결정 1개, 기록 완료까지 탭 2회 이내 (PRD §9) — 공용 컴포넌트로 강제
 - **알림 침묵 원칙**: 비경보일 알림 0건. 알림 생성은 도메인 로직, 전달은 v0 인앱([ADR-0008](adr/0008-notification-in-app-first.md))
 - **PWA**: manifest + 수제 SW([ADR-0006](adr/0006-pwa-manual-service-worker.md)). 오프라인 기록 큐잉은 데모에서 언급만
-- **배포**: Vercel([ADR-0013](adr/0013-prisma-postgres.md)) — `vercel-build`가 `prisma migrate deploy` 후 빌드한다. 데모 진행은 여전히 로컬 실행이 기본이고([ADR-0011](adr/0011-deploy-local-demo-first.md)) 배포 URL은 심사위원 접속용 보조 경로다. 절차는 [docs/deploy-vercel.md](deploy-vercel.md)
+- **배포**: Vercel([ADR-0013](adr/0013-prisma-postgres.md)) — `vercel-build`가 direct 연결(`DIRECT_URL`)로 `prisma migrate deploy` 후 빌드하고, 런타임은 pooled 연결(`DATABASE_URL`)을 쓴다. 데모 진행은 여전히 로컬 실행이 기본이고([ADR-0011](adr/0011-deploy-local-demo-first.md)) 배포 URL은 심사위원 접속용 보조 경로다. 절차는 [docs/deploy-vercel.md](deploy-vercel.md)
 
 ## 9. PRD 48h 계획 ↔ 모듈 매핑
 

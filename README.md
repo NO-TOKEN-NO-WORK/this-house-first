@@ -8,8 +8,8 @@
 
 ```bash
 npm install            # postinstall에서 prisma generate 자동 실행
-cp .env.example .env   # DATABASE_URL과 API 키를 채운다
-npx create-db@latest   # Prisma Postgres 즉시 발급 → 출력된 DATABASE_URL을 .env에 붙여넣는다
+cp .env.example .env   # 환경변수 파일 생성 (값은 다음 단계에서 채운다)
+npx create-db@latest   # Prisma Postgres 발급 → direct/pooled URL을 .env에 입력
 npm run db:deploy      # 마이그레이션 적용
 npm run db:seed        # 건축HUB·카카오 실호출로 건물 10동 + 합성 대상자 15명 시드 (PUBLIC_DATA_SERVICE_KEY·KAKAO_REST_KEY 필요)
 npm run dev            # http://localhost:3000

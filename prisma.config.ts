@@ -11,6 +11,8 @@ export default defineConfig({
     seed: "tsx prisma/seed.ts",
   },
   datasource: {
-    url: process.env["DATABASE_URL"],
+    // Prisma Postgres 풀러는 트랜잭션 모드이므로 migrate/Studio는 direct 연결을 쓴다.
+    // 런타임 연결은 src/lib/db.ts의 DATABASE_URL(pooled)이 담당한다 (ADR-0013).
+    url: process.env["DIRECT_URL"],
   },
 });
