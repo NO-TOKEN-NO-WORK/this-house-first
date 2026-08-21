@@ -21,21 +21,24 @@ npm run dev          # 개발 서버 (http://localhost:3000)
 npm run build        # 프로덕션 빌드
 npm run lint         # ESLint
 npm test             # Vitest (스코어링·상태머신 단위 테스트)
-npx prisma db push   # 스키마 → 로컬 SQLite (dev.db) 반영
+npm run db:migrate   # 스키마 변경 → 마이그레이션 생성·적용 (Prisma Postgres, ADR-0013)
+npm run db:deploy    # 기존 마이그레이션만 적용 (배포·팀원 세팅)
 npm run db:seed      # 시드 — 건축HUB·카카오 실호출로 건물 10동 + 합성 대상자 15명 (키 필요, ADR-0012)
 npx prisma studio    # DB 브라우저
 ```
 
-최초 세팅: `npm install` → `cp .env.example .env`(키 입력) → `npx prisma db push` → `npm run db:seed`
+최초 세팅: `npm install` → `cp .env.example .env` → DB 발급(`npx create-db@latest`, pooled URL은 `DATABASE_URL`, direct URL은 `DIRECT_URL`에 입력) + API 키 입력 → `npm run db:deploy` → `npm run db:seed`
+
+> `create-db`로 받은 DB는 24시간 뒤 삭제된다. 계속 쓰려면 출력된 claim URL로 클레임한다 (ADR-0013).
 
 ## 기술 스택 (근거는 각 ADR)
 
-Next.js 16 App Router 모놀리스([ADR-0001](docs/adr/0001-nextjs-fullstack-monolith.md)) · TypeScript strict([0002](docs/adr/0002-typescript-strict.md)) · Tailwind 4([0003](docs/adr/0003-tailwind-css.md)) · SQLite+Prisma([0004](docs/adr/0004-sqlite-prisma.md)) · 규칙 기반 스코어링([0005](docs/adr/0005-rule-based-risk-model.md)) · 수제 SW PWA([0006](docs/adr/0006-pwa-manual-service-worker.md)) · 카카오맵([0007](docs/adr/0007-kakao-map.md)) · 인앱 알림([0008](docs/adr/0008-notification-in-app-first.md)) · Vitest([0009](docs/adr/0009-vitest.md)) · npm+Node20([0010](docs/adr/0010-npm-node20.md)) · 로컬 데모 우선([0011](docs/adr/0011-deploy-local-demo-first.md)) · 시드 tsx+건축HUB 실호출([0012](docs/adr/0012-seed-runner-tsx.md))
+Next.js 16 App Router 모놀리스([ADR-0001](docs/adr/0001-nextjs-fullstack-monolith.md)) · TypeScript strict([0002](docs/adr/0002-typescript-strict.md)) · Tailwind 4([0003](docs/adr/0003-tailwind-css.md)) · Prisma Postgres([0013](docs/adr/0013-prisma-postgres.md), [0004](docs/adr/0004-sqlite-prisma.md) 대체) · 규칙 기반 스코어링([0005](docs/adr/0005-rule-based-risk-model.md)) · 수제 SW PWA([0006](docs/adr/0006-pwa-manual-service-worker.md)) · 카카오맵([0007](docs/adr/0007-kakao-map.md)) · 인앱 알림([0008](docs/adr/0008-notification-in-app-first.md)) · Vitest([0009](docs/adr/0009-vitest.md)) · npm+Node20([0010](docs/adr/0010-npm-node20.md)) · 로컬 데모 우선([0011](docs/adr/0011-deploy-local-demo-first.md)) · 시드 tsx+건축HUB 실호출([0012](docs/adr/0012-seed-runner-tsx.md)) · Prisma Postgres+Vercel([0013](docs/adr/0013-prisma-postgres.md))
 
 ## 도메인 규칙 (어기면 리뷰 반려)
 
 1. **가중치는 `src/lib/scoring/weights.ts`에서만** 정의·수정한다. 모든 가중치·임계값에는 **출처 주석 필수** (PRD §7 — "가중치 어떻게 정했나" 방어가 스펙이다). 출처 없는 잠정치는 `잠정` 주석을 명시
-2. **상태값 문자열 하드코딩 금지.** 경보 단계·가구 상태·확인 결과 코드는 `src/lib/domain.ts`의 `as const` 상수만 사용 (SQLite에 enum이 없어 타입이 유일한 방어선)
+2. **상태값 문자열 하드코딩 금지.** 경보 단계·가구 상태·확인 결과 코드는 `src/lib/domain.ts`의 `as const` 상수만 사용 (DB 컬럼이 String이라 도메인 상수·가드가 유일한 방어선 — ADR-0013)
 3. **설명 가능성**: 사용자에게 보이는 모든 위험 판단은 스코어링 엔진이 반환한 `reasons`를 그대로 표시한다. UI에서 위험 사유를 재작성하지 않는다
 4. **알림 침묵 원칙**: 비경보일에는 어떤 알림도 만들지 않는다. 경보일에도 요약 1건 + 승격 이벤트만 (PRD §9)
 5. **담당자(`/today`) UI 원칙**: 60대 사용자 기준 — 큰 글자, 화면당 결정 1개, 어떤 기록도 탭 2회 이내 완료 (PRD §9). 관리자 화면에는 이 제약이 없다

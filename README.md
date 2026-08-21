@@ -8,8 +8,9 @@
 
 ```bash
 npm install            # postinstall에서 prisma generate 자동 실행
-cp .env.example .env   # API 키는 필요해지면 채운다 (로컬 개발은 빈 값으로 시작 가능)
-npx prisma db push     # 로컬 SQLite(prisma/dev.db) 생성
+cp .env.example .env   # 환경변수 파일 생성 (값은 다음 단계에서 채운다)
+npx create-db@latest   # Prisma Postgres 발급 → direct/pooled URL을 .env에 입력
+npm run db:deploy      # 마이그레이션 적용
 npm run db:seed        # 건축HUB·카카오 실호출로 건물 10동 + 합성 대상자 15명 시드 (PUBLIC_DATA_SERVICE_KEY·KAKAO_REST_KEY 필요)
 npm run dev            # http://localhost:3000
 ```
@@ -24,7 +25,8 @@ npm run dev            # http://localhost:3000
 | `npm run build` · `npm start` | 프로덕션 빌드·실행 (데모 모드) |
 | `npm run lint` | ESLint |
 | `npm test` | Vitest — 스코어링·상태머신 단위 테스트 |
-| `npm run db:push` | 스키마 변경을 로컬 DB에 반영 |
+| `npm run db:migrate` | 스키마 변경 → 마이그레이션 생성·적용 |
+| `npm run db:deploy` | 기존 마이그레이션 적용 (배포·팀원 세팅) |
 | `npm run db:seed` | 시드 — 실 건축물대장 건물 + 합성 대상자 (ADR-0012) |
 | `npm run db:studio` | DB 브라우저 |
 
@@ -35,6 +37,7 @@ npm run dev            # http://localhost:3000
 | [docs/PRD.md](docs/PRD.md) | 제품 요구사항 (기능·플로우·위험도 모델·데모 시나리오) |
 | [docs/architecture.md](docs/architecture.md) | 아키텍처 스냅샷 (구성도·데이터 모델·상태머신) |
 | [docs/adr/](docs/adr/README.md) | 기술 결정 기록 — **모든 스택 결정은 ADR 필수** |
+| [docs/deploy-vercel.md](docs/deploy-vercel.md) | Vercel 배포 절차 (환경변수·마이그레이션) |
 | [AGENTS.md](AGENTS.md) | AI 에이전트·개발 규칙 (CLAUDE.md는 이 파일의 심링크) |
 
 ## 협업 규칙
@@ -49,4 +52,4 @@ npm run dev            # http://localhost:3000
 
 ## 기술 스택
 
-Next.js 16 (App Router) · TypeScript · Tailwind CSS 4 · Prisma 7 + SQLite · Vitest · 카카오맵 — 각 선택의 근거는 [docs/adr/](docs/adr/README.md)
+Next.js 16 (App Router) · TypeScript · Tailwind CSS 4 · Prisma 7 + Prisma Postgres · Vitest · 카카오맵 — 각 선택의 근거는 [docs/adr/](docs/adr/README.md)

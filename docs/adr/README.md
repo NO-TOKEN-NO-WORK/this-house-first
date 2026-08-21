@@ -16,7 +16,7 @@
 | [0001](0001-nextjs-fullstack-monolith.md) | 풀스택 프레임워크: Next.js 16 App Router 모놀리스 | 승인됨 |
 | [0002](0002-typescript-strict.md) | 언어: TypeScript (strict) | 승인됨 |
 | [0003](0003-tailwind-css.md) | 스타일링: Tailwind CSS 4 | 승인됨 |
-| [0004](0004-sqlite-prisma.md) | 데이터베이스/ORM: SQLite + Prisma | 승인됨 |
+| [0004](0004-sqlite-prisma.md) | 데이터베이스/ORM: SQLite + Prisma | 대체됨([0013](0013-prisma-postgres.md)) |
 | [0005](0005-rule-based-risk-model.md) | 위험도 모델: 규칙 기반 (ML 배제) | 승인됨 |
 | [0006](0006-pwa-manual-service-worker.md) | PWA: Manifest + 수제 Service Worker | 승인됨 |
 | [0007](0007-kakao-map.md) | 지도: 카카오맵 JS SDK | 승인됨 |
@@ -25,3 +25,4 @@
 | [0010](0010-npm-node20.md) | 패키지 매니저/런타임: npm + Node 20 | 승인됨 |
 | [0011](0011-deploy-local-demo-first.md) | 배포/데모 전략: 로컬 데모 우선, 수동 트리거 | 승인됨 |
 | [0012](0012-seed-runner-tsx.md) | 시드: tsx 실행기 + 건축HUB 실호출로 건물 데이터 생성 | 승인됨 |
+| [0013](0013-prisma-postgres.md) | DB: Prisma Postgres 전환 + Vercel 배포 | 승인됨 |

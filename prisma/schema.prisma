@@ -1,8 +1,10 @@
-// 데이터 모델 단일 원본 (ADR-0004: SQLite + Prisma 7)
+// 데이터 모델 단일 원본 (ADR-0013: Prisma Postgres + Prisma 7, ADR-0004 대체)
 //
-// ⚠️ SQLite 제약: enum·Json 타입을 지원하지 않는다.
-//  - 상태값(String 컬럼)의 유효한 값 집합은 src/lib/domain.ts의 as const 상수가 정의한다.
-//  - reasons 등 구조화 데이터는 JSON 직렬화 문자열로 저장한다.
+// ⚠️ 상태값은 String으로 둔다.
+//  - 유효한 값 집합은 src/lib/domain.ts의 as const 상수가 정의하고 가드가 검증한다.
+//  - Postgres는 enum을 지원하지만, 값을 추가할 때마다 마이그레이션이 필요하고 이미 도메인
+//    가드가 방어선 역할을 하므로 v0에서는 String을 유지한다 (ADR-0013 결과 항목).
+//  - reasons 등 구조화 데이터는 JSON 직렬화 문자열로 저장한다 (Json 타입 전환은 후속 과제).
 //
 // 개인정보 원칙 (PRD §8): "건물은 진짜, 사람은 가짜" — Building은 실제 건축물대장 값,
 // Subject는 합성 인물만. 실명·실인물 데이터 저장 절대 금지.
@@ -13,7 +15,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
 }
 
 // 담당자(생활지원사) / 관리자(전담사회복지사) — PRD §4

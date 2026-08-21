@@ -20,4 +20,5 @@ jobs:
       - run: npm test
       - run: npm run build
         env:
-          DATABASE_URL: "file:./prisma/dev.db"
+          # 빌드는 DB에 접속하지 않는다. Prisma 클라이언트 초기화에 값만 필요하다
+          DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci?schema=public"
