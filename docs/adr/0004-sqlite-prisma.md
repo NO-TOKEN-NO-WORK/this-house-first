@@ -1,6 +1,6 @@
 # ADR-0004: 데이터베이스는 SQLite, ORM은 Prisma를 쓴다
 
-- **상태**: 승인됨
+- **상태**: 대체됨([ADR-0013](0013-prisma-postgres.md)) — datasource는 Prisma Postgres로 교체. ORM(Prisma) 결정은 유효하다
 - **날짜**: 2026-08-22
 - **결정자**: 팀 전원
 
