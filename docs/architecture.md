@@ -57,11 +57,11 @@ src/
 │   │   ├── weights.ts        # 가중치 + 출처 주석 (수정은 이 파일에서만)
 │   │   ├── score.ts          # 순수 함수 스코어링 엔진 (FR-3)
 │   │   └── score.test.ts
-│   ├── escalation/           # [예정] 상태머신 전이 함수 (FR-5)
+│   ├── escalation/initial.ts # 발령 시 가구 상태 결정 (순수) — transition.ts는 예정 (FR-5)
 │   ├── public-data/          # 공공데이터포털 공통 클라이언트 + 기상청·인구 (서버 전용)
 │   ├── bldg-hub/             # 건축HUB 건축물대장 표제부 클라이언트 + 순수 매핑 (FR-2)
 │   ├── kakao/local.ts        # 카카오 로컬 지오코딩 (서버 전용, ADR-0007)
-│   └── trigger/              # 기상청 폴링·3단계 판정 (FR-1)
+│   └── trigger/              # 3단계 판정(heat) · 발령 오케스트레이션(declare) · 날짜 변환
 ├── generated/prisma/         # Prisma 생성 클라이언트 (커밋 안 함, postinstall 자동 생성)
 prisma/
 ├── schema.prisma             # 데이터 모델 단일 원본 (ADR-0004)
@@ -118,6 +118,7 @@ stateDiagram-v2
     RESOLVED --> [*]
 ```
 
+- 발령(`/api/trigger` POST)은 `[*] --> UNCHECKED`와 `[*] --> VISIT_QUEUED` 진입 화살표만 담당한다(`escalation/initial.ts`). 같은 날 재발령해도 진행 중인 상태는 보존한다
 - 방문 결과 `에어컨 없음·고장`은 상태와 별개로 `Subject.airconBroken` 플래그를 세우고 **익일 위험도에 가중**된다(FR-8) + 지원사업 연계 플래그(FR-11)
 - 방문 큐 2건 이상 → 위험도 우선 + 이동시간 최소 순서 제시(FR-7, v0는 카카오 도보 경로 API — [ADR-0007](adr/0007-kakao-map.md))
 
@@ -149,7 +150,7 @@ stateDiagram-v2
 | `/` | 진입점 안내 | ✅ 초기화됨 |
 | `/today` | 담당자 대응 보드 + 원터치 기록 (FR-4) | 예정 (D1 밤) |
 | `/admin` | 관리자 지도 대시보드 (FR-6) | 예정 (D2 오전) |
-| `/api/trigger` | 단기예보 기반 익일 체감온도·트리거 판정 (FR-1) | ✅ 연동됨 |
+| `/api/trigger` | `GET` 판정 미리보기 / `POST` 발령 — AlertDay + 당일 평가 + 가구 상태 생성 (FR-1·FR-3) | ✅ 연동됨 |
 | `/api/public-data/weather-warnings` | 기상청 기상특보 목록 | ✅ 연동됨 |
 | `/api/public-data/buildings` | 건축HUB 표제부 정규화 | ✅ 연동됨 |
 | `/api/public-data/population` | 행정동 연령별 인구 정규화 | ✅ 연동됨 |

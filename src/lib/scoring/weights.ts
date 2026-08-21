@@ -57,6 +57,16 @@ export const HEAT_ALERT_THRESHOLD = {
 } as const;
 
 /**
+ * 단계별 최소 체감온도 — HEAT_ALERT_THRESHOLD에서 파생한 조회표이며 새 임계값이 아니다.
+ * 수동 발령(ADR-0011 데모 시뮬레이션)에서 체감온도를 생략했을 때 기본값으로 쓴다.
+ */
+export const LEVEL_MIN_FEELS_LIKE: Record<AlertLevel, number> = {
+  [AlertLevel.ADVISORY]: HEAT_ALERT_THRESHOLD.ADVISORY_FEELS_LIKE,
+  [AlertLevel.WARNING]: HEAT_ALERT_THRESHOLD.WARNING_FEELS_LIKE,
+  [AlertLevel.EMERGENCY]: HEAT_ALERT_THRESHOLD.EMERGENCY_FEELS_LIKE,
+};
+
+/**
  * 에어컨 없음·고장 가중 (FR-8: 방문 기록 → 익일 위험도 반영)
  * ⚠️ 잠정 1.5 — PRD에 수치 근거 없음. 합성 데이터 분포 확인 후 팀 캘리브레이션 필요.
  */
