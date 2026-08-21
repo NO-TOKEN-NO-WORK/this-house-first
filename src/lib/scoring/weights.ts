@@ -44,6 +44,19 @@ export const WEATHER: Record<AlertLevel, number> = {
 };
 
 /**
+ * 폭염 운영 단계 임계값 (PRD F1).
+ * 출처: 기상청 2026 폭염특보 개편 — 주의보 체감 33℃, 경보 체감 35℃,
+ * 중대경보 체감 38℃ 또는 기온 39℃. 실제 주의보·경보는 2일 지속 조건이 있으나,
+ * 본 앱은 익일 대응 강도를 정하기 위해 일 최고 예보값을 사용한다.
+ */
+export const HEAT_ALERT_THRESHOLD = {
+  ADVISORY_FEELS_LIKE: 33,
+  WARNING_FEELS_LIKE: 35,
+  EMERGENCY_FEELS_LIKE: 38,
+  EMERGENCY_AIR_TEMPERATURE: 39,
+} as const;
+
+/**
  * 에어컨 없음·고장 가중 (FR-8: 방문 기록 → 익일 위험도 반영)
  * ⚠️ 잠정 1.5 — PRD에 수치 근거 없음. 합성 데이터 분포 확인 후 팀 캘리브레이션 필요.
  */
