@@ -1,0 +1,21 @@
+name: 버그
+description: 동작이 기대와 다를 때
+labels: ["bug"]
+body:
+  - type: textarea
+    id: expected
+    attributes:
+      label: 기대 동작
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: 실제 동작 (재현 절차 포함)
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: 환경
+      placeholder: "예: iOS Safari PWA / 데스크톱 Chrome"

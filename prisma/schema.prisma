@@ -1,0 +1,116 @@
+// 데이터 모델 단일 원본 (ADR-0004: SQLite + Prisma 7)
+//
+// ⚠️ SQLite 제약: enum·Json 타입을 지원하지 않는다.
+//  - 상태값(String 컬럼)의 유효한 값 집합은 src/lib/domain.ts의 as const 상수가 정의한다.
+//  - reasons 등 구조화 데이터는 JSON 직렬화 문자열로 저장한다.
+//
+// 개인정보 원칙 (PRD §8): "건물은 진짜, 사람은 가짜" — Building은 실제 건축물대장 값,
+// Subject는 합성 인물만. 실명·실인물 데이터 저장 절대 금지.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// 담당자(생활지원사) / 관리자(전담사회복지사) — PRD §4
+model Worker {
+  id          String       @id @default(cuid())
+  name        String
+  phone       String?
+  role        String       @default("WORKER") // domain.ts WorkerRole: WORKER | MANAGER
+  subjects    Subject[]
+  checkEvents CheckEvent[]
+}
+
+// 건물 — 건축HUB 건축물대장 실데이터 (FR-2)
+model Building {
+  id              String    @id @default(cuid())
+  address         String
+  lat             Float
+  lng             Float
+  builtYear       Int? // 사용승인 연도 — 1980년 이전 ×2.0 가중 (weights.ts)
+  isDetached      Boolean   @default(false) // 단독주택 여부 ×1.4
+  structure       String? // 구조명 (예: 슬레이트) — 위험 사유 표시용
+  hasTopFloorUnit Boolean   @default(false) // 최상층/옥탑 ×2.0
+  subjects        Subject[]
+}
+
+// 돌봄 대상자 — 합성 데이터만 (PRD §3 비목표: 실명 데이터 금지)
+model Subject {
+  id                String               @id @default(cuid())
+  name              String // 합성 이름 (예: 김○○)
+  birthYear         Int
+  phone             String? // 합성 번호
+  livesAlone        Boolean              @default(false)
+  hasMobilityIssue  Boolean? // null = 데이터 없음 (가중 미적용)
+  hasChronicDisease Boolean?
+  hasAircon         Boolean? // null = 미확인. false → 지원사업 연계 플래그 (FR-11)
+  airconBroken      Boolean              @default(false) // 방문 발견 → 익일 가중 (FR-8)
+  building          Building             @relation(fields: [buildingId], references: [id])
+  buildingId        String
+  worker            Worker               @relation(fields: [workerId], references: [id])
+  workerId          String
+  assessments       RiskAssessment[]
+  dayStatuses       HouseholdDayStatus[]
+  checkEvents       CheckEvent[]
+}
+
+// 경보일 — F1 트리거가 생성. 비경보일에는 행이 없다 (침묵이 스펙)
+model AlertDay {
+  id           String               @id @default(cuid())
+  date         String               @unique // "YYYY-MM-DD" (KST)
+  level        String // domain.ts AlertLevel: ADVISORY | WARNING | EMERGENCY
+  feelsLikeMax Float // 당일 최고 체감온도
+  regionCode   String? // 읍면동 코드 (기상청 격자 매핑용)
+  assessments  RiskAssessment[]
+  dayStatuses  HouseholdDayStatus[]
+  checkEvents  CheckEvent[]
+}
+
+// 대상자별 당일 위험도 평가 — F2 스코어링 결과 스냅샷
+model RiskAssessment {
+  id         String   @id @default(cuid())
+  alertDay   AlertDay @relation(fields: [alertDayId], references: [id])
+  alertDayId String
+  subject    Subject  @relation(fields: [subjectId], references: [id])
+  subjectId  String
+  score      Float
+  grade      Int // domain.ts RiskGrade: 1(초고위험) | 2 | 3
+  reasons    String // JSON string[] — 스코어링 엔진의 위험 사유 (UI에 그대로 표시)
+
+  @@unique([alertDayId, subjectId])
+}
+
+// 가구별 당일 상태머신 — F4 에스컬레이션 (docs/architecture.md §4)
+model HouseholdDayStatus {
+  id           String    @id @default(cuid())
+  alertDay     AlertDay  @relation(fields: [alertDayId], references: [id])
+  alertDayId   String
+  subject      Subject   @relation(fields: [subjectId], references: [id])
+  subjectId    String
+  status       String    @default("UNCHECKED") // domain.ts HouseholdStatus
+  callAttempts Int       @default(0) // 무응답 2회(30분 간격) → 방문 큐 승격
+  promotedAt   DateTime? // 방문 큐 승격 시각
+  updatedAt    DateTime  @updatedAt
+
+  @@unique([alertDayId, subjectId])
+}
+
+// 확인 기록 — 전화/방문 원터치 기록 원장 (F4)
+model CheckEvent {
+  id         String   @id @default(cuid())
+  alertDay   AlertDay @relation(fields: [alertDayId], references: [id])
+  alertDayId String
+  subject    Subject  @relation(fields: [subjectId], references: [id])
+  subjectId  String
+  worker     Worker   @relation(fields: [workerId], references: [id])
+  workerId   String
+  kind       String // domain.ts CheckKind: CALL | VISIT
+  result     String // domain.ts CallResult | VisitResult
+  memo       String?
+  createdAt  DateTime @default(now())
+}

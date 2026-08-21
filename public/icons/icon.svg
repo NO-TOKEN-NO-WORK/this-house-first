@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- 앱 아이콘: 폭염(적색) 배경 위의 집 — maskable 대응을 위해 풀블리드 배경 -->
+  <rect width="512" height="512" fill="#b91c1c"/>
+  <g fill="none" stroke="#ffffff" stroke-width="28" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M116 268 L256 148 L396 268"/>
+    <path d="M156 252 V392 H356 V252"/>
+  </g>
+  <!-- 온도계: 위험도 모니터링 상징 -->
+  <line x1="256" y1="268" x2="256" y2="330" stroke="#ffffff" stroke-width="22" stroke-linecap="round"/>
+  <circle cx="256" cy="352" r="26" fill="#ffffff"/>
+</svg>
