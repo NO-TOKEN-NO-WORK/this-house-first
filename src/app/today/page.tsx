@@ -1,6 +1,6 @@
 import { getBoard, type BoardSubject } from "@/lib/board/today";
 import { RecordButton } from "@/components/today/RecordButton";
-import { AlertLevel, RiskGrade } from "@/lib/domain";
+import { AlertLevel, CheckKind, RiskGrade } from "@/lib/domain";
 
 /**
  * 담당자(생활지원사) 오늘의 대응 보드 — FR-4, PRD F3
@@ -15,15 +15,24 @@ import { AlertLevel, RiskGrade } from "@/lib/domain";
 export const dynamic = "force-dynamic";
 
 const LEVEL_STYLE: Record<AlertLevel, string> = {
-  ADVISORY: "bg-amber-500",
-  WARNING: "bg-orange-600",
-  EMERGENCY: "bg-red-700",
+  [AlertLevel.ADVISORY]: "bg-amber-500",
+  [AlertLevel.WARNING]: "bg-orange-600",
+  [AlertLevel.EMERGENCY]: "bg-red-700",
 };
 
 const GRADE_STYLE: Record<RiskGrade, { card: string; badge: string }> = {
-  1: { card: "border-red-300 bg-red-50", badge: "bg-red-700 text-white" },
-  2: { card: "border-orange-200 bg-orange-50", badge: "bg-orange-600 text-white" },
-  3: { card: "border-zinc-200 bg-white", badge: "bg-zinc-600 text-white" },
+  [RiskGrade.CRITICAL]: {
+    card: "border-red-300 bg-red-50",
+    badge: "bg-red-700 text-white",
+  },
+  [RiskGrade.HIGH]: {
+    card: "border-orange-200 bg-orange-50",
+    badge: "bg-orange-600 text-white",
+  },
+  [RiskGrade.MODERATE]: {
+    card: "border-zinc-200 bg-white",
+    badge: "bg-zinc-600 text-white",
+  },
 };
 
 function SubjectCard({ subject, date }: { subject: BoardSubject; date: string }) {
@@ -64,7 +73,7 @@ function SubjectCard({ subject, date }: { subject: BoardSubject; date: string })
       <p className="mt-2 text-lg text-zinc-500">{subject.address}</p>
 
       <div className="mt-5 flex flex-col gap-3">
-        {subject.phone && subject.nextCheckKind === "CALL" && (
+        {subject.phone && subject.nextCheckKind === CheckKind.CALL && (
           <a
             href={`tel:${subject.phone}`}
             className="flex min-h-14 items-center justify-center rounded-2xl border-2 border-zinc-900 text-xl font-bold"

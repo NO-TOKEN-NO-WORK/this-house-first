@@ -1,12 +1,27 @@
 import { describe, expect, it } from "vitest";
 import { CallResult, CheckKind, HouseholdStatus, VisitResult } from "../domain";
-import { transition, TransitionError } from "./transition";
+import {
+  NO_ANSWER_RETRY_INTERVAL_MS,
+  transition,
+  TransitionError,
+} from "./transition";
+
+const NOW = new Date("2026-08-22T01:00:00.000Z");
 
 const call = (
   current: HouseholdStatus,
   result: CallResult,
   callAttempts = 0,
-) => transition({ current, callAttempts, kind: CheckKind.CALL, result });
+  lastCallAt: Date | null = null,
+) =>
+  transition({
+    current,
+    callAttempts,
+    kind: CheckKind.CALL,
+    result,
+    now: NOW,
+    lastCallAt,
+  });
 
 const visit = (current: HouseholdStatus, result: VisitResult) =>
   transition({ current, callAttempts: 0, kind: CheckKind.VISIT, result });
@@ -24,10 +39,44 @@ describe("전화 기록 전이", () => {
     expect(first.callAttempts).toBe(1);
     expect(first.promoted).toBe(false);
 
-    const second = call(HouseholdStatus.NO_ANSWER_1, CallResult.NO_ANSWER, 1);
+    const second = call(
+      HouseholdStatus.NO_ANSWER_1,
+      CallResult.NO_ANSWER,
+      1,
+      new Date(NOW.getTime() - NO_ANSWER_RETRY_INTERVAL_MS),
+    );
     expect(second.status).toBe(HouseholdStatus.VISIT_QUEUED);
     expect(second.callAttempts).toBe(2);
     expect(second.promoted).toBe(true);
+  });
+
+  it("첫 무응답 후 30분 전에는 두 번째 무응답 기록·승격을 막는다", () => {
+    const lastCallAt = new Date(
+      NOW.getTime() - NO_ANSWER_RETRY_INTERVAL_MS + 1,
+    );
+
+    expect(() =>
+      call(
+        HouseholdStatus.NO_ANSWER_1,
+        CallResult.NO_ANSWER,
+        1,
+        lastCallAt,
+      ),
+    ).toThrowError(
+      expect.objectContaining<Partial<TransitionError>>({
+        code: "RETRY_TOO_SOON",
+      }),
+    );
+  });
+
+  it("무응답 상태인데 이전 전화 기록이 없으면 데이터 불일치로 거절한다", () => {
+    expect(() =>
+      call(HouseholdStatus.NO_ANSWER_1, CallResult.NO_ANSWER, 1),
+    ).toThrowError(
+      expect.objectContaining<Partial<TransitionError>>({
+        code: "PREVIOUS_CALL_NOT_FOUND",
+      }),
+    );
   });
 
   it("무응답 1회 후 재전화가 닿으면 확인 완료로 빠진다", () => {
@@ -101,3 +150,16 @@ describe("방문 기록 전이", () => {
     }
   });
 });
+
+// TransitionInput의 kind-result 결합 제약은 런타임 테스트가 아니라 TypeScript가 검증한다.
+if (false) {
+  // @ts-expect-error 방문 결과는 전화 기록과 결합할 수 없다
+  transition({
+    current: HouseholdStatus.UNCHECKED,
+    callAttempts: 0,
+    kind: CheckKind.CALL,
+    result: VisitResult.ACTED,
+    now: NOW,
+    lastCallAt: null,
+  });
+}

@@ -18,13 +18,31 @@ import {
 /** 무응답 승격 임계 횟수 — 무응답 2회(30분 간격)면 방문 큐로 (PRD F4) */
 export const NO_ANSWER_PROMOTE_AT = 2;
 
-export interface TransitionInput {
+/** 재전화 최소 간격 — PRD F4의 "무응답 2회(30분 간격)" */
+export const NO_ANSWER_RETRY_INTERVAL_MS = 30 * 60 * 1_000;
+
+interface TransitionBase {
   current: HouseholdStatus;
   /** 지금까지의 전화 시도 횟수 */
   callAttempts: number;
-  kind: CheckKind;
-  result: CallResult | VisitResult;
 }
+
+export interface CallTransitionInput extends TransitionBase {
+  kind: typeof CheckKind.CALL;
+  result: CallResult;
+  /** 순수 함수 유지를 위해 호출부에서 주입하는 현재 시각 */
+  now: Date;
+  /** 가장 최근 전화 기록 시각. 첫 전화라면 null */
+  lastCallAt: Date | null;
+}
+
+export interface VisitTransitionInput extends TransitionBase {
+  kind: typeof CheckKind.VISIT;
+  result: VisitResult;
+}
+
+/** kind가 result의 허용 집합을 결정한다 — 잘못된 결합을 컴파일 단계에서 차단 */
+export type TransitionInput = CallTransitionInput | VisitTransitionInput;
 
 export interface TransitionOutcome {
   status: HouseholdStatus;
@@ -57,9 +75,8 @@ const VISITABLE: readonly HouseholdStatus[] = [
   HouseholdStatus.VISITING,
 ];
 
-function callTransition(input: TransitionInput): TransitionOutcome {
-  const { current, callAttempts } = input;
-  const result = input.result as CallResult;
+function callTransition(input: CallTransitionInput): TransitionOutcome {
+  const { current, callAttempts, result } = input;
 
   if (!CALLABLE.includes(current)) {
     if (
@@ -87,6 +104,25 @@ function callTransition(input: TransitionInput): TransitionOutcome {
       };
 
     case CallResult.NO_ANSWER: {
+      if (current === HouseholdStatus.NO_ANSWER_1) {
+        if (input.lastCallAt == null) {
+          throw new TransitionError(
+            "첫 무응답 전화 기록 시각을 찾지 못했습니다.",
+            "PREVIOUS_CALL_NOT_FOUND",
+          );
+        }
+        const elapsed = input.now.getTime() - input.lastCallAt.getTime();
+        if (elapsed < NO_ANSWER_RETRY_INTERVAL_MS) {
+          const remainingMinutes = Math.ceil(
+            (NO_ANSWER_RETRY_INTERVAL_MS - elapsed) / 60_000,
+          );
+          throw new TransitionError(
+            `재전화는 첫 무응답 기록 30분 후 가능합니다. ${remainingMinutes}분 뒤 다시 시도하세요.`,
+            "RETRY_TOO_SOON",
+          );
+        }
+      }
+
       const attempts = callAttempts + 1;
       // 무응답 2회 → 자동 승격 (PRD F4)
       const promoted = attempts >= NO_ANSWER_PROMOTE_AT;
@@ -119,9 +155,8 @@ function callTransition(input: TransitionInput): TransitionOutcome {
   }
 }
 
-function visitTransition(input: TransitionInput): TransitionOutcome {
-  const { current, callAttempts } = input;
-  const result = input.result as VisitResult;
+function visitTransition(input: VisitTransitionInput): TransitionOutcome {
+  const { current, callAttempts, result } = input;
 
   if (!VISITABLE.includes(current)) {
     throw new TransitionError(

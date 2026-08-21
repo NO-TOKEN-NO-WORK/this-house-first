@@ -1,4 +1,5 @@
 import { PublicDataError } from "./public-data/client";
+import { toIsoDate } from "./trigger/alert-date";
 
 /**
  * 앱 자체 API(Route Handler)의 오류 표현.
@@ -68,15 +69,24 @@ export function optionalIsoDate(
   if (typeof value !== "string" || !ISO_DATE.test(value)) {
     throw badRequest(`${name}는 YYYY-MM-DD 형식이어야 합니다.`);
   }
+  try {
+    toIsoDate(value.replaceAll("-", ""));
+  } catch {
+    throw badRequest(`${name}는 실제 달력에 존재하는 날짜여야 합니다.`);
+  }
   return value;
 }
 
 export function optionalId(value: unknown, name: string): string | undefined {
   if (value == null) return undefined;
-  if (typeof value !== "string" || value.length === 0 || value.length > 64) {
+  if (typeof value !== "string") {
     throw badRequest(`${name}가 올바르지 않습니다.`);
   }
-  return value;
+  const trimmed = value.trim();
+  if (trimmed.length === 0 || trimmed.length > 64) {
+    throw badRequest(`${name}가 올바르지 않습니다.`);
+  }
+  return trimmed;
 }
 
 export function requiredId(value: unknown, name: string): string {
