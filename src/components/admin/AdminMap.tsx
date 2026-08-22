@@ -61,34 +61,7 @@ export function isValidMapCoordinate(lat: number, lng: number): boolean {
 export function adminMapBuildingsSignature(
   buildings: AdminDashboardBuilding[],
 ): string {
-  return JSON.stringify(
-    buildings.map((building) => [
-      building.buildingId,
-      building.address,
-      building.lat,
-      building.lng,
-      building.grade,
-      building.score,
-      building.statusCategory,
-      building.openCount,
-      building.subjects.map((subject) => [
-        subject.subjectId,
-        subject.name,
-        subject.workerId,
-        subject.workerName,
-        subject.buildingId,
-        subject.address,
-        subject.lat,
-        subject.lng,
-        subject.grade,
-        subject.score,
-        subject.reasons,
-        subject.status,
-        subject.statusLabel,
-        subject.open,
-      ]),
-    ]),
-  );
+  return JSON.stringify(buildings);
 }
 
 export function loadKakaoSdk(mapKey: string): Promise<KakaoMaps> {

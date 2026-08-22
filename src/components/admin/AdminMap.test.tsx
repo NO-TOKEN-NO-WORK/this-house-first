@@ -153,6 +153,25 @@ describe("AdminMap", () => {
     );
   });
 
+  it("지도 초기화 서명을 다시 읽어도 건물 좌표를 유지한다", () => {
+    const signature = adminMapBuildingsSignature([
+      {
+        buildingId: "building-1",
+        address: "대구광역시 서구 비산동 1",
+        lat: 35.87,
+        lng: 128.56,
+        grade: 1,
+        score: 31.5,
+        statusCategory: "unchecked",
+        openCount: 1,
+        subjects: [],
+      },
+    ]);
+    const [building] = JSON.parse(signature) as Array<Record<string, unknown>>;
+
+    expect(building).toMatchObject({ lat: 35.87, lng: 128.56 });
+  });
+
   it("실패한 SDK 스크립트를 제거해 다음 로드를 다시 시도한다", async () => {
     const { document, scripts } = createScriptDocument();
     vi.stubGlobal("document", document);
