@@ -4,8 +4,8 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "이 집 먼저",
-    template: "%s | 이 집 먼저",
+    default: "See:Near",
+    template: "%s | See:Near",
   },
   description:
     "폭염·한파 경보일에 누가 위험한지, 누구부터 확인할지, 언제 방문으로 전환할지 정해주는 취약노인 관제 시스템",

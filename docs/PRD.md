@@ -1,4 +1,4 @@
-# PRD: 이 집 먼저 (This House First)
+# PRD: See:Near
 **폭염·한파 위험도 기반 취약노인 알림·대응 관제 시스템**
 v0.1 — JunctionX Korea 2026 (48h MVP)
 

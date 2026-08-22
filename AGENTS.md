@@ -1,4 +1,4 @@
-# AGENTS.md — 이 집 먼저 (This House First)
+# AGENTS.md — See:Near
 
 > 이 파일이 AI 에이전트 지침의 **원본**이다. `CLAUDE.md`는 이 파일의 심링크이므로 Claude Code·Codex·Cursor 등 어떤 도구든 동일한 내용을 읽는다. 지침 수정은 반드시 이 파일에서만 한다.
 

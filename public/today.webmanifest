@@ -1,7 +1,7 @@
 {
   "id": "/today",
-  "name": "이 집 먼저 — 오늘의 대응 보드",
-  "short_name": "오늘의 대응",
+  "name": "See:Near",
+  "short_name": "See:Near",
   "description": "폭염·한파 경보일의 대상자 우선순위와 확인·방문 상태를 기록하는 담당자용 대응 보드",
   "lang": "ko",
   "start_url": "/today",

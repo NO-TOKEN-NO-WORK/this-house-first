@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   manifest: "/today.webmanifest",
   appleWebApp: {
     capable: true,
-    title: "오늘의 대응 보드",
+    title: "See:Near",
     statusBarStyle: "default",
   },
 };

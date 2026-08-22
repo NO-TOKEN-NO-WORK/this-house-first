@@ -47,7 +47,7 @@ export function AdminManagementHeader({
     <header className={styles.topBar}>
       <Link className={styles.brand} href="/admin">
         <Image alt="" aria-hidden="true" height={32} src="/admin/brand-mark.png" width={32} />
-        <span>이 집 먼저</span>
+        <span>See:Near</span>
       </Link>
       {breadcrumbBelow ? <h1 className={styles.managementTitle}>관리자 관제</h1> : breadcrumb}
       <div className={styles.headerMeta}>

@@ -7,7 +7,7 @@ export default function Home() {
         <p className="text-label-18 text-status-critical-strong">
           폭염·한파 취약노인 관제
         </p>
-        <h1 className="mt-2 text-display-28 tracking-tight">이 집 먼저</h1>
+        <h1 className="mt-2 text-display-28 tracking-tight">See:Near</h1>
         <p className="mt-4 max-w-md text-body-18 leading-8 text-text-secondary">
           오늘 누가 위험한지, 누구부터 확인할지, 언제 방문으로 전환할지
           정해주는 시스템. 평소에는 조용합니다.

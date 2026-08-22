@@ -27,7 +27,7 @@ export function AdminTopBar({
     <header className={styles.topBar} data-admin-topbar="true">
       <Link href="/" className={styles.brand}>
         <Image alt="" aria-hidden="true" height={32} src="/admin/brand-mark.png" width={32} />
-        <span>이 집 먼저</span>
+        <span>See:Near</span>
       </Link>
       <h1 className={styles.title}>{title}</h1>
       <div className={styles.topMeta}>
