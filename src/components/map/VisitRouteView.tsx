@@ -2,8 +2,8 @@
 
 import Script from "next/script";
 import { useEffect, useRef, useState } from "react";
-import { GRADE_CHIP } from "@/components/today/gradeStyles";
-import { GRADE_LABEL, RiskGrade } from "@/lib/domain";
+import { GRADE_CHIP, GRADE_CHIP_SUBTLE } from "@/components/today/gradeStyles";
+import { GRADE_LABEL } from "@/lib/domain";
 import type { KakaoOverlay } from "@/lib/kakao/maps-sdk";
 import {
   kakaoDirectionsHref,
@@ -18,18 +18,14 @@ interface Props {
 }
 
 /**
- * 등급 칩 — Figma 38:5687(심각)·123:3167(경계).
- * 경계 글자만 Figma의 `status/warning`(#f29900) 대신 `status-warning-strong`을 쓴다 —
- * amber-50 위 amber-500은 1.94:1이라 12px 글자가 읽히지 않는다(→ 5.32:1). ADR-0014의 접근성 예외.
+ * 주소 앞 핀 (Figma 123:3149) — 하단 탭과 같은 글리프를 14.7×16.8408로 줄여 쓴다.
+ *
+ * 그리는 상자는 24px인데 사방 여백을 3px씩 깎아 자리는 Figma의 18px 그대로 차지한다.
+ * 18px 상자에 그대로 담으면 위아래 여유가 0.58px뿐이라 `mask-clip: border-box`가
+ * 기기에 따라 핀 윗머리를 깎는다 — 하단 탭에서 여유 0.84px로 이미 겪은 문제다
+ * (b4a54ae, BottomNav). 여유를 3.58px로 늘린다. 음수 여백이 자리를 18px로 되돌리므로
+ * 글리프가 그려지는 위치는 달라지지 않는다.
  */
-const ROUTE_GRADE_CHIP: Record<RiskGrade, string> = {
-  [RiskGrade.CRITICAL]:
-    "bg-status-critical-subtle text-status-critical-strong",
-  [RiskGrade.HIGH]: "bg-status-warning-subtle text-status-warning-strong",
-  [RiskGrade.MODERATE]: "bg-background-subtle text-text-supporting",
-};
-
-/** 주소 앞 핀 (Figma 123:3149) — 하단 탭과 같은 글리프를 18px 상자에 담는다. */
 const ADDRESS_PIN_MASK = {
   WebkitMaskImage: "url('/figma/visit-route-pin.svg')",
   WebkitMaskPosition: "center",
@@ -66,11 +62,11 @@ function VisitRouteMap({ apiKey, route }: { apiKey: string | undefined; route: V
       /*
        * 마커는 Figma 38:5661의 26px 원형 배지다 — 카드 앞 번호 배지와 같은 `GRADE_CHIP`을
        * 쓰므로 같은 등급이 지도와 목록에서 같은 색으로 보인다.
-       * 상자만 44px로 키운다: 26px은 60대 사용자가 지도 위에서 누르기 어렵다 (PRD §9).
+       * 누르는 상자는 48px로 남긴다: 26px은 60대 사용자가 지도 위에서 누르기 어렵다 (PRD §9).
        */
       const button = document.createElement("button");
       button.type = "button";
-      button.className = "flex size-11 items-center justify-center";
+      button.className = "flex size-12 items-center justify-center";
       const badge = document.createElement("span");
       badge.className = `flex size-[26px] items-center justify-center rounded-full text-label-14 drop-shadow-sm ${GRADE_CHIP[stop.grade]}`;
       badge.textContent = String(index + 1);
@@ -100,14 +96,22 @@ function VisitRouteMap({ apiKey, route }: { apiKey: string | undefined; route: V
     }
 
     /*
-     * 구간 이동시간 (Figma 38:5669) — 두 가구를 이은 선 가운데에 얹는다.
-     * 첫 가구는 앞선 구간이 없으므로 1번부터 시작한다.
+     * 구간 이동시간 (Figma 38:5669) — 두 가구의 중간 지점에 얹는다.
+     * 그리는 선은 카카오 도로 좌표라 라벨이 선 위에 정확히 얹히지는 않는다.
+     *
+     * 0분 구간은 건너뛴다. 대상자 좌표는 건물 좌표라 한 건물에 여러 가구가 있으면
+     * 중간 지점이 그 건물이 되어 `0분`이 번호 배지 위에 포개진다.
+     *
+     * 배경 없는 맨 글자는 Figma(38:5669) 그대로지만, 그 지도는 회색 목업이다.
+     * 실제 지도 타일에는 도로명·건물명이 이미 깔려 있어 흰 알약을 깔지 않으면
+     * 이 화면의 유일한 구간 시간 표시가 읽히지 않는다 (ADR-0014의 접근성 예외와 같은 이유).
      */
     for (const [index, stop] of route.stops.entries()) {
       const previous = route.stops[index - 1];
-      if (!previous) continue;
+      if (!previous || stop.minutesFromPrevious === 0) continue;
       const label = document.createElement("span");
-      label.className = "text-body-14 text-text-strong";
+      label.className =
+        "rounded-full bg-surface-default px-1.5 py-0.5 text-body-14 text-text-strong drop-shadow-sm";
       label.textContent = `${stop.minutesFromPrevious}분`;
       overlays.push(
         new maps.CustomOverlay({
@@ -266,7 +270,7 @@ function VisitCard({ stop, order }: { stop: VisitRouteStop; order: number }) {
           </span>
         </p>
         <span
-          className={`shrink-0 rounded-full px-3 py-1.5 text-caption-12 ${ROUTE_GRADE_CHIP[stop.grade]}`}
+          className={`shrink-0 rounded-full px-3 py-1.5 text-caption-12 ${GRADE_CHIP_SUBTLE[stop.grade]}`}
         >
           {GRADE_LABEL[stop.grade]}
         </span>
@@ -275,7 +279,7 @@ function VisitCard({ stop, order }: { stop: VisitRouteStop; order: number }) {
       <p className="flex min-w-0 items-center gap-1.5 text-body-15-relaxed text-text-secondary">
         <span
           aria-hidden="true"
-          className="size-[18px] shrink-0 bg-icon-secondary"
+          className="-m-[3px] size-[24px] shrink-0 bg-icon-secondary"
           style={ADDRESS_PIN_MASK}
         />
         <span className="truncate">{stop.address}</span>
@@ -286,7 +290,7 @@ function VisitCard({ stop, order }: { stop: VisitRouteStop; order: number }) {
         target="_blank"
         rel="noreferrer"
         aria-label={`${stop.name}님 경로 안내`}
-        className="flex h-11 w-full items-center justify-center rounded-md bg-action-secondary px-4 text-label-15 text-text-inverse active:bg-action-secondary-strong"
+        className="flex min-h-11 w-full items-center justify-center rounded-md bg-action-secondary px-4 py-2 text-label-15 text-text-inverse active:bg-action-secondary-strong"
       >
         경로 안내
       </a>
