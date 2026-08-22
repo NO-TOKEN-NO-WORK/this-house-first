@@ -101,14 +101,16 @@ export function pushDispatchMessage(result: PushDispatchResult | null): string {
   if (result.claimed === 0) {
     return "경보를 발령했습니다. 전송할 Push 알림이 없습니다.";
   }
-  if (result.sent === 0 && result.failed === 0) {
-    return "경보는 발령됐지만 구독된 기기가 없습니다.";
-  }
   if (
     result.attemptedDevices !== undefined &&
     result.sentDevices !== undefined &&
     result.failedDevices !== undefined
   ) {
+    if (result.attemptedDevices === 0) {
+      return (result.recipientsWithoutSubscriptions ?? 0) > 0
+        ? `경보 발령 · 구독된 기기 없음 · 미구독 담당자 ${result.recipientsWithoutSubscriptions}명`
+        : "경보는 발령됐지만 구독된 기기가 없습니다.";
+    }
     const details = [
       `경보 발령 · 기기 ${result.attemptedDevices}대 중 ${result.sentDevices}대 전송`,
       result.failedDevices > 0 ? `${result.failedDevices}대 실패` : null,
@@ -117,6 +119,9 @@ export function pushDispatchMessage(result: PushDispatchResult | null): string {
         : null,
     ].filter((message): message is string => message !== null);
     return details.join(" · ");
+  }
+  if (result.sent === 0 && result.failed === 0) {
+    return "경보는 발령됐지만 구독된 기기가 없습니다.";
   }
   const failures = [
     result.failed > 0 ? `실패 ${result.failed}건` : null,

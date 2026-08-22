@@ -27,11 +27,20 @@ class PushSetupError extends Error {
   }
 }
 
+export function isIosDevice(
+  device: Pick<Navigator, "userAgent" | "platform" | "maxTouchPoints">,
+): boolean {
+  return (
+    /iPhone|iPad|iPod/i.test(device.userAgent) ||
+    (device.platform === "MacIntel" && device.maxTouchPoints > 1)
+  );
+}
+
 function needsIosHomeScreenInstall(): boolean {
   const standalone =
     window.matchMedia("(display-mode: standalone)").matches ||
     Boolean((navigator as Navigator & { standalone?: boolean }).standalone);
-  return /iPhone|iPad|iPod/i.test(navigator.userAgent) && !standalone;
+  return isIosDevice(navigator) && !standalone;
 }
 
 function urlBase64ToUint8Array(value: string): Uint8Array<ArrayBuffer> {
@@ -52,10 +61,16 @@ async function registration(): Promise<ServiceWorkerRegistration> {
 export async function renewPushSubscription(
   pushManager: Pick<PushManager, "getSubscription" | "subscribe">,
   applicationServerKey: Uint8Array<ArrayBuffer>,
-): Promise<PushSubscription> {
+): Promise<{ subscription: PushSubscription; created: boolean }> {
   const existing = await pushManager.getSubscription();
-  if (existing) return existing;
-  return pushManager.subscribe({ userVisibleOnly: true, applicationServerKey });
+  if (existing) return { subscription: existing, created: false };
+  return {
+    subscription: await pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey,
+    }),
+    created: true,
+  };
 }
 
 function subscribedOf(payload: unknown): boolean {
@@ -100,24 +115,27 @@ async function readSubscriptionStatus(
  * 서버에 없는 endpoint를 새로 만든 뒤 저장한다. 구독 직후 발송기가 endpoint를
  * 만료로 판정해 지웠다면 서버 응답의 `subscribed`도 false이므로 브라우저 구독을 되돌린다.
  */
-async function createSubscription(
+export async function createSubscription(
   registered: ServiceWorkerRegistration,
   workerId: string,
   publicKey: string,
+  fetcher: typeof fetch = fetch,
 ): Promise<void> {
   let subscription: PushSubscription;
+  let created: boolean;
   try {
-    subscription = await renewPushSubscription(
+    ({ subscription, created } = await renewPushSubscription(
       registered.pushManager,
       urlBase64ToUint8Array(publicKey),
-    );
+    ));
   } catch {
     throw new PushSetupError("subscribe");
   }
 
+  let unsubscribeAfterFailure = created;
   try {
     const serialized = subscription.toJSON();
-    const response = await fetch("/api/push-subscriptions", {
+    const response = await fetcher("/api/push-subscriptions", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -127,11 +145,17 @@ async function createSubscription(
       }),
     });
     const payload: unknown = await response.json().catch(() => null);
-    if (!response.ok || !subscribedOf(payload)) {
+    if (!response.ok) {
       throw new Error("구독 저장 실패");
     }
+    if (!subscribedOf(payload)) {
+      unsubscribeAfterFailure = true;
+      throw new Error("구독 검증 실패");
+    }
   } catch (error) {
-    await subscription.unsubscribe().catch(() => false);
+    if (unsubscribeAfterFailure) {
+      await subscription.unsubscribe().catch(() => false);
+    }
     throw error instanceof PushSetupError ? error : new PushSetupError("save");
   }
 }
