@@ -5,7 +5,7 @@
   "description": "폭염·한파 경보일의 대상자 우선순위와 확인·방문 상태를 기록하는 담당자용 대응 보드",
   "lang": "ko",
   "start_url": "/today",
-  "scope": "/today",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#d93025",

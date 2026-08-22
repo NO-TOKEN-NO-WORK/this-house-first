@@ -10,14 +10,14 @@
 
 ## 결정 (Decision)
 
-- **Web App Manifest**: `public/today.webmanifest`로 제공하고 `/today` 레이아웃에서만 연결한다. `id`·`start_url`·`scope`는 모두 `/today`로 둔다
-- **Service Worker**: `public/sw.js`에 직접 작성한 최소 워커 (페이지는 network-first + 캐시 폴백, 정적 자원은 cache-first). `/today` 레이아웃의 `ServiceWorkerRegistrar`가 production에서 `scope: "/today"`로만 등록하며, 기존 전역 scope 등록은 제거한다
+- **Web App Manifest**: `public/today.webmanifest`로 제공하고 `/today` 레이아웃에서만 연결한다. `id`·`start_url`은 `/today`, `scope`는 담당자 방문 동선 `/map`까지 포함하도록 `/`로 둔다
+- **Service Worker**: `public/sw.js`에 직접 작성한 최소 워커 (페이지는 network-first + 캐시 폴백, 정적 자원은 cache-first). 등록 scope는 알림을 위해 [ADR-0017](0017-notification-events-web-push.md)에서 `/`로 대체됐고, 페이지 캐시는 계속 `/today`에만 적용한다
 - 오프라인 기록 큐잉(PRD §9)은 구현하지 않고 데모 멘트로만 다룬다
 
 ## 근거 (Rationale)
 
 - 빌드 체인과 완전 분리 — Turbopack/Next 버전과 무관하게 항상 동작
-- 담당자용 `/today`만 설치 대상이 되어 관리자·안내 화면이 동일 PWA에 섞이지 않음
+- 담당자용 `/today`만 설치 진입점이 되고, 별도 경로인 담당자 방문 동선 `/map`도 설치된 PWA 안에서 열림
 - 설치 가능 + 기본 오프라인 폴백이면 v0 PWA 요구를 100% 충족
 - 수십 줄짜리 워커는 디버깅 가능, 라이브러리 블랙박스는 해커톤에서 시한폭탄
 
@@ -29,5 +29,5 @@
 ## 결과 (Consequences)
 
 - 긍정: 빌드 안정성, 완전한 제어
-- 부정/트레이드오프: 빌드 산출물 자동 precache 없음 — v0에선 불필요. 캐시 무효화는 `sw.js`의 캐시 버전 상수를 수동 갱신
+- 부정/트레이드오프: 빌드 산출물 자동 precache 없음 — v0에선 불필요. 캐시 무효화는 `sw.js`의 캐시 버전 상수를 수동 갱신. Web App Manifest는 복수 scope를 지원하지 않아 `/map`을 포함하려면 관리자·안내 경로도 navigation scope에는 들어가지만, 이들 화면에는 manifest를 연결하지 않아 설치 진입점은 되지 않음
 - 되돌리기: 오프라인 큐잉이 실요구가 되면 Serwist 도입 ADR을 새로 쓴다
