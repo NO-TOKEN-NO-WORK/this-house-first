@@ -18,7 +18,6 @@ import { isIsoDate } from "../../lib/board/format";
 import {
   AlertLevel,
   ALERT_LEVEL_LABEL,
-  DEMO_HEAT_TEMPERATURE,
   GRADE_LABEL,
   HouseholdStatus,
   HOUSEHOLD_STATUS_LABEL,
@@ -721,15 +720,7 @@ export function AdminDashboardView({
           { icon: "/admin/refresh.png", label: "자동 갱신", live: true, value: "켜짐" },
         ]}
         metaTail={
-          <CurrentWeatherSummary
-            demoTemperature={
-              dashboard.alerted && dashboard.isDemo
-                ? DEMO_HEAT_TEMPERATURE
-                : undefined
-            }
-            valuesOnly
-            variant="admin"
-          />
+          <CurrentWeatherSummary valuesOnly variant="admin" />
         }
         title="관리자 관제"
       />}

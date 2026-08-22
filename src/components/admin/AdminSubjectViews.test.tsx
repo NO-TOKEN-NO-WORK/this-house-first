@@ -63,6 +63,7 @@ describe("관리자 대상자 상세·수정 화면", () => {
     );
 
     expect(html).toContain('aria-label="현재 날씨"');
+    expect(html).not.toContain("현재 위치 날씨");
     expect(html).not.toContain("14:32");
   });
 
