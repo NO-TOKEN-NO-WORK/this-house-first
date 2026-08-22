@@ -4,13 +4,13 @@ import { HomeIcon, ListIcon, MapIcon } from "./icons";
 /**
  * 담당자 하단 탭 (Figma ① 8:1945).
  *
- * 기록은 아직 화면이 없다. 눌러도 아무 일이 없는 링크를 두면 담당자가 고장으로 읽으므로,
- * 준비 중임을 드러낸 비활성 항목으로 둔다.
+ * 오늘·지도·기록은 모두 활성. `date`·`workerId`를 링크에 실어
+ * 탭 왕복이 같은 날·담당자를 유지하게 한다.
  */
 const ITEMS = [
   { key: "today", label: "오늘", href: "/today", Icon: HomeIcon },
   { key: "map", label: "지도", href: "/map", Icon: MapIcon },
-  { key: "log", label: "기록", href: null, Icon: ListIcon },
+  { key: "log", label: "기록", href: "/today/log", Icon: ListIcon },
 ] as const;
 
 function withContext(path: string, date?: string, workerId?: string): string {
@@ -45,7 +45,7 @@ export function BottomNav({
           </>
         );
 
-        return href ? (
+        return (
           <Link
             key={key}
             href={withContext(href, date, workerId)}
@@ -54,15 +54,6 @@ export function BottomNav({
           >
             {body}
           </Link>
-        ) : (
-          <span
-            key={key}
-            aria-disabled="true"
-            title="준비 중"
-            className="flex flex-1 flex-col items-center justify-center gap-[3px] text-calm"
-          >
-            {body}
-          </span>
         );
       })}
     </nav>
