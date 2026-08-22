@@ -46,11 +46,15 @@ export function VisitChecklist() {
       <h2 className="text-label-15 text-text-secondary">방문 체크리스트</h2>
       <ul className="flex flex-col gap-2.5 text-body-16 text-text-primary">
         {VISIT_CHECKLIST.map((item) => (
-          <li key={item} className="flex items-start gap-2">
+          <li key={item.emphasis} className="flex items-start gap-2">
             <span aria-hidden className="shrink-0">
               -
             </span>
-            <span>{item}</span>
+            {/* 굵게 읽을 자리는 domain.ts가 정한다 (Figma 167:10191) */}
+            <span>
+              <strong className="text-label-16">{item.emphasis}</strong>
+              {item.rest}
+            </span>
           </li>
         ))}
       </ul>

@@ -130,7 +130,9 @@ describe("VisitDetailView", () => {
       expect(html).toContain(reason.text);
     }
     for (const item of VISIT_CHECKLIST) {
-      expect(html).toContain(item);
+      // 굵은 앞부분과 이어지는 설명이 모두 domain.ts 원본 그대로여야 한다
+      expect(html).toContain(item.emphasis);
+      expect(html).toContain(item.rest.trimStart());
     }
   });
 
