@@ -1,10 +1,61 @@
-import { describe, expect, it } from "vitest";
-import { HouseholdStatus } from "../domain";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { HouseholdStatus, WorkerRole } from "../domain";
+
+const mocks = vi.hoisted(() => ({
+  alertDayFindUnique: vi.fn(),
+  subjectFindMany: vi.fn(),
+  workerFindMany: vi.fn(),
+}));
+
+vi.mock("../db", () => ({
+  prisma: {
+    alertDay: { findUnique: mocks.alertDayFindUnique },
+    subject: { findMany: mocks.subjectFindMany },
+    worker: { findMany: mocks.workerFindMany },
+  },
+}));
+
 import {
+  buildAdminRoster,
   buildAdminSnapshot,
+  getAdminDashboard,
   type AdminAssessmentRow,
   type AdminStatusRow,
 } from "./dashboard";
+
+const rosterWorkers = [
+  { id: "worker-a", name: "이담당", phone: "010-0000-0001" },
+  { id: "worker-b", name: "박담당", phone: null },
+];
+
+const rosterSubjects = [
+  {
+    id: "subject-critical",
+    name: "김○○",
+    phone: "010-0000-0101",
+    birthYear: 1938,
+    workerId: "worker-a",
+    worker: { name: "이담당" },
+    building: {
+      id: "building-a",
+      address: "대구광역시 서구 비산동 1",
+      roadAddress: null,
+    },
+  },
+  {
+    id: "subject-visit",
+    name: "박○○",
+    phone: "010-0000-0102",
+    birthYear: 1948,
+    workerId: "worker-a",
+    worker: { name: "이담당" },
+    building: {
+      id: "building-b",
+      address: "대구광역시 서구 비산동 2",
+      roadAddress: "대구광역시 서구 비산로 2",
+    },
+  },
+];
 
 const assessments: AdminAssessmentRow[] = [
   {
@@ -161,5 +212,67 @@ describe("buildAdminSnapshot", () => {
     expect(none.subjects).toEqual([]);
     expect(none.buildings).toEqual([]);
     expect(none.summary.total).toBe(0);
+  });
+});
+
+describe("buildAdminRoster", () => {
+  it("활성 대상자를 위험 스냅샷과 별도의 원장으로 만든다", () => {
+    expect(buildAdminRoster({ workers: rosterWorkers, subjects: rosterSubjects }).subjects).toHaveLength(2);
+  });
+
+  it("없는 담당자 필터는 다른 담당자의 대상자를 대신 반환하지 않는다", () => {
+    expect(
+      buildAdminRoster({
+        workers: rosterWorkers,
+        subjects: rosterSubjects,
+        workerId: "missing",
+      }).subjects,
+    ).toEqual([]);
+  });
+
+  it("대상자 이름 검색을 원장에 적용한다", () => {
+    expect(
+      buildAdminRoster({
+        workers: rosterWorkers,
+        subjects: rosterSubjects,
+        subjectQuery: "박",
+      }).subjects.map((row) => row.name),
+    ).toEqual(["박○○"]);
+  });
+});
+
+describe("getAdminDashboard", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.workerFindMany.mockResolvedValue(rosterWorkers);
+    mocks.subjectFindMany.mockResolvedValue(rosterSubjects);
+    mocks.alertDayFindUnique.mockResolvedValue(null);
+  });
+
+  it("비경보일에도 활성 원장을 반환하고 보관 행을 조회에서 제외한다", async () => {
+    const dashboard = await getAdminDashboard({
+      date: "2026-08-23",
+      now: new Date("2026-08-23T00:00:00.000Z"),
+    });
+
+    expect(dashboard.alerted).toBe(false);
+    expect(dashboard.roster.workers).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: "worker-a", subjectCount: 2 }),
+      ]),
+    );
+    expect(dashboard.roster.subjects).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ subjectId: "subject-critical", name: "김○○" }),
+      ]),
+    );
+    expect(mocks.workerFindMany.mock.calls[0]?.[0]?.where).toEqual({
+      role: WorkerRole.WORKER,
+      archivedAt: null,
+    });
+    expect(mocks.subjectFindMany.mock.calls[0]?.[0]?.where).toEqual({
+      archivedAt: null,
+      worker: { archivedAt: null },
+    });
   });
 });

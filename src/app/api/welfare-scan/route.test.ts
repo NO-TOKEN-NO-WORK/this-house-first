@@ -93,6 +93,16 @@ describe("POST /api/welfare-scan", () => {
     expect(JSON.stringify(payload)).not.toContain("010-");
   });
 
+  it("보관되지 않은 담당자의 활성 대상자만 복지 스캔한다", async () => {
+    await POST();
+
+    expect(mocks.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { archivedAt: null, worker: { archivedAt: null } },
+      }),
+    );
+  });
+
   it("외부 연동이 모두 실패해도 연결 상태와 빈 결과를 반환한다", async () => {
     mocks.refreshWelfarePrograms.mockRejectedValue(
       Object.assign(new Error("PUBLIC_DATA_SERVICE_KEY 환경변수가 설정되지 않았습니다."), {

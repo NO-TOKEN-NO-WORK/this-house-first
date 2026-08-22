@@ -185,7 +185,7 @@ export function AdminWorkerDetailView({
                 <span aria-disabled="true" className={`${styles.secondaryButton} ${styles.disabledButton}`}>전화하기</span>
               )}
               <Link className={styles.secondaryButton} href={`/admin/workers/${detail.id}/edit`}>수정</Link>
-              <Link className={styles.dangerButton} href={`/admin/workers/${detail.id}/edit#delete`}>삭제</Link>
+              <Link className={styles.dangerButton} href={`/admin/workers/${detail.id}/edit#archive`}>보관</Link>
               <Link href={`/admin?date=${detail.date}`}>목록으로</Link>
             </div>
           </section>

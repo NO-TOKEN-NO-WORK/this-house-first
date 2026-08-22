@@ -9,6 +9,8 @@ import {
   type AdminAlertedDashboard,
   type AdminDashboard,
   type AdminDashboardBuilding,
+  type AdminRosterSubject,
+  type AdminRosterWorker,
   type AdminDashboardSubject,
   type AdminStatusCategory,
 } from "../../lib/admin/dashboard";
@@ -121,6 +123,19 @@ const PREVIEW_DASHBOARD: AdminAlertedDashboard = {
   date: "2026-08-22",
   dateLabel: "8월 22일(토)",
   selectedWorkerId: null,
+  roster: {
+    workers: [{ id: "preview-worker-1", name: "이미경", phone: "010-0000-1001", subjectCount: 1 }],
+    subjects: [{
+      subjectId: PREVIEW_SUBJECT.subjectId,
+      name: PREVIEW_SUBJECT.name,
+      phone: PREVIEW_SUBJECT.phone,
+      birthYear: PREVIEW_SUBJECT.birthYear,
+      workerId: PREVIEW_SUBJECT.workerId,
+      workerName: PREVIEW_SUBJECT.workerName,
+      buildingId: PREVIEW_SUBJECT.buildingId,
+      address: PREVIEW_SUBJECT.address,
+    }],
+  },
   workers: [{ id: "preview-worker-1", name: "이미경", phone: "010-0000-1001", subjectCount: 1 }],
   generatedAt: "2026-08-22T01:30:00.000Z",
   level: AlertLevel.EMERGENCY,
@@ -291,7 +306,12 @@ export function PriorityList({
   selectedStatus,
   previewMode = false,
 }: {
-  subjects: AdminDashboardSubject[];
+  subjects: Array<
+    AdminRosterSubject &
+    Partial<Pick<AdminDashboardSubject, "grade" | "reasons" | "statusLabel" | "open">> & {
+      historical?: boolean;
+    }
+  >;
   date?: string;
   workerId?: string | null;
   subjectQuery?: string;
@@ -362,14 +382,19 @@ export function PriorityList({
                         width={30}
                       />
                       <strong>{subject.name}</strong>
+                      {subject.historical ? <span className={styles.statusBadge}>과거 기록</span> : null}
                     </span>
                   </td>
                   <td>
-                    <span className={`${styles.badge} ${GRADE_CLASS[subject.grade]}`}>
-                      {GRADE_LABEL[subject.grade]}
-                    </span>
+                    {subject.grade === undefined ? (
+                      <span className={styles.statusBadge}>경보 없음</span>
+                    ) : (
+                      <span className={`${styles.badge} ${GRADE_CLASS[subject.grade]}`}>
+                        {GRADE_LABEL[subject.grade]}
+                      </span>
+                    )}
                   </td>
-                  <td><span className={styles.statusBadge}>{subject.statusLabel}</span></td>
+                  <td><span className={styles.statusBadge}>{subject.statusLabel ?? "경보 없음"}</span></td>
                   <td>
                     <span className={styles.inlineIconText}>
                       <Image alt="" aria-hidden="true" height={14} src="/admin/person.png" width={14} />
@@ -377,15 +402,17 @@ export function PriorityList({
                     </span>
                   </td>
                   <td className={styles.addressCell}>{compactAddress(subject.address)}</td>
-                  <td className={styles.reasonCell}>{subject.reasons.join(" / ")}</td>
+                  <td className={styles.reasonCell}>{subject.reasons?.join(" / ") ?? "경보 없음"}</td>
                   <td>
                     {previewMode ? (
                       <span className={styles.statusBadge} aria-disabled="true">미리보기</span>
+                    ) : subject.historical ? (
+                      <Link href={subjectHref(subject.subjectId, date, workerId)}>상세</Link>
                     ) : (
                       <span className={styles.rowActions}>
                         <Link href={subjectHref(subject.subjectId, date, workerId)}>상세</Link>
                         <Link href={`/admin/subjects/${subject.subjectId}/edit`}>수정</Link>
-                        <Link className={styles.dangerLink} href={`${subjectHref(subject.subjectId, date, workerId)}#delete`}>삭제</Link>
+                        <Link className={styles.dangerLink} href={`${subjectHref(subject.subjectId, date, workerId)}#archive`}>보관</Link>
                       </span>
                     )}
                   </td>
@@ -435,10 +462,12 @@ function BuildingStatusPanel({ buildings }: { buildings: AdminDashboardBuilding[
 }
 
 function WorkerPanel({
-  dashboard,
+  workers,
+  date,
   previewMode = false,
 }: {
-  dashboard: AdminAlertedDashboard;
+  workers: AdminRosterWorker[];
+  date: string;
   previewMode?: boolean;
 }) {
   return (
@@ -465,19 +494,14 @@ function WorkerPanel({
             </tr>
           </thead>
           <tbody>
-            {dashboard.workers.map((worker) => {
-              const assigned = dashboard.subjects.filter(
-                (subject) => subject.workerId === worker.id,
-              );
-              const subjectCount = worker.subjectCount ?? assigned.length;
-              return (
+            {workers.map((worker) => (
                 <tr key={worker.id}>
                   <td><strong>{worker.name}</strong></td>
-                  <td>{subjectCount}명</td>
+                  <td>{worker.subjectCount}명</td>
                   <td>
                     <span className={styles.inlineIconText}>
                       <Image alt="" aria-hidden="true" height={14} src="/admin/phone.png" width={14} />
-                      {maskPhone(worker.phone ?? assigned[0]?.workerPhone)}
+                      {maskPhone(worker.phone)}
                     </span>
                   </td>
                   <td>
@@ -485,15 +509,14 @@ function WorkerPanel({
                       <span className={styles.statusBadge} aria-disabled="true">미리보기</span>
                     ) : (
                       <span className={styles.rowActions}>
-                        <Link href={`/admin/workers/${worker.id}?date=${dashboard.date}`}>상세</Link>
+                        <Link href={`/admin/workers/${worker.id}?date=${date}`}>상세</Link>
                         <Link href={`/admin/workers/${worker.id}/edit`}>수정</Link>
-                        <Link className={styles.dangerLink} href={`/admin/workers/${worker.id}/edit#delete`}>삭제</Link>
+                        <Link className={styles.dangerLink} href={`/admin/workers/${worker.id}/edit#archive`}>보관</Link>
                       </span>
                     )}
                   </td>
                 </tr>
-              );
-            })}
+              ))}
           </tbody>
         </table>
       </div>
@@ -659,6 +682,31 @@ export function AdminDashboardView({
   pushPublicKey?: string;
   previewMode?: boolean;
 }) {
+  const rosterBySubjectId = new Map(
+    dashboard.roster.subjects.map((subject) => [subject.subjectId, subject]),
+  );
+  const snapshotSubjects = dashboard.subjects.map((snapshot) => {
+    const roster = rosterBySubjectId.get(snapshot.subjectId);
+    return roster
+      ? {
+        ...roster,
+        grade: snapshot.grade,
+        reasons: snapshot.reasons,
+        statusLabel: snapshot.statusLabel,
+        open: snapshot.open,
+      }
+      : { ...snapshot, historical: true };
+  });
+  const snapshotSubjectIds = new Set(snapshotSubjects.map((subject) => subject.subjectId));
+  const managementSubjects = !dashboard.alerted
+    ? dashboard.roster.subjects
+    : filters.selectedStatuses !== undefined
+      ? snapshotSubjects
+      : [
+        ...snapshotSubjects,
+        ...dashboard.roster.subjects.filter((subject) => !snapshotSubjectIds.has(subject.subjectId)),
+      ];
+
   return (
     <AdminShell
       activePage="dashboard"
@@ -704,27 +752,31 @@ export function AdminDashboardView({
                 <AdminMap buildings={dashboard.buildings} date={dashboard.date} mapKey={mapKey} previewMode={previewMode} />
                 <BuildingStatusPanel buildings={dashboard.buildings} />
               </section>
-              <section className={styles.managementGrid} aria-label="대상자와 생활지원사 관리">
-                <PriorityList
-                  date={dashboard.date}
-                  selectedStatus={
-                    filters.selectedStatuses?.length === 1
-                      ? filters.selectedStatuses[0]
-                      : undefined
-                  }
-                  subjectQuery={filters.subjectQuery}
-                  subjects={dashboard.subjects}
-                  workerId={dashboard.selectedWorkerId}
-                  previewMode={previewMode}
-                />
-                <WorkerPanel dashboard={dashboard} previewMode={previewMode} />
-              </section>
             </>
           ) : (
             <p className={styles.silentState}>
               오늘은 경보가 없습니다. 경보가 내려지면 위험도와 우선 확인 대상을 안내합니다.
             </p>
           )}
+          <section className={styles.managementGrid} aria-label="대상자와 생활지원사 관리">
+            <PriorityList
+              date={dashboard.date}
+              selectedStatus={
+                filters.selectedStatuses?.length === 1
+                  ? filters.selectedStatuses[0]
+                  : undefined
+              }
+              subjectQuery={filters.subjectQuery}
+              subjects={managementSubjects}
+              workerId={dashboard.selectedWorkerId}
+              previewMode={previewMode}
+            />
+            <WorkerPanel
+              date={dashboard.date}
+              previewMode={previewMode}
+              workers={dashboard.roster.workers}
+            />
+          </section>
           <DataSources />
         </section>
       </main>

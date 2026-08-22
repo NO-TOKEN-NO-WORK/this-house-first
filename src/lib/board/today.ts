@@ -157,12 +157,14 @@ const GRADE_ORDER: readonly RiskGrade[] = [
  * v0에는 로그인이 없으므로(ADR-0008 범위 밖) workerId가 없으면 생활지원사 계정을 기본으로 쓴다.
  */
 async function resolveWorker(workerId?: string): Promise<BoardWorker | null> {
-  const worker = workerId
-    ? await prisma.worker.findUnique({ where: { id: workerId } })
-    : await prisma.worker.findFirst({
-        where: { role: WorkerRole.WORKER },
-        orderBy: { id: "asc" },
-      });
+  const worker = await prisma.worker.findFirst({
+    where: {
+      ...(workerId ? { id: workerId } : {}),
+      role: WorkerRole.WORKER,
+      archivedAt: null,
+    },
+    orderBy: { id: "asc" },
+  });
   return worker ? { id: worker.id, name: worker.name } : null;
 }
 
@@ -174,14 +176,16 @@ export async function getBoard(
   const year = yearOfIsoDate(date);
   const worker = await resolveWorker(options.workerId);
   // 요청한 담당자를 못 찾았으면 남의 명단을 대신 보여주지 않는다 — 빈 명단이 맞다
-  const workerId = options.workerId ?? worker?.id ?? null;
+  const workerId = worker?.id ?? null;
 
   const alertDay = await prisma.alertDay.findUnique({ where: { date } });
 
   // 비경보일에는 AlertDay 행이 없다 — 위험 단계도 상태도 없이 담당 가구만 보여준다 (Figma ①-b)
   if (!alertDay) {
     const rows = await prisma.subject.findMany({
-      where: workerId ? { workerId } : { id: { in: [] } },
+      where: workerId
+        ? { workerId, archivedAt: null, worker: { archivedAt: null } }
+        : { id: { in: [] } },
       include: { building: true },
       // 경보일 정렬(위험 점수)이 없으므로 나이 많은 순으로 둔다
       orderBy: [{ birthYear: "asc" }, { name: "asc" }],

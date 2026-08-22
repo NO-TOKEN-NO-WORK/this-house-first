@@ -34,3 +34,4 @@
 | [0019](0019-emergency-only-alert-banner.md) | 경보 배너는 비상 단계에만 · 최고 단계 문구 `비상` | 승인됨 |
 | [0020](0020-welfare-scan-luna-responses.md) | 복지 스캔: Luna 신호 추출 + 규칙 기반 자격 판정 | 승인됨 |
 | [0021](0021-visit-record-flow.md) | 방문 기록 흐름: 고르고 한 번 저장 · 끝난 방문은 되읽기 | 승인됨 |
+| [0022](0022-permanent-roster-alert-snapshot-separation.md) | 상시 원장과 경보 스냅샷 분리 | 승인됨 |

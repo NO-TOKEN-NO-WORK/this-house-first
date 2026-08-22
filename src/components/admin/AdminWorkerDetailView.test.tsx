@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { AlertLevel, HouseholdStatus, RiskGrade } from "../../lib/domain";
 import type { AdminWorkerDetail } from "../../lib/admin/worker-detail";
 import { AdminWorkerDetailView } from "./AdminWorkerDetailView";
+import { AdminWorkerFormView } from "./AdminWorkerFormView";
 
 const detail = {
   id: "worker-1",
@@ -100,5 +101,18 @@ describe("관리자 생활지원사 상세 화면", () => {
 
     expect(html).toContain('aria-disabled="true"');
     expect(html).not.toContain('href="tel:');
+  });
+
+  it("점검 이력만 있는 생활지원사는 보관할 수 있다", () => {
+    const html = renderToStaticMarkup(
+      <AdminWorkerFormView
+        action={async () => {}}
+        archiveAction={async () => {}}
+        worker={{ name: "박○○", phone: "010-1234-5678", assigned: 0, checks: 2 }}
+      />,
+    );
+
+    expect(html).toContain(">보관</button>");
+    expect(html).not.toContain("점검 기록이 있어 보관할 수 없습니다.");
   });
 });

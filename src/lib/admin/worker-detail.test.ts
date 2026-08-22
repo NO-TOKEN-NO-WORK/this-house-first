@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   AlertLevel,
   CheckKind,
@@ -7,9 +7,38 @@ import {
   VisitResult,
   WorkerRole,
 } from "../domain";
-import { buildAdminWorkerDetail } from "./worker-detail";
+
+const mocks = vi.hoisted(() => ({
+  workerFindUnique: vi.fn(),
+}));
+
+vi.mock("../db", () => ({
+  prisma: { worker: { findUnique: mocks.workerFindUnique } },
+}));
+vi.mock("../board/today", () => ({ todayInKst: vi.fn() }));
+
+import { buildAdminWorkerDetail, getAdminWorkerDetail } from "./worker-detail";
 
 describe("관리자 생활지원사 상세", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("보관된 생활지원사의 과거 상세는 ID로 열고 현재 배정 대상자만 포함한다", async () => {
+    mocks.workerFindUnique.mockResolvedValue(null);
+
+    await expect(getAdminWorkerDetail("archived-worker", "2026-08-22")).resolves.toBeNull();
+
+    expect(mocks.workerFindUnique).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "archived-worker" },
+        include: expect.objectContaining({
+          subjects: expect.objectContaining({ where: { archivedAt: null } }),
+        }),
+      }),
+    );
+  });
+
   it("당일 대상자 현황과 활동을 생활지원사 단위로 요약한다", () => {
     const detail = buildAdminWorkerDetail({
       date: "2026-08-22",
