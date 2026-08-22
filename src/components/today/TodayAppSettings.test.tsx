@@ -22,7 +22,7 @@ describe("TodayAppSettings", () => {
     expect(html).toContain("홈 화면에 앱 설치");
     expect(html).toContain("푸시 알림");
     expect(html).toContain("홈 화면 설치 · 푸시 알림");
-    expect(html).toContain("설정");
+    expect(html).toContain("group-open:rotate-180");
   });
 
   it("담당자가 선택되지 않으면 푸시 설정을 표시하지 않는다", () => {

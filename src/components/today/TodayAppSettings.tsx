@@ -1,5 +1,6 @@
 import { InstallPwaBanner } from "@/components/InstallPwaBanner";
 import { PushNotificationManager } from "@/components/PushNotificationManager";
+import { ChevronDownIcon } from "@/components/today/icons";
 
 /**
  * 오늘의 대응이 끝난 뒤 필요할 때만 여는 앱 설정.
@@ -13,7 +14,7 @@ export function TodayAppSettings({
   publicKey: string;
 }) {
   return (
-    <details className="border-t border-border-subtle pt-4">
+    <details className="group border-t border-border-subtle pt-4">
       <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-4 text-text-primary [&::-webkit-details-marker]:hidden">
         <span className="min-w-0">
           <span className="block text-label-15">앱 설정</span>
@@ -21,9 +22,7 @@ export function TodayAppSettings({
             홈 화면 설치 · 푸시 알림
           </span>
         </span>
-        <span className="shrink-0 text-label-15 text-action-secondary">
-          설정
-        </span>
+        <ChevronDownIcon className="size-6 shrink-0 text-icon-secondary group-open:rotate-180" />
       </summary>
 
       <div className="flex flex-col gap-3 pt-3">

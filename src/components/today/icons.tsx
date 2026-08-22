@@ -101,6 +101,12 @@ export const ChevronLeftIcon = (props: IconProps) => (
   </Icon>
 );
 
+export const ChevronDownIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="m5 9 7 7 7-7" />
+  </Icon>
+);
+
 export const SnowflakeIcon = (props: IconProps) => (
   <Icon {...props}>
     <path d="M12 3v18M4.2 7.5l15.6 9M19.8 7.5l-15.6 9" />
