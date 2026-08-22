@@ -166,11 +166,13 @@ export async function extractWelfareSignals(
         max_output_tokens: 4_000,
         input: [
           {
+            type: "message",
             role: "system",
             content:
               "당신은 제공된 구조화 사실과 개인정보를 제거한 현장 기록 용어에서 지원이 필요한 생활 문제만 분류합니다. 수급 자격이나 선정 여부는 판단하지 말고, 제공되지 않은 문제는 만들지 마세요.",
           },
           {
+            type: "message",
             role: "user",
             content: JSON.stringify(
               profiles.map((profile, index) => ({

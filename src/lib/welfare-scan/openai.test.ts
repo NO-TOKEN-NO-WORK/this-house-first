@@ -66,6 +66,10 @@ describe("Luna 복지 메모 분석", () => {
       model: "openai/gpt-5.6-luna",
       reasoning: { effort: "high" },
       store: false,
+      input: [
+        { type: "message", role: "system" },
+        { type: "message", role: "user" },
+      ],
       text: { format: { type: "json_schema", strict: true } },
     });
     expect(JSON.stringify(sentBody)).not.toContain("이미경");
