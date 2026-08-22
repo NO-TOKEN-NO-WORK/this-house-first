@@ -174,6 +174,12 @@ export function nextCheckKindOf(status: HouseholdStatus): CheckKind | null {
     : CheckKind.CALL;
 }
 
+/** 확인 기록 종류 라벨 — 기록 탭 목록에 그대로 쓴다. UI에서 다시 쓰지 않는다 */
+export const CHECK_KIND_LABEL: Record<CheckKind, string> = {
+  CALL: "전화",
+  VISIT: "방문",
+};
+
 /** 전화 결과 원터치 기록 (PRD F4) */
 export const CallResult = {
   OK: "OK",

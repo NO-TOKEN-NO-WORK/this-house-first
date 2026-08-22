@@ -40,15 +40,16 @@ flowchart LR
 ```
 src/
 ├── app/
-│   ├── layout.tsx            # 루트 레이아웃 (ko, PWA 등록)
+│   ├── layout.tsx            # 루트 레이아웃 (ko)
 │   ├── page.tsx              # 홈 (진입점 안내)
-│   ├── manifest.ts           # PWA Web App Manifest (ADR-0006)
-│   ├── today/                # 담당자: 오늘의 대응 보드 + [subjectId] 상세·기록 (F3, F4)
+│   ├── today/                # 담당자: 오늘의 대응 보드 + PWA 등록 + [subjectId] 상세·기록 + log(기록 탭) (F3, F4)
+│   ├── map/                  # 담당자: 담당 가구 지도 (F5)
 │   ├── admin/                # [예정] 관리자: 관제 대시보드 (F5)
 │   └── api/                  # Route Handlers (공공데이터 프록시 포함)
 ├── components/
 │   ├── ServiceWorkerRegistrar.tsx
-│   └── today/                # 담당자 화면 컴포넌트 (카드·하단 탭·원터치 기록·아이콘)
+│   ├── today/                # 담당자 화면 컴포넌트 (카드·하단 탭·원터치 기록·아이콘)
+│   └── map/                  # 담당자 지도 컴포넌트
 ├── lib/
 │   ├── domain.ts             # 도메인 상수·타입 (상태값 단일 원본)
 │   ├── db.ts                 # Prisma 클라이언트 싱글턴 (driver adapter)
@@ -60,7 +61,7 @@ src/
 │   │   ├── reasons.ts        # 위험 사유 분류(개인·건물·기상) — 문장은 그대로 둔다
 │   │   └── *.test.ts
 │   ├── escalation/           # initial(발령 시 진입) · transition(기록 전이, FR-5) — 모두 순수 함수
-│   ├── board/                # today.ts(보드 — /today·/api/subjects 공유) · subject.ts(상세) · format.ts(날짜·나이·동)
+│   ├── board/                # today.ts(보드 — /today·/api/subjects 공유) · subject.ts(상세) · log.ts(기록 탭 화면 모델) · log-read.ts(조회) · format.ts(날짜·나이·동)
 │   ├── http.ts               # 앱 API 공통 오류·검증 헬퍼
 │   ├── public-data/          # 공공데이터포털 공통 클라이언트 + 기상청·인구 (서버 전용)
 │   ├── bldg-hub/             # 건축HUB 건축물대장 표제부 클라이언트 + 순수 매핑 (FR-2)
@@ -74,7 +75,8 @@ prisma/
 └── seed/                     # config(지역·슬롯) · select(순수 선별) · synthetic(합성 인물)
 prisma.config.ts              # Prisma 7 CLI 설정 (.env 로딩, DIRECT_URL)
 public/
-└── sw.js                     # 수제 Service Worker (ADR-0006)
+├── today.webmanifest          # /today 전용 Web App Manifest (ADR-0006)
+└── sw.js                     # /today scope 수제 Service Worker (ADR-0006)
 ```
 
 ## 3. 데이터 모델
@@ -155,6 +157,8 @@ stateDiagram-v2
 | `/` | 진입점 안내 | ✅ 초기화됨 |
 | `/today` | 담당자 대응 보드 — 경보일 등급별 목록 / 비경보일 담당 가구 명단 (FR-4) | ✅ 구현됨 |
 | `/today/[subjectId]` | 대상자 상세 + 원터치 전화·방문 결과 기록 (FR-4·FR-5) | ✅ 구현됨 |
+| `/today/log` | 담당자 확인 기록 목록 — 선택한 담당자의 CheckEvent (읽기 전용) | ✅ 구현됨 |
+| `/map` | 담당자 담당 가구 지도 | ✅ 구현됨 |
 | `/admin` | 관리자 지도 대시보드 (FR-6) | 예정 (D2 오전) |
 | `/api/trigger` | `GET` 판정 미리보기 / `POST` 발령 — AlertDay + 당일 평가 + 가구 상태 생성 (FR-1·FR-3) | ✅ 연동됨 |
 | `/api/public-data/weather-warnings` | 기상청 기상특보 목록 | ✅ 연동됨 |
@@ -169,7 +173,7 @@ stateDiagram-v2
 
 - **접근성(담당자 앱)**: 기본 글자 크기 상향, 터치 타깃 최소 48px, 화면당 결정 1개, 기록 완료까지 탭 2회 이내 (PRD §9) — 공용 컴포넌트로 강제. 보드 카드 버튼(탭 1) → 상세의 결과 버튼(탭 2)이 기록 경로다
 - **담당자 화면 디자인**: Figma `junction` ①(`8:1803`)·①-b(`14:2926`)·②(`3:505`)를 따른다. 색은 `src/app/globals.css`의 `@theme` 토큰, 아이콘은 인라인 SVG(`src/components/today/icons.tsx`). **문구는 `src/lib/domain.ts` 상수를 쓰며 디자인과 의도적으로 다른 지점이 있다** — 근거와 목록은 [ADR-0014](adr/0014-figma-design-with-domain-terms.md)
-- **하단 탭(오늘·지도·기록)**: 지도(④)·기록 화면이 없는 동안은 비활성 항목으로 둔다. 눌러도 아무 일이 없는 링크는 담당자에게 고장으로 읽힌다
+- **하단 탭(오늘·지도·기록)**: 오늘(`/today`)·지도(`/map`)·기록(`/today/log`)은 모두 활성. 탭 왕복은 `date`·`workerId` 검색 문맥을 유지한다. 기록은 PWA scope(`/today`) 안에 둔다
 - **알림 침묵 원칙**: 비경보일 알림 0건. 알림 생성은 도메인 로직, 전달은 v0 인앱([ADR-0008](adr/0008-notification-in-app-first.md))
 - **PWA**: manifest + 수제 SW([ADR-0006](adr/0006-pwa-manual-service-worker.md)). 오프라인 기록 큐잉은 데모에서 언급만
 - **배포**: Vercel([ADR-0013](adr/0013-prisma-postgres.md)) — `vercel-build`가 direct 연결(`DIRECT_URL`)로 `prisma migrate deploy` 후 빌드하고, 런타임은 pooled 연결(`DATABASE_URL`)을 쓴다. 데모 진행은 여전히 로컬 실행이 기본이고([ADR-0011](adr/0011-deploy-local-demo-first.md)) 배포 URL은 심사위원 접속용 보조 경로다. 절차는 [docs/deploy-vercel.md](deploy-vercel.md)

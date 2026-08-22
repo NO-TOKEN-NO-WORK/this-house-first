@@ -21,6 +21,7 @@ import type { AlertedBoard, BoardSubject } from "./today";
 function subject(over: Partial<BoardSubject> = {}): BoardSubject {
   return {
     subjectId: "s1",
+    buildingId: "b1",
     name: "김○○",
     age: 88,
     birthYear: 1938,
