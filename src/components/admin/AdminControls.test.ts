@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
@@ -10,6 +11,12 @@ vi.mock("next/navigation", () => ({
 import { AdminControls, requestDemoTrigger } from "./AdminControls";
 
 describe("requestDemoTrigger", () => {
+  it("발령 결과 토스트는 잠시 뒤 화면을 가리지 않도록 닫힌다", () => {
+    const source = readFileSync(new URL("./AdminControls.tsx", import.meta.url), "utf8");
+    expect(source).toContain("window.setTimeout");
+    expect(source).toContain("3_000");
+  });
+
   it("경보 단계 세 개를 즉시 발령하는 버튼으로 제공한다", () => {
     const html = renderToStaticMarkup(
       createElement(AdminControls, { date: "2026-08-22" }),

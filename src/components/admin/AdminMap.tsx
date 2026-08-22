@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import styles from "../../app/admin/admin.module.css";
 import type { AdminDashboardBuilding } from "../../lib/admin/dashboard";
@@ -10,6 +11,7 @@ type KakaoLatLng = object;
 
 type KakaoMap = {
   setBounds(bounds: KakaoLatLngBounds): void;
+  setZoomable(zoomable: boolean): void;
 };
 
 type KakaoLatLngBounds = {
@@ -119,9 +121,11 @@ export function loadKakaoSdk(mapKey: string): Promise<KakaoMaps> {
 export function AdminMap({
   buildings,
   mapKey,
+  date,
 }: {
   buildings: AdminDashboardBuilding[];
   mapKey: string;
+  date?: string;
 }) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const [mapError, setMapError] = useState<string | null>(null);
@@ -168,6 +172,7 @@ export function AdminMap({
                 center: new maps.LatLng(firstBuilding.lat, firstBuilding.lng),
                 level: 6,
               });
+              map.setZoomable(false);
               const bounds = new maps.LatLngBounds();
 
               for (const building of mappedBuildings) {
@@ -251,111 +256,105 @@ export function AdminMap({
       <h2 id="map-title" className={styles.screenReaderOnly}>
         건물 위험도 지도
       </h2>
-      {!mapKey ? (
-        <div className={styles.mapFallback} role="region" aria-label="건물 위험도 지도">
-          {mappedBuildings.slice(0, 5).map((building) => (
-            <button
-              aria-label={`${building.address}, ${GRADE_LABEL[building.grade]}, 미처리 ${building.openCount}명`}
-              className={`${styles.mapMarker} ${styles.fallbackMarker} ${styles[`grade${building.grade}`]} ${styles[building.statusCategory]}`}
-              key={building.buildingId}
-              onClick={() => setSelectedBuildingId(building.buildingId)}
-              type="button"
-            >
-              <Image
-                alt=""
-                aria-hidden="true"
-                className={styles.mapMarkerIcon}
-                height={24}
-                src={buildingIconSrc(building.grade)}
-                width={24}
-              />
-              <span className={styles.mapMarkerCopy}>
-                <strong>{building.address.split(" ").slice(-2).join(" ")}</strong>
-                <span>건물 위험 {GRADE_LABEL[building.grade]}</span>
-                <em>미처리 {building.openCount}명</em>
-              </span>
-            </button>
-          ))}
-          <p className={styles.screenReaderOnly}>
-            카카오 지도 키가 설정되지 않았습니다. 생성된 지도 이미지로 현황을 표시합니다.
-          </p>
-        </div>
-      ) : (
-        <>
-          <div
-            ref={mapContainerRef}
-            className={styles.mapCanvas}
-            role="region"
-            aria-label="건물 위험도 지도"
-          />
-          {coordinateError ?? mapError ? (
-            <p className={styles.mapMessage} role="alert">
-              {coordinateError ?? mapError}
-            </p>
-          ) : null}
-        </>
-      )}
-      {selectedBuilding?.subjects[0] ? (
+      <div className={styles.mapLayout}>
         <section
-          className={styles.mapDetail}
-          aria-label="선택한 건물 상세"
+          className={styles.mapSelection}
+          aria-label="선택한 대상자"
           aria-live="polite"
         >
-          <span className={styles.mapDetailLabel}>최우선 대상</span>
-          <Image
-            alt=""
-            aria-hidden="true"
-            className={styles.mapDetailAlert}
-            height={42}
-            src="/admin/metric-critical.png"
-            width={42}
-          />
-          <div className={styles.mapSubject}>
-            <Image
-              alt={`${selectedBuilding.subjects[0].name} 합성 프로필`}
-              className={styles.mapSubjectAvatar}
-              height={64}
-              src="/admin/elder-female-1.png"
-              width={64}
-            />
-            <div>
-              <h3 className={styles.mapDetailTitle}>
-                <strong>{selectedBuilding.subjects[0].name}</strong>
-                <span className={`${styles.badge} ${styles[`grade${selectedBuilding.subjects[0].grade}`]}`}>
-                  {GRADE_LABEL[selectedBuilding.subjects[0].grade]}
-                </span>
-                <span className={styles.statusBadge}>{selectedBuilding.subjects[0].statusLabel}</span>
-              </h3>
-              <p className={styles.mapSubjectMetaRow}>
-                <span className={styles.mapSubjectMeta}>
-                  <Image alt="" aria-hidden="true" height={14} src="/admin/person.png" width={14} />
-                  담당자 {selectedBuilding.subjects[0].workerName}
-                </span>
-                <span className={styles.mapSubjectMeta}>
-                  <Image alt="" aria-hidden="true" height={14} src="/admin/location.png" width={14} />
-                  {selectedBuilding.address.split(" ").slice(0, 2).join(" ")}
-                </span>
+          {selectedBuilding?.subjects[0] ? (
+            <>
+              <span className={styles.mapSelectionEyebrow}>선택 대상자</span>
+              <div className={styles.mapSubject}>
+                <Image
+                  alt={`${selectedBuilding.subjects[0].name} 합성 프로필`}
+                  className={styles.mapSubjectAvatar}
+                  height={72}
+                  src="/admin/elder-female-1.png"
+                  width={72}
+                />
+                <div>
+                  <h3 className={styles.mapDetailTitle}>
+                    <strong>{selectedBuilding.subjects[0].name}</strong>
+                    <span className={`${styles.badge} ${styles[`grade${selectedBuilding.subjects[0].grade}`]}`}>
+                      {GRADE_LABEL[selectedBuilding.subjects[0].grade]}
+                    </span>
+                  </h3>
+                  <span className={styles.statusBadge}>
+                    {selectedBuilding.subjects[0].statusLabel}
+                  </span>
+                </div>
+              </div>
+              <dl className={styles.mapSelectionFacts}>
+                <div><dt>담당자</dt><dd>{selectedBuilding.subjects[0].workerName}</dd></div>
+                <div><dt>주소</dt><dd>{selectedBuilding.address}</dd></div>
+              </dl>
+              <ul
+                className={styles.reasonList}
+                aria-label={`${selectedBuilding.subjects[0].name} 위험 사유`}
+              >
+                {selectedBuilding.subjects[0].reasons.map((reason, index) => (
+                  <li key={`${selectedBuilding.subjects[0].subjectId}-${index}`}>{reason}</li>
+                ))}
+              </ul>
+              <Link
+                className={styles.mapSelectionLink}
+                href={`/admin/subjects/${selectedBuilding.subjects[0].subjectId}${date ? `?date=${date}` : ""}`}
+              >
+                대상자 상세 보기
+              </Link>
+            </>
+          ) : (
+            <p className={styles.mapSelectionEmpty}>건물 마커를 선택하면 대상자 정보가 표시됩니다.</p>
+          )}
+        </section>
+        <div className={styles.mapViewport}>
+          {!mapKey ? (
+            <div className={styles.mapFallback} role="region" aria-label="건물 위험도 지도">
+              {mappedBuildings.slice(0, 5).map((building) => (
+                <button
+                  aria-label={`${building.address}, ${GRADE_LABEL[building.grade]}, 미처리 ${building.openCount}명`}
+                  className={`${styles.mapMarker} ${styles.fallbackMarker} ${styles[`grade${building.grade}`]} ${styles[building.statusCategory]}`}
+                  key={building.buildingId}
+                  onClick={() => setSelectedBuildingId(building.buildingId)}
+                  type="button"
+                >
+                  <Image
+                    alt=""
+                    aria-hidden="true"
+                    className={styles.mapMarkerIcon}
+                    height={24}
+                    src={buildingIconSrc(building.grade)}
+                    width={24}
+                  />
+                  <span className={styles.mapMarkerCopy}>
+                    <strong>{building.address.split(" ").slice(-2).join(" ")}</strong>
+                    <span>건물 위험 {GRADE_LABEL[building.grade]}</span>
+                    <em>미처리 {building.openCount}명</em>
+                  </span>
+                </button>
+              ))}
+              <p className={styles.screenReaderOnly}>
+                카카오 지도 키가 설정되지 않았습니다. 생성된 지도 이미지로 현황을 표시합니다.
               </p>
             </div>
-          </div>
-          <ul
-            className={styles.reasonList}
-            aria-label={`${selectedBuilding.subjects[0].name} 위험 사유`}
-          >
-            {selectedBuilding.subjects[0].reasons.map((reason, index) => (
-              <li key={`${selectedBuilding.subjects[0].subjectId}-${index}`}>{reason}</li>
-            ))}
-          </ul>
-          <Image
-            alt=""
-            aria-hidden="true"
-            className={styles.mapDetailPin}
-            height={42}
-            src="/admin/map-pin.png"
-            width={32}
-          />
-        </section>
-      ) : null}
+          ) : (
+            <>
+              <div
+                ref={mapContainerRef}
+                className={styles.mapCanvas}
+                role="region"
+                aria-label="건물 위험도 지도"
+              />
+              {coordinateError ?? mapError ? (
+                <p className={styles.mapMessage} role="alert">
+                  {coordinateError ?? mapError}
+                </p>
+              ) : null}
+            </>
+          )}
+        </div>
+      </div>
     </section>
   );
 }

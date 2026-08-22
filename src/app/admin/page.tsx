@@ -16,6 +16,7 @@ import {
   GRADE_LABEL,
   HouseholdStatus,
   HOUSEHOLD_STATUS_LABEL,
+  isHouseholdStatus,
   RiskGrade,
 } from "../../lib/domain";
 import { AdminMap } from "../../components/admin/AdminMap";
@@ -68,6 +69,16 @@ const STATUS_LEGEND: Array<{
     category: "resolved",
     icon: "/admin/status-resolved.png",
     statuses: [HouseholdStatus.RESOLVED],
+  },
+  {
+    category: "emergency",
+    icon: "/admin/status-emergency.png",
+    statuses: [HouseholdStatus.EMERGENCY_119],
+  },
+  {
+    category: "unreachable",
+    icon: "/admin/status-unreachable.png",
+    statuses: [HouseholdStatus.UNREACHABLE],
   },
 ];
 
@@ -218,17 +229,21 @@ function subjectHref(subjectId: string, date?: string, workerId?: string | null)
   if (date) query.set("date", date);
   if (workerId) query.set("workerId", workerId);
   const search = query.toString();
-  return `/today/${subjectId}${search ? `?${search}` : ""}`;
+  return `/admin/subjects/${subjectId}${search ? `?${search}` : ""}`;
 }
 
 export function PriorityList({
   subjects,
   date,
   workerId,
+  subjectQuery = "",
+  selectedStatus,
 }: {
   subjects: AdminDashboardSubject[];
   date?: string;
   workerId?: string | null;
+  subjectQuery?: string;
+  selectedStatus?: HouseholdStatus;
 }) {
   return (
     <section className={styles.priorityPanel} aria-labelledby="priority-title">
@@ -239,15 +254,27 @@ export function PriorityList({
           </h2>
           <span className={styles.panelHint}>대상자 관리</span>
         </span>
-        <span className={styles.panelHeaderControls}>
+        <form action="/admin" className={styles.panelHeaderControls} method="get">
+          {date ? <input name="date" type="hidden" value={date} /> : null}
+          {workerId ? <input name="workerId" type="hidden" value={workerId} /> : null}
           <label>
             <Image alt="" aria-hidden="true" height={14} src="/admin/search.png" width={14} />
-            <input aria-label="대상자 검색" placeholder="대상자 검색" type="search" />
+            <input
+              aria-label="대상자 검색"
+              defaultValue={subjectQuery}
+              name="subjectQuery"
+              placeholder="대상자 검색"
+              type="search"
+            />
           </label>
-          <select aria-label="대상자 상태" defaultValue="all">
+          <select aria-label="대상자 상태" defaultValue={selectedStatus ?? "all"} name="status">
             <option value="all">전체 상태</option>
+            {Object.values(HouseholdStatus).map((status) => (
+              <option key={status} value={status}>{HOUSEHOLD_STATUS_LABEL[status]}</option>
+            ))}
           </select>
-        </span>
+          <button className={styles.compactSubmit} type="submit">검색</button>
+        </form>
       </header>
       {subjects.length === 0 ? (
         <p className={styles.emptyState}>선택한 담당자의 대상자가 없습니다.</p>
@@ -300,8 +327,8 @@ export function PriorityList({
                   <td>
                     <span className={styles.rowActions}>
                       <Link href={subjectHref(subject.subjectId, date, workerId)}>상세</Link>
-                      <button disabled type="button">수정</button>
-                      <button disabled type="button">삭제</button>
+                      <Link href={`/admin/subjects/${subject.subjectId}/edit`}>수정</Link>
+                      <Link className={styles.dangerLink} href={`${subjectHref(subject.subjectId, date, workerId)}#delete`}>삭제</Link>
                     </span>
                   </td>
                 </tr>
@@ -354,10 +381,10 @@ function WorkerPanel({ dashboard }: { dashboard: AdminAlertedDashboard }) {
     <section className={styles.workerPanel} aria-labelledby="worker-title">
       <header className={styles.panelHeader}>
         <h2 id="worker-title" className={styles.panelTitle}>생활지원사 관리</h2>
-        <button className={styles.outlineAction} disabled type="button">
+        <Link className={styles.outlineAction} href="/admin/workers/new">
           <Image alt="" aria-hidden="true" height={16} src="/admin/add.png" width={16} />
           생활지원사 등록
-        </button>
+        </Link>
       </header>
       <div className={styles.tableScroller}>
         <table className={styles.workerTable}>
@@ -380,7 +407,12 @@ function WorkerPanel({ dashboard }: { dashboard: AdminAlertedDashboard }) {
                 <tr key={worker.id}>
                   <td><strong>{worker.name}</strong></td>
                   <td>{subjectCount}명</td>
-                  <td>{maskPhone(worker.phone ?? assigned[0]?.workerPhone)}</td>
+                  <td>
+                    <span className={styles.inlineIconText}>
+                      <Image alt="" aria-hidden="true" height={14} src="/admin/phone.png" width={14} />
+                      {maskPhone(worker.phone ?? assigned[0]?.workerPhone)}
+                    </span>
+                  </td>
                   <td>
                     <span className={subjectCount ? styles.workerActive : styles.workerIdle}>
                       {subjectCount ? "근무 중" : "휴식 중"}
@@ -389,8 +421,8 @@ function WorkerPanel({ dashboard }: { dashboard: AdminAlertedDashboard }) {
                   <td>
                     <span className={styles.rowActions}>
                       <Link href={`/today?workerId=${worker.id}`}>상세</Link>
-                      <button disabled type="button">수정</button>
-                      <button disabled type="button">삭제</button>
+                      <Link href={`/admin/workers/${worker.id}/edit`}>수정</Link>
+                      <Link className={styles.dangerLink} href={`/admin/workers/${worker.id}/edit#delete`}>삭제</Link>
                     </span>
                   </td>
                 </tr>
@@ -403,87 +435,52 @@ function WorkerPanel({ dashboard }: { dashboard: AdminAlertedDashboard }) {
   );
 }
 
-function StatusLegend() {
+function StatusLegend({
+  date,
+  workerId,
+  subjectQuery,
+  selectedStatuses,
+}: {
+  date: string;
+  workerId: string | null;
+  subjectQuery?: string;
+  selectedStatuses?: readonly HouseholdStatus[];
+}) {
   return (
     <section className={styles.statusFilters} aria-labelledby="status-filter-title">
       <h2 id="status-filter-title" className={styles.sidebarTitle}>상태</h2>
-      <ul>
-        {STATUS_LEGEND.map((entry) => (
-          <li key={`${entry.category}-${entry.statuses.join("-")}`}>
-            <input
-              aria-label={`${entry.statuses.map((status) => HOUSEHOLD_STATUS_LABEL[status]).join(" · ")} 표시`}
-              defaultChecked
-              type="checkbox"
-            />
-            <Image
-              alt=""
-              aria-hidden="true"
-              className={styles.statusIcon}
-              height={20}
-              src={entry.icon}
-              width={20}
-            />
-            {entry.statuses.map((status) => HOUSEHOLD_STATUS_LABEL[status]).join(" · ")}
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
-}
-
-function SubjectDetailCard({
-  subject,
-  date,
-  workerId,
-}: {
-  subject: AdminDashboardSubject;
-  date: string;
-  workerId: string | null;
-}) {
-  return (
-    <section className={styles.subjectDetail} aria-labelledby="subject-detail-title">
-      <header className={styles.detailHeader}>
-        <h2 id="subject-detail-title" className={styles.sidebarTitle}>대상자 상세</h2>
-        <button aria-label="대상자 상세 닫기" className={styles.detailClose} disabled type="button">
-          <Image alt="" aria-hidden="true" height={16} src="/admin/close.png" width={16} />
-        </button>
-      </header>
-      <div className={styles.detailIdentity}>
-        <Image
-          alt={`${subject.name} 합성 프로필`}
-          className={styles.detailAvatar}
-          height={64}
-          src={avatarSrc(0)}
-          width={64}
-        />
-        <div>
-          <strong>{subject.name}</strong>
-          <span className={styles.detailBadges}>
-            <span className={`${styles.badge} ${GRADE_CLASS[subject.grade]}`}>
-              {GRADE_LABEL[subject.grade]}
-            </span>
-            <span className={styles.statusBadge}>{subject.statusLabel}</span>
-          </span>
-          {subject.phone ? (
-            <a href={`tel:${subject.phone}`}>
-              <Image alt="" aria-hidden="true" height={12} src="/admin/phone.png" width={12} />
-              {maskPhone(subject.phone)}
-            </a>
-          ) : null}
-        </div>
-      </div>
-      <dl className={styles.detailFacts}>
-        <div><dt>생년</dt><dd>{subject.birthYear}년</dd></div>
-        <div><dt>주소</dt><dd>{subject.address}</dd></div>
-        <div><dt>담당자</dt><dd>{subject.workerName}</dd></div>
-      </dl>
-      <ul className={styles.detailReasons} aria-label={`${subject.name} 위험 사유`}>
-        {subject.reasons.map((reason, index) => <li key={index}>{reason}</li>)}
-      </ul>
-      <div className={styles.detailActions}>
-        <Link href={subjectHref(subject.subjectId, date, workerId)}>상세 보기</Link>
-        <button disabled type="button">삭제</button>
-      </div>
+      <form action="/admin" method="get">
+        <input name="date" type="hidden" value={date} />
+        {workerId ? <input name="workerId" type="hidden" value={workerId} /> : null}
+        {subjectQuery ? <input name="subjectQuery" type="hidden" value={subjectQuery} /> : null}
+        <input name="status" type="hidden" value="__none" />
+        <ul>
+          {STATUS_LEGEND.map((entry) => (
+            <li key={`${entry.category}-${entry.statuses.join("-")}`}>
+              <input
+                aria-label={`${entry.statuses.map((status) => HOUSEHOLD_STATUS_LABEL[status]).join(" · ")} 표시`}
+                defaultChecked={
+                  selectedStatuses === undefined ||
+                  entry.statuses.some((status) => selectedStatuses.includes(status))
+                }
+                name="status"
+                type="checkbox"
+                value={entry.statuses[0]}
+              />
+              <Image
+                alt=""
+                aria-hidden="true"
+                className={styles.statusIcon}
+                height={20}
+                src={entry.icon}
+                width={20}
+              />
+              {entry.statuses.map((status) => HOUSEHOLD_STATUS_LABEL[status]).join(" · ")}
+            </li>
+          ))}
+        </ul>
+        <button className={styles.statusSubmit} type="submit">상태 적용</button>
+      </form>
     </section>
   );
 }
@@ -499,7 +496,16 @@ function DataSources() {
   );
 }
 
-function FilterForm({ dashboard }: { dashboard: AdminDashboard }) {
+function FilterForm({
+  dashboard,
+  workerQuery = "",
+}: {
+  dashboard: AdminDashboard;
+  workerQuery?: string;
+}) {
+  const visibleWorkers = dashboard.workers.filter((worker) =>
+    worker.name.includes(workerQuery.trim()),
+  );
   return (
     <form action="/admin" method="get" className={styles.filterForm}>
       <label className={styles.filterField}>
@@ -515,10 +521,16 @@ function FilterForm({ dashboard }: { dashboard: AdminDashboard }) {
           <button aria-label="필터 적용" className={styles.workerSearchButton} type="submit">
             <Image alt="" aria-hidden="true" height={16} src="/admin/search.png" width={16} />
           </button>
-          <input aria-label="담당자 검색" placeholder="담당자 검색" type="search" />
+          <input
+            aria-label="담당자 검색"
+            defaultValue={workerQuery}
+            name="workerQuery"
+            placeholder="담당자 검색"
+            type="search"
+          />
         </div>
         <label><input defaultChecked={!dashboard.selectedWorkerId} name="workerId" type="radio" value="" />전체 담당자</label>
-        {dashboard.workers.map((worker) => (
+        {visibleWorkers.map((worker) => (
           <label key={worker.id}>
             <input
               defaultChecked={dashboard.selectedWorkerId === worker.id}
@@ -581,28 +593,36 @@ function TopBar({
 function RegistrationActions() {
   return (
     <div className={styles.registrationActions} aria-label="관리 등록 기능">
-      <button className={styles.outlineAction} disabled type="button">
+      <Link className={styles.outlineAction} href="/admin/subjects/new">
         <Image alt="" aria-hidden="true" height={16} src="/admin/add.png" width={16} />
         대상자 등록
-      </button>
-      <button className={styles.outlineAction} disabled type="button">
+      </Link>
+      <Link className={styles.outlineAction} href="/admin/workers/new">
         <Image alt="" aria-hidden="true" height={16} src="/admin/add.png" width={16} />
         생활지원사 등록
-      </button>
+      </Link>
     </div>
   );
+}
+
+interface AdminViewFilters {
+  subjectQuery?: string;
+  workerQuery?: string;
+  selectedStatuses?: readonly HouseholdStatus[];
 }
 
 export function AdminDashboardView({
   dashboard,
   mapKey,
   controls,
+  filters = {},
   notificationFeed,
   pushPublicKey = "",
 }: {
   dashboard: AdminDashboard;
   mapKey: string;
   controls?: ReactNode;
+  filters?: AdminViewFilters;
   notificationFeed?: ManagerNotificationFeed;
   pushPublicKey?: string;
 }) {
@@ -612,15 +632,13 @@ export function AdminDashboardView({
       <RegistrationActions />
       <main className={styles.workspace}>
         <aside className={styles.sidebar} aria-label="관제 필터와 대상자 상세">
-          <FilterForm dashboard={dashboard} />
-          <StatusLegend />
-          {dashboard.alerted && dashboard.subjects[0] ? (
-            <SubjectDetailCard
-              date={dashboard.date}
-              subject={dashboard.subjects[0]}
-              workerId={dashboard.selectedWorkerId}
-            />
-          ) : null}
+          <FilterForm dashboard={dashboard} workerQuery={filters.workerQuery} />
+          <StatusLegend
+            date={dashboard.date}
+            selectedStatuses={filters.selectedStatuses}
+            subjectQuery={filters.subjectQuery}
+            workerId={dashboard.selectedWorkerId}
+          />
         </aside>
         <section className={styles.dashboardContent} aria-label="관리자 관제 현황">
           {dashboard.alerted && notificationFeed ? (
@@ -638,12 +656,18 @@ export function AdminDashboardView({
             <>
               <SummaryCards summary={dashboard.summary} />
               <section className={styles.mapGrid} aria-label="지도와 건물별 현황">
-                <AdminMap buildings={dashboard.buildings} mapKey={mapKey} />
+                <AdminMap buildings={dashboard.buildings} date={dashboard.date} mapKey={mapKey} />
                 <BuildingStatusPanel buildings={dashboard.buildings} />
               </section>
               <section className={styles.managementGrid} aria-label="대상자와 생활지원사 관리">
                 <PriorityList
                   date={dashboard.date}
+                  selectedStatus={
+                    filters.selectedStatuses?.length === 1
+                      ? filters.selectedStatuses[0]
+                      : undefined
+                  }
+                  subjectQuery={filters.subjectQuery}
                   subjects={dashboard.subjects}
                   workerId={dashboard.selectedWorkerId}
                 />
@@ -665,19 +689,49 @@ export function AdminDashboardView({
 export function normalizeAdminSearchParams(params: {
   date?: string | string[];
   workerId?: string | string[];
-}): { date?: string; workerId?: string } | null {
-  if (Array.isArray(params.date) || Array.isArray(params.workerId)) return null;
+  subjectQuery?: string | string[];
+  workerQuery?: string | string[];
+  status?: string | string[];
+}): {
+  date?: string;
+  workerId?: string;
+  subjectQuery?: string;
+  workerQuery?: string;
+  selectedStatuses?: HouseholdStatus[];
+} | null {
+  if (
+    Array.isArray(params.date) ||
+    Array.isArray(params.workerId) ||
+    Array.isArray(params.subjectQuery) ||
+    Array.isArray(params.workerQuery)
+  ) return null;
   if (params.date !== undefined && !isIsoDate(params.date)) return null;
-  return { date: params.date, workerId: params.workerId };
+  const rawStatuses = params.status === undefined
+    ? undefined
+    : Array.isArray(params.status)
+      ? params.status
+      : [params.status];
+  const statusValues = rawStatuses?.filter((status) => status !== "__none" && status !== "all");
+  if (statusValues?.some((status) => !isHouseholdStatus(status))) return null;
+  return {
+    date: params.date,
+    workerId: params.workerId,
+    subjectQuery: params.subjectQuery?.slice(0, 50),
+    workerQuery: params.workerQuery?.slice(0, 50),
+    selectedStatuses:
+      rawStatuses === undefined || rawStatuses.includes("all")
+        ? undefined
+        : statusValues as HouseholdStatus[],
+  };
 }
 
 export default async function AdminPage(props: PageProps<"/admin">) {
   const params = await props.searchParams;
   const query = normalizeAdminSearchParams(params);
   if (!query) notFound();
-  const { date, workerId } = query;
+  const { date, workerId, subjectQuery, workerQuery, selectedStatuses } = query;
   const [dashboard, notificationFeed] = await Promise.all([
-    getAdminDashboard({ date, workerId }),
+    getAdminDashboard({ date, workerId, subjectQuery, selectedStatuses }),
     getManagerNotificationFeed({ date, workerId }),
   ]);
 
@@ -685,6 +739,7 @@ export default async function AdminPage(props: PageProps<"/admin">) {
     <AdminDashboardView
       controls={<AdminControls date={dashboard.date} />}
       dashboard={dashboard}
+      filters={{ subjectQuery, workerQuery, selectedStatuses }}
       mapKey={process.env.NEXT_PUBLIC_KAKAO_MAP_KEY?.trim() ?? ""}
       notificationFeed={notificationFeed}
       pushPublicKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY?.trim() ?? ""}

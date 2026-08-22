@@ -146,7 +146,7 @@ const STATUS_PRIORITY: Record<AdminStatusCategory, number> = {
   resolved: 6,
 };
 
-function parseReasons(raw: string): string[] {
+export function parseAdminReasons(raw: string): string[] {
   try {
     const value: unknown = JSON.parse(raw);
     if (Array.isArray(value) && value.every((item) => typeof item === "string")) {
@@ -162,17 +162,30 @@ export function buildAdminSnapshot({
   assessments,
   statuses,
   workerId,
+  subjectQuery,
+  selectedStatuses,
 }: {
   assessments: AdminAssessmentRow[];
   statuses: AdminStatusRow[];
   workerId?: string;
+  subjectQuery?: string;
+  selectedStatuses?: readonly HouseholdStatus[];
 }): AdminSnapshot {
   const statusBySubject = new Map(
     statuses.map((row) => [row.subjectId, row.status]),
   );
-  const selectedRows = workerId
+  const workerRows = workerId
     ? assessments.filter((row) => row.subject.workerId === workerId)
     : assessments;
+  const query = subjectQuery?.trim().toLocaleLowerCase("ko-KR") ?? "";
+  const selectedRows = workerRows.filter((row) => {
+    const status =
+      statusBySubject.get(row.subjectId) ?? HouseholdStatus.UNCHECKED;
+    return (
+      (!query || row.subject.name.toLocaleLowerCase("ko-KR").includes(query)) &&
+      (selectedStatuses === undefined || selectedStatuses.includes(status))
+    );
+  });
   const subjects = selectedRows
     .map((row) => {
       const status =
@@ -191,7 +204,7 @@ export function buildAdminSnapshot({
         lng: row.subject.building.lng,
         grade: row.grade,
         score: row.score,
-        reasons: parseReasons(row.reasons),
+        reasons: parseAdminReasons(row.reasons),
         status,
         statusLabel: HOUSEHOLD_STATUS_LABEL[status],
         open: isOpenHouseholdStatus(status),
@@ -257,7 +270,13 @@ export function buildAdminSnapshot({
 }
 
 export async function getAdminDashboard(
-  options: { date?: string; workerId?: string; now?: Date } = {},
+  options: {
+    date?: string;
+    workerId?: string;
+    subjectQuery?: string;
+    selectedStatuses?: readonly HouseholdStatus[];
+    now?: Date;
+  } = {},
 ): Promise<AdminDashboard> {
   const [{ prisma }, { todayInKst }] = await Promise.all([
     import("../db"),
@@ -314,7 +333,12 @@ export async function getAdminDashboard(
     subjectId: row.subjectId,
     status: parseHouseholdStatus(row.status),
   }));
-  const snapshot = buildAdminSnapshot({ assessments, statuses });
+  const snapshot = buildAdminSnapshot({
+    assessments,
+    statuses,
+    subjectQuery: options.subjectQuery,
+    selectedStatuses: options.selectedStatuses,
+  });
 
   return {
     ...base,
