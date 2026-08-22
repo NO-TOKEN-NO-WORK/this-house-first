@@ -41,7 +41,7 @@ function alertedBoard(subjects: BoardSubject[]): AlertedBoard {
     worker: { id: "worker-1", name: "담당자" },
     dong: "비산동",
     level: AlertLevel.EMERGENCY,
-    levelLabel: "심각",
+    levelLabel: "비상",
     feelsLikeMax: 38,
     groups: [
       {
@@ -139,14 +139,14 @@ describe("toVisitRoute", () => {
       alertedBoard([
         subject("one", {
           roadAddress: "대구광역시 서구 달서로 1",
-          reasons: ["1938년생 (88세)·독거", "오늘 심각 단계 (체감 38도)"],
+          reasons: ["1938년생 (88세)·독거", "오늘 비상 단계 (체감 38도)"],
         }),
       ]),
     );
 
     expect(route.stops[0]).toMatchObject({
       address: "대구광역시 서구 달서로 1",
-      reasons: ["1938년생 (88세)·독거", "오늘 심각 단계 (체감 38도)"],
+      reasons: ["1938년생 (88세)·독거", "오늘 비상 단계 (체감 38도)"],
     });
   });
 

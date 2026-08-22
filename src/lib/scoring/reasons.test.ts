@@ -6,11 +6,11 @@ import { assessRisk } from "./score";
 describe("labelReasons", () => {
   it("개인 → 건물 → 기상 순서로 분류한다", () => {
     expect(
-      labelReasons(["1938년생 (88세)·독거", "1972년 단독주택 슬레이트", "오늘 심각 단계 (체감 38도)"]),
+      labelReasons(["1938년생 (88세)·독거", "1972년 단독주택 슬레이트", "오늘 비상 단계 (체감 38도)"]),
     ).toEqual([
       { category: ReasonCategory.PERSONAL, text: "1938년생 (88세)·독거" },
       { category: ReasonCategory.BUILDING, text: "1972년 단독주택 슬레이트" },
-      { category: ReasonCategory.WEATHER, text: "오늘 심각 단계 (체감 38도)" },
+      { category: ReasonCategory.WEATHER, text: "오늘 비상 단계 (체감 38도)" },
     ]);
   });
 

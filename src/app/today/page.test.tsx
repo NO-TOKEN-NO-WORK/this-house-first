@@ -13,6 +13,7 @@ import type {
   SilentBoard,
 } from "@/lib/board/today";
 import {
+  ALERT_LEVEL_LABEL,
   AlertLevel,
   CheckKind,
   HouseholdStatus,
@@ -67,7 +68,7 @@ const board: AlertedBoard = {
   worker: { id: "worker-1", name: "담당자" },
   dong: "비산동",
   level: AlertLevel.EMERGENCY,
-  levelLabel: "심각",
+  levelLabel: "비상",
   feelsLikeMax: 38,
   groups: [
     {
@@ -191,6 +192,40 @@ describe("TodayPage 위험 단계 필터", () => {
     });
 
     expect(findGradeFilter(page)?.key).toBe("2");
+  });
+
+  it("비상 단계에만 폭염 배너를 띄운다", async () => {
+    getBoard.mockResolvedValue(board);
+
+    const html = renderToStaticMarkup(
+      await TodayPage({
+        params: Promise.resolve({}),
+        searchParams: Promise.resolve({ date: "2026-08-21" }),
+      }),
+    );
+
+    expect(html).toContain("오늘 폭염 비상 단계예요");
+  });
+
+  it("주의·경계 단계에서는 배너 색만 바꾸지 않고 아예 감춘다", async () => {
+    for (const level of [AlertLevel.ADVISORY, AlertLevel.WARNING] as const) {
+      getBoard.mockResolvedValue({
+        ...board,
+        level,
+        levelLabel: ALERT_LEVEL_LABEL[level],
+      });
+
+      const html = renderToStaticMarkup(
+        await TodayPage({
+          params: Promise.resolve({}),
+          searchParams: Promise.resolve({ date: "2026-08-21" }),
+        }),
+      );
+
+      expect(html).not.toContain("단계예요");
+      // 배너가 빠져도 요약 카드는 그대로 있어야 한다 (Figma 133:3213)
+      expect(html).toContain("확인 완료");
+    }
   });
 
   it("비경보일에는 위험 단계 필터 없이 담당 가구를 표시한다", async () => {

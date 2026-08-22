@@ -26,8 +26,9 @@
 | [0011](0011-deploy-local-demo-first.md) | 배포/데모 전략: 로컬 데모 우선, 수동 트리거 | 승인됨 |
 | [0012](0012-seed-runner-tsx.md) | 시드: tsx 실행기 + 건축HUB 실호출로 건물 데이터 생성 | 승인됨 |
 | [0013](0013-prisma-postgres.md) | DB: Prisma Postgres 전환 + Vercel 배포 | 승인됨 |
-| [0014](0014-figma-design-with-domain-terms.md) | 담당자 화면: Figma 디자인 + 도메인 상수 문구 | 승인됨 |
+| [0014](0014-figma-design-with-domain-terms.md) | 담당자 화면: Figma 디자인 + 도메인 상수 문구 | 부분 대체됨([0016](0016-alert-level-labels-advisory-watch-severe.md), [0019](0019-emergency-only-alert-banner.md)) |
 | [0015](0015-design-system-tokens.md) | 디자인 시스템: Figma Foundations → Primitive/Semantic 2층 토큰 | 승인됨 |
-| [0016](0016-alert-level-labels-advisory-watch-severe.md) | 경보 단계 화면 문구: 주의/경계/심각 (코드는 ADVISORY/WARNING/EMERGENCY) | 승인됨 |
+| [0016](0016-alert-level-labels-advisory-watch-severe.md) | 경보 단계 화면 문구: 주의/경계/심각 (코드는 ADVISORY/WARNING/EMERGENCY) | 부분 대체됨([0019](0019-emergency-only-alert-banner.md)) |
 | [0017](0017-notification-events-web-push.md) | 알림: 이벤트 원장 + Web Push 전달 | 승인됨 |
 | [0018](0018-kakao-driving-shortest-route.md) | 방문 동선: 카카오 자동차 최단 경로 | 승인됨 |
+| [0019](0019-emergency-only-alert-banner.md) | 경보 배너는 비상 단계에만 · 최고 단계 문구 `비상` | 승인됨 |
