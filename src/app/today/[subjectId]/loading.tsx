@@ -4,13 +4,62 @@
  */
 export default function SubjectDetailLoading() {
   return (
-    <div className="mx-auto flex w-full max-w-[520px] flex-1 flex-col bg-background-subtle">
-      <header className="sticky top-0 z-30 flex h-[53px] items-center gap-2.5 border-b border-border-default bg-surface-default px-3.5">
-        <span className="size-11" />
-        <h1 className="text-label-16-compact text-text-primary">대상자 상세</h1>
+    <div className="mx-auto flex w-full max-w-[520px] flex-1 flex-col bg-surface-default">
+      <header className="sticky top-0 z-30 grid h-[calc(53px_+_var(--safe-top))] grid-cols-[44px_1fr_44px] items-center bg-surface-default px-1.5 pt-[var(--safe-top)]">
+        <span aria-hidden />
+        <h1 className="flex justify-center">
+          <span className="sr-only">대상자 상세</span>
+          <span
+            aria-hidden
+            className="h-5 w-20 animate-pulse rounded-md bg-background-subtle motion-reduce:animate-none"
+          />
+        </h1>
+        <span aria-hidden />
       </header>
-      <main className="flex flex-1 flex-col gap-5 px-5 py-6">
-        <p className="text-body-15 text-text-secondary">불러오는 중</p>
+
+      <main
+        aria-busy="true"
+        aria-describedby="subject-detail-loading-status"
+        className="flex flex-1 flex-col gap-5 px-5 py-6 pb-10"
+      >
+        <p id="subject-detail-loading-status" role="status" className="sr-only">
+          대상자 상세를 불러오는 중입니다.
+        </p>
+
+        <div
+          aria-hidden="true"
+          className="flex animate-pulse flex-col gap-5 motion-reduce:animate-none"
+        >
+          <section className="flex flex-col gap-3">
+            <span className="h-7 w-14 rounded-full bg-background-subtle" />
+            <div className="flex items-end gap-3">
+              <span className="h-9 w-28 rounded-lg bg-background-subtle" />
+              <span className="mb-1 h-5 w-20 rounded-md bg-background-subtle" />
+            </div>
+            <div className="flex gap-3">
+              <span className="h-5 w-32 rounded-md bg-background-subtle" />
+              <span className="h-5 min-w-0 flex-1 rounded-md bg-background-subtle" />
+            </div>
+          </section>
+
+          <section className="rounded-xl border border-border-subtle p-4">
+            <span className="block h-5 w-20 rounded-md bg-background-subtle" />
+            <div className="mt-4 flex flex-col gap-3">
+              <span className="h-5 w-full rounded-md bg-background-subtle" />
+              <span className="h-5 w-5/6 rounded-md bg-background-subtle" />
+              <span className="h-5 w-3/4 rounded-md bg-background-subtle" />
+            </div>
+          </section>
+
+          <section className="rounded-xl border border-border-subtle p-4">
+            <span className="block h-5 w-28 rounded-md bg-background-subtle" />
+            <div className="mt-4 flex flex-col gap-3">
+              <span className="h-5 w-full rounded-md bg-background-subtle" />
+              <span className="h-5 w-4/5 rounded-md bg-background-subtle" />
+              <span className="h-5 w-2/3 rounded-md bg-background-subtle" />
+            </div>
+          </section>
+        </div>
       </main>
     </div>
   );

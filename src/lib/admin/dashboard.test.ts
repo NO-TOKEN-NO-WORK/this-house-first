@@ -11,7 +11,7 @@ const assessments: AdminAssessmentRow[] = [
     subjectId: "subject-critical",
     score: 31.5,
     grade: 1,
-    reasons: JSON.stringify(["1938년생 (88세)·독거", "오늘 심각 단계"]),
+    reasons: JSON.stringify(["1938년생 (88세)·독거", "오늘 비상 단계"]),
     subject: {
       id: "subject-critical",
       name: "김○○",
@@ -32,7 +32,7 @@ const assessments: AdminAssessmentRow[] = [
     subjectId: "subject-visit",
     score: 12,
     grade: 2,
-    reasons: JSON.stringify(["1948년생 (78세)", "오늘 심각 단계"]),
+    reasons: JSON.stringify(["1948년생 (78세)", "오늘 비상 단계"]),
     subject: {
       id: "subject-visit",
       name: "박○○",

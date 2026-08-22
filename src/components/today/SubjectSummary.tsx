@@ -16,7 +16,8 @@ export interface SubjectSummaryProps {
   name: string;
   age: number;
   livesAlone: boolean;
-  grade: RiskGrade;
+  /** 비경보일 정보 화면에는 위험 단계가 없으므로 칩을 생략한다. */
+  grade?: RiskGrade | null;
   phone: string | null;
   /** 도로명이 있으면 도로명, 없으면 지번 — 상세 화면과 같은 규칙 */
   address: string;
@@ -33,11 +34,13 @@ export function SubjectSummary({
 }: SubjectSummaryProps) {
   return (
     <div className="flex flex-col gap-3">
-      <span
-        className={`self-start rounded-full px-3 py-1.25 text-label-15 ${GRADE_CHIP[grade]}`}
-      >
-        {GRADE_LABEL[grade]}
-      </span>
+      {grade && (
+        <span
+          className={`self-start rounded-full px-3 py-1.25 text-label-15 ${GRADE_CHIP[grade]}`}
+        >
+          {GRADE_LABEL[grade]}
+        </span>
+      )}
 
       <p id={nameId} className="flex items-baseline gap-2.5">
         <span className="text-display-28 text-text-primary">{name}</span>

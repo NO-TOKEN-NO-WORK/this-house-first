@@ -100,7 +100,7 @@ describe("관리자 대상자 상세·수정 화면", () => {
     expect(html).toContain("1938년 (88세)");
     expect(html).toContain("위험 단계");
     expect(html).toContain(
-      'aria-label="경보 단계"><span>주의</span><span>경계</span><strong>심각</strong>',
+      'aria-label="경보 단계"><span>주의</span><span>경계</span><strong>비상</strong>',
     );
     expect(html).not.toContain("미등록-미등록");
     expect(html).toContain('href="/admin/subjects/subject-1/edit"');

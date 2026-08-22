@@ -2,11 +2,10 @@ import { notFound } from "next/navigation";
 import { BottomNav } from "@/components/today/BottomNav";
 import { GradeFilter } from "@/components/today/GradeFilter";
 import { SubjectCard } from "@/components/today/SubjectCard";
+import { TodayAppSettings } from "@/components/today/TodayAppSettings";
 import { TodayWorkspace } from "@/components/today/TodayWorkspace";
 import { AlertCircleIcon } from "@/components/today/icons";
 import { CurrentWeatherSummary } from "@/components/CurrentWeatherSummary";
-import { InstallPwaBanner } from "@/components/InstallPwaBanner";
-import { PushNotificationManager } from "@/components/PushNotificationManager";
 import {
   type AlertedBoard,
   getBoard,
@@ -32,13 +31,6 @@ import {
  * 경보가 없는 날에는 위험 단계도 순서도 없이 담당 가구만 보여준다. 알림은 여전히 0건이다(PRD §9).
  */
 export const dynamic = "force-dynamic";
-
-/** 경보 단계별 배너 색 — 흰 글자가 읽히는 명도만 쓴다(60대 사용자 기준, PRD §9) */
-const LEVEL_BANNER: Record<AlertLevel, string> = {
-  [AlertLevel.ADVISORY]: "bg-action-secondary",
-  [AlertLevel.WARNING]: "bg-status-warning-strong",
-  [AlertLevel.EMERGENCY]: "bg-status-critical",
-};
 
 /**
  * 위험 단계 요약 글자색 (Figma ① 25:36~25:44).
@@ -81,11 +73,17 @@ function Greeting({
   );
 }
 
-function AlertBanner({ board }: { board: AlertedBoard }) {
+/**
+ * 비상 단계 배너 (Figma 38:4482 · 이전 판 25:4) — ADR-0019.
+ *
+ * 주의·경계 단계에서는 색이 바뀌는 게 아니라 배너 자체가 없다 (Figma 133:3213).
+ * 매 경보일 떠 있는 띠는 곧 배경이 되므로 "오늘은 평소와 다르다"는 신호는 최고 단계에만
+ * 남긴다 — 낮은 단계에서 무엇부터 할지는 아래 요약·위험 단계 필터가 이미 말해 준다(PRD §9).
+ */
+function EmergencyBanner({ board }: { board: AlertedBoard }) {
+  if (board.level !== AlertLevel.EMERGENCY) return null;
   return (
-    <p
-      className={`flex w-full items-center gap-2.5 rounded-full px-4.5 py-3 text-label-18 text-text-inverse ${LEVEL_BANNER[board.level]}`}
-    >
+    <p className="flex w-full items-center gap-2.5 rounded-full bg-status-critical px-4.5 py-3 text-label-18 text-text-inverse">
       <AlertCircleIcon className="size-6 shrink-0" />
       <span>
         오늘 폭염 {board.levelLabel} 단계예요 · 체감 {board.feelsLikeMax}°C
@@ -185,10 +183,9 @@ export default async function TodayPage(props: PageProps<"/today">) {
             dong={board.dong}
           />
           <CurrentWeatherSummary variant="today" />
-          <InstallPwaBanner />
           {board.alerted ? (
             <div className="flex flex-col gap-3">
-              <AlertBanner board={board} />
+              <EmergencyBanner board={board} />
               <SummaryCard board={board} />
             </div>
           ) : null}
@@ -205,15 +202,12 @@ export default async function TodayPage(props: PageProps<"/today">) {
         ) : (
           <SilentBoardView board={board} workerId={workerId} />
         )}
-      </main>
-      {/* 알림 설정은 화면 맨 위가 아니라 아래 띠로 묻는다 — 위쪽은 오늘의 결정 자리다(PRD §9) */}
-      {board.worker ? (
-        <PushNotificationManager
-          variant="toast"
-          workerId={board.worker.id}
+
+        <TodayAppSettings
+          workerId={board.worker?.id}
           publicKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY?.trim() ?? ""}
         />
-      ) : null}
+      </main>
       <BottomNav current="today" date={date} workerId={workerId} />
     </TodayWorkspace>
   );
