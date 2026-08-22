@@ -432,8 +432,27 @@ export function isBriefingCategory(value: unknown): value is BriefingCategory {
   );
 }
 
+/**
+ * 카드·탭에 찍히는 인수인계 순서 — 하루의 흐름(리듬) → 쌓인 신호 → 오늘 조심할 것.
+ * 모델이 낸 순서를 그대로 쓰면 같은 대상자의 3줄이 열 때마다 자리를 바꾼다 (PRD F6의 나열 순서).
+ */
+export const BRIEFING_CATEGORIES: readonly BriefingCategory[] = [
+  BriefingCategory.LIFE_RHYTHM,
+  BriefingCategory.REPEATED_SIGNAL,
+  BriefingCategory.CAUTION,
+];
+
+/** 인수인계 카드는 3줄을 넘지 않는다 — 화면당 결정 1개 (PRD §9). */
+export const BRIEFING_MAX_LINES = 3;
+
 /** 전화 안내에 붙는 대상자별 대화 추천 상한 — PRD F6·ADR-0024. */
 export const CONVERSATION_SUGGESTION_MAX = 2;
+
+/** 기록별 대화 요약 상한 — 히스토리가 보여 주는 최근 기록 수와 같다. */
+export const CONVERSATION_SUMMARY_MAX = 3;
+
+/** 대화 요약 하나에 붙는 `진행 중인 사항` 상한. */
+export const CONVERSATION_ONGOING_MAX = 3;
 
 /** 대상자 정보 화면의 새 탭·상세 문구 — Figma 용어를 제품 용어(ADR-0024)로 맞춘다. */
 export const SUBJECT_INFORMATION_LABELS = {

@@ -180,6 +180,22 @@ stateDiagram-v2
 - **알림을 만들지 않는다** — `Notification` 행을 생성하지 않는다(도메인 규칙 4)
 - reasoning effort는 `medium`이다. 담당자가 화면을 여는 동안 기다리는 호출이라 지연이 비싸다 — 관리자가 수동 실행하는 복지 스캔(`high`)과 다른 선택이다
 
+구현 배치는 이렇다. **근거 대조는 DB를 모르는 순수 함수**(`evidence.ts`)라 prisma 목 없이 검사한다 —
+이 기능의 안전장치이므로 검사되지 않은 채 바뀌는 자리에 두지 않는다.
+
+| 조각 | 위치 | 하는 일 |
+|---|---|---|
+| 마스킹·별칭 | `lib/briefing/privacy.ts` | 전송 전 이름·전화·주소·기관 고유명 제거 + `CheckEvent.id` → `event-1` 별칭 |
+| 모델 호출 | `lib/briefing/openai.ts` | AI Gateway Responses + strict Structured Outputs 파싱 |
+| 근거 대조 | `lib/briefing/evidence.ts` | 그 대상자의 기록인지 확인 · 근거 문구 생성 · 저장 모양 변환 |
+| 캐시·조회 | `lib/briefing/service.ts` | 최신 기록 id 비교 → 재생성 여부 결정. DB만 맡는다 |
+| 조회 경로 | `app/api/subjects/[subjectId]/briefing/route.ts` | 유일한 조회 경로. 클라이언트는 모델을 직접 부르지 않는다 |
+| 화면 | `SubjectBriefingCard`(상세·방문) · `SubjectInformationTabs`(정보 탭·기록 상세) · `ConversationSuggestions`(전화 안내) | 페이지가 먼저 뜨고 브리핑만 나중에 채워진다 (`useSubjectBriefing`) |
+| 입력 시드 | `prisma/seed/history.ts` | 과거 경보일 3일 + 대상자별 합성 확인 기록 (브리핑의 유일한 입력) |
+
+산출물 상한은 전부 `domain.ts` 상수다 — `BRIEFING_MAX_LINES`(3) · `CONVERSATION_SUGGESTION_MAX`(2) ·
+`CONVERSATION_SUMMARY_MAX`(3) · `CONVERSATION_ONGOING_MAX`(3). 모델 스키마와 화면이 같은 값을 읽는다.
+
 ## 6. 외부 연동
 
 | 연동 | 용도 | 인증 | env 키 |

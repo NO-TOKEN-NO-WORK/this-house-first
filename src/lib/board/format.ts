@@ -64,6 +64,17 @@ export function formatHistoryDate(isoDate: string): string {
   return `${month}/${day} (${weekday})`;
 }
 
+/**
+ * `"2026-08-14"` → 브리핑 근거의 아주 짧은 날짜 `"8/14"` (PRD F6 — "8/14 방문 · 에어컨 고장 확인")
+ *
+ * 요일을 뺀 것은 근거 줄이 전화 안내 다이얼로그 안에서 한 줄을 넘기지 않아야 하기 때문이다.
+ * 히스토리 목록·기록 상세(`formatHistoryDate`)는 화면이 넓어 요일까지 읽는다.
+ */
+export function formatEvidenceDate(isoDate: string): string {
+  const { month, day } = requireIsoDateParts(isoDate);
+  return `${month}/${day}`;
+}
+
 /** 경보일 날짜에서 나이 계산 기준 연도를 뽑는다 — 스코어링 엔진과 같은 기준을 쓰기 위한 것 */
 export function yearOfIsoDate(isoDate: string): number {
   return requireIsoDateParts(isoDate).year;
