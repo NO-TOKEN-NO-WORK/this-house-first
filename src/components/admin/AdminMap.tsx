@@ -22,10 +22,66 @@ type KakaoOverlay = {
   setMap(map: null): void;
 };
 
+type KakaoMarker = object;
+
+type KakaoCluster = {
+  getClusterMarker(): { getContent(): Node | string };
+  getMarkers(): KakaoMarker[];
+  getSize(): number;
+};
+
+type KakaoMarkerClusterer = {
+  addMarkers(markers: KakaoMarker[]): void;
+  clear(): void;
+};
+
+type KakaoEvent = {
+  addListener(
+    target: KakaoMarkerClusterer,
+    type: "clusterclick",
+    handler: (cluster: KakaoCluster) => void,
+  ): void;
+  addListener(
+    target: KakaoMarkerClusterer,
+    type: "clustered",
+    handler: (clusters: KakaoCluster[]) => void,
+  ): void;
+  removeListener(
+    target: KakaoMarkerClusterer,
+    type: "clusterclick",
+    handler: (cluster: KakaoCluster) => void,
+  ): void;
+  removeListener(
+    target: KakaoMarkerClusterer,
+    type: "clustered",
+    handler: (clusters: KakaoCluster[]) => void,
+  ): void;
+};
+
 type KakaoMaps = {
   load(callback: () => void): void;
   LatLng: new (lat: number, lng: number) => KakaoLatLng;
   LatLngBounds: new () => KakaoLatLngBounds;
+  Size: new (width: number, height: number) => object;
+  MarkerImage: new (src: string, size: object) => object;
+  Marker: new (options: {
+    position: KakaoLatLng;
+    image: object;
+    title: string;
+    clickable: boolean;
+    opacity: number;
+  }) => KakaoMarker;
+  MarkerClusterer: new (options: {
+    map: KakaoMap;
+    averageCenter: boolean;
+    minClusterSize: number;
+    minLevel: number;
+    disableClickZoom: boolean;
+    calculator: number[];
+    texts(count: number): string;
+    styles: Array<Record<string, string>>;
+  }) => KakaoMarkerClusterer;
+  event: KakaoEvent;
   Map: new (
     container: HTMLElement,
     options: { center: KakaoLatLng; level: number },
@@ -33,6 +89,7 @@ type KakaoMaps = {
   CustomOverlay: new (options: {
     map: KakaoMap;
     position: KakaoLatLng;
+    clickable: boolean;
     content: HTMLElement;
     yAnchor: number;
   }) => KakaoOverlay;
@@ -42,6 +99,12 @@ function buildingIconSrc(grade: AdminDashboardBuilding["grade"]): string {
   if (grade === 1) return "/admin/building-critical.png";
   if (grade === 2) return "/admin/building-high.png";
   return "/admin/building-moderate.png";
+}
+
+export function clusterMarkerText(count: number): string {
+  if (count >= 10) return "10+";
+  if (count >= 5) return "5+";
+  return String(count);
 }
 
 function getKakaoMaps(): KakaoMaps | undefined {
@@ -111,11 +174,54 @@ export function loadKakaoSdk(mapKey: string): Promise<KakaoMaps> {
 
     const script = document.createElement("script");
     script.dataset.adminKakaoMap = "true";
-    script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${encodeURIComponent(mapKey)}&autoload=false`;
+    script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${encodeURIComponent(mapKey)}&autoload=false&libraries=clusterer`;
     script.async = true;
     subscribe(script);
     document.head.appendChild(script);
   });
+}
+
+export function ClusterBuildingTray({
+  buildings,
+  selectedBuildingId,
+  onSelect,
+}: {
+  buildings: AdminDashboardBuilding[];
+  selectedBuildingId: string | null;
+  onSelect(buildingId: string): void;
+}) {
+  return (
+    <section
+      className={styles.mapClusterTray}
+      aria-label={`선택한 지역의 건물 ${buildings.length}개`}
+    >
+      <ul className={styles.mapClusterList}>
+        {buildings.map((building) => (
+          <li key={building.buildingId}>
+            <button
+              aria-pressed={building.buildingId === selectedBuildingId}
+              className={styles.mapClusterCard}
+              onClick={() => onSelect(building.buildingId)}
+              type="button"
+            >
+              <Image
+                alt=""
+                aria-hidden="true"
+                height={24}
+                src={buildingIconSrc(building.grade)}
+                width={24}
+              />
+              <span>
+                <strong>{building.address.split(" ").slice(-2).join(" ")}</strong>
+                <small>건물 위험 {GRADE_LABEL[building.grade]}</small>
+              </span>
+              <em>미처리 {building.openCount}명</em>
+            </button>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
 }
 
 export function AdminMap({
@@ -132,6 +238,7 @@ export function AdminMap({
   const [selectedBuildingId, setSelectedBuildingId] = useState<string | null>(
     buildings[0]?.buildingId ?? null,
   );
+  const [clusterBuildingIds, setClusterBuildingIds] = useState<string[]>([]);
   const buildingsSignature = adminMapBuildingsSignature(buildings);
   const mappedBuildings = useMemo(
     () =>
@@ -143,6 +250,10 @@ export function AdminMap({
   const selectedBuilding =
     buildings.find((building) => building.buildingId === selectedBuildingId) ??
     buildings[0];
+  const clusterBuildings = clusterBuildingIds.flatMap((buildingId) => {
+    const building = buildings.find((candidate) => candidate.buildingId === buildingId);
+    return building ? [building] : [];
+  });
   const coordinateError =
     mapKey && mappedBuildings.length === 0
       ? "지도에 표시할 수 있는 건물 좌표가 없습니다."
@@ -154,7 +265,11 @@ export function AdminMap({
 
     let cancelled = false;
     const overlays: KakaoOverlay[] = [];
-    const cleanupMap = () => cleanupKakaoMap(overlays, container);
+    let cleanupClusterer = () => undefined;
+    const cleanupMap = () => {
+      cleanupClusterer();
+      cleanupKakaoMap(overlays, container);
+    };
 
     if (mappedBuildings.length === 0) {
       return cleanupMap;
@@ -174,6 +289,9 @@ export function AdminMap({
               });
               map.setZoomable(false);
               const bounds = new maps.LatLngBounds();
+              const buildingByMarker = new Map<KakaoMarker, AdminDashboardBuilding>();
+              const buttonByMarker = new Map<KakaoMarker, HTMLButtonElement>();
+              const markers: KakaoMarker[] = [];
 
               for (const building of mappedBuildings) {
                 const position = new maps.LatLng(building.lat, building.lng);
@@ -185,16 +303,7 @@ export function AdminMap({
                 icon.alt = "";
                 icon.className = styles.mapMarkerIcon;
                 icon.setAttribute("aria-hidden", "true");
-                const copy = document.createElement("div");
-                copy.className = styles.mapMarkerCopy;
-                const address = document.createElement("strong");
-                address.textContent = building.address.split(" ").slice(-2).join(" ");
-                const grade = document.createElement("span");
-                grade.textContent = `건물 위험 ${GRADE_LABEL[building.grade]}`;
-                const open = document.createElement("em");
-                open.textContent = `미처리 ${building.openCount}명`;
-                copy.append(address, grade, open);
-                button.append(icon, copy);
+                button.append(icon);
                 button.setAttribute(
                   "aria-label",
                   `${building.address}, ${GRADE_LABEL[building.grade]}, 미처리 ${building.openCount}명`,
@@ -209,20 +318,104 @@ export function AdminMap({
                   );
                 }
                 button.addEventListener("click", () => {
+                  setClusterBuildingIds([]);
                   setSelectedBuildingId(building.buildingId);
                 });
                 overlays.push(
                   new maps.CustomOverlay({
                     map,
                     position,
+                    clickable: true,
                     content: button,
-                    yAnchor: 1,
+                    yAnchor: 0.5,
                   }),
                 );
+                const marker = new maps.Marker({
+                  position,
+                  image: new maps.MarkerImage(
+                    buildingIconSrc(building.grade),
+                    new maps.Size(32, 32),
+                  ),
+                  title: `${building.address}, ${GRADE_LABEL[building.grade]}`,
+                  clickable: false,
+                  opacity: 0,
+                });
+                markers.push(marker);
+                buildingByMarker.set(marker, building);
+                buttonByMarker.set(marker, button);
                 bounds.extend(position);
               }
 
               map.setBounds(bounds);
+              const clusterStyle = {
+                display: "flex",
+                width: "40px",
+                height: "40px",
+                alignItems: "center",
+                justifyContent: "center",
+                border: "3px solid var(--admin-surface)",
+                borderRadius: "50%",
+                background: "var(--admin-accent)",
+                boxShadow: "var(--admin-shadow-panel)",
+                color: "var(--admin-on-accent)",
+                fontSize: "13px",
+                fontWeight: "800",
+              };
+              const clusterer = new maps.MarkerClusterer({
+                map,
+                averageCenter: true,
+                minClusterSize: 2,
+                minLevel: 0,
+                disableClickZoom: true,
+                calculator: [10],
+                texts: clusterMarkerText,
+                styles: [clusterStyle, { ...clusterStyle }],
+              });
+              const selectCluster = (cluster: KakaoCluster) => {
+                const clusterBuildings = cluster.getMarkers().flatMap((marker) => {
+                  const building = buildingByMarker.get(marker);
+                  return building ? [building] : [];
+                });
+                setClusterBuildingIds(
+                  clusterBuildings.map((building) => building.buildingId),
+                );
+                setSelectedBuildingId(clusterBuildings[0]?.buildingId ?? null);
+              };
+              const syncClusters = (clusters: KakaoCluster[]) => {
+                setClusterBuildingIds([]);
+                buttonByMarker.forEach((button) => {
+                  button.hidden = false;
+                });
+                clusters.forEach((cluster) => {
+                  if (cluster.getSize() < 2) return;
+                  cluster.getMarkers().forEach((marker) => {
+                    const button = buttonByMarker.get(marker);
+                    if (button) button.hidden = true;
+                  });
+                  const content = cluster.getClusterMarker().getContent();
+                  if (!(content instanceof HTMLElement)) return;
+                  content.setAttribute("role", "button");
+                  content.setAttribute("tabindex", "0");
+                  content.setAttribute(
+                    "aria-label",
+                    `가까운 건물 ${cluster.getSize()}개 보기`,
+                  );
+                  content.onkeydown = (event) => {
+                    if (event.key !== "Enter" && event.key !== " ") return;
+                    event.preventDefault();
+                    selectCluster(cluster);
+                  };
+                });
+              };
+              cleanupClusterer = () => {
+                maps.event.removeListener(clusterer, "clusterclick", selectCluster);
+                maps.event.removeListener(clusterer, "clustered", syncClusters);
+                clusterer.clear();
+                cleanupClusterer = () => undefined;
+              };
+              maps.event.addListener(clusterer, "clusterclick", selectCluster);
+              maps.event.addListener(clusterer, "clustered", syncClusters);
+              clusterer.addMarkers(markers);
               setMapError(null);
             } catch {
               if (!cancelled) {
@@ -323,15 +516,10 @@ export function AdminMap({
                     alt=""
                     aria-hidden="true"
                     className={styles.mapMarkerIcon}
-                    height={24}
+                    height={32}
                     src={buildingIconSrc(building.grade)}
-                    width={24}
+                    width={32}
                   />
-                  <span className={styles.mapMarkerCopy}>
-                    <strong>{building.address.split(" ").slice(-2).join(" ")}</strong>
-                    <span>건물 위험 {GRADE_LABEL[building.grade]}</span>
-                    <em>미처리 {building.openCount}명</em>
-                  </span>
                 </button>
               ))}
               <p className={styles.screenReaderOnly}>
@@ -353,6 +541,13 @@ export function AdminMap({
               ) : null}
             </>
           )}
+          {clusterBuildings.length > 1 ? (
+            <ClusterBuildingTray
+              buildings={clusterBuildings}
+              onSelect={setSelectedBuildingId}
+              selectedBuildingId={selectedBuildingId}
+            />
+          ) : null}
         </div>
       </div>
     </section>
