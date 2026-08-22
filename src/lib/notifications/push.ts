@@ -20,6 +20,7 @@ export interface DispatchResult {
   claimed: number;
   sent: number;
   failed: number;
+  partialFailures: number;
 }
 
 function vapidDetails(): {
@@ -56,7 +57,9 @@ export async function dispatchDueNotifications(
   client: PrismaClient = prisma,
 ): Promise<DispatchResult> {
   const details = vapidDetails();
-  if (!details) return { configured: false, claimed: 0, sent: 0, failed: 0 };
+  if (!details) {
+    return { configured: false, claimed: 0, sent: 0, failed: 0, partialFailures: 0 };
+  }
 
   const now = options.now ?? new Date();
   const claimExpiredBefore = new Date(now.getTime() - CLAIM_TIMEOUT_MS);
@@ -80,6 +83,7 @@ export async function dispatchDueNotifications(
   let claimed = 0;
   let sent = 0;
   let failed = 0;
+  let partialFailures = 0;
 
   for (const notification of notifications) {
     const claim = await client.notification.updateMany({
@@ -158,6 +162,7 @@ export async function dispatchDueNotifications(
     }
 
     if (results.some((result) => result.ok)) {
+      if (results.some((result) => !result.ok)) partialFailures += 1;
       await client.notification.update({
         where: { id: notification.id },
         data: {
@@ -183,5 +188,5 @@ export async function dispatchDueNotifications(
     failed += 1;
   }
 
-  return { configured: true, claimed, sent, failed };
+  return { configured: true, claimed, sent, failed, partialFailures };
 }
