@@ -5,9 +5,9 @@
   --admin-ink-soft: oklch(43% 0.018 257);
   --admin-rule: oklch(87% 0.008 252);
   --admin-rule-strong: oklch(72% 0.016 252);
-  --admin-accent: oklch(58% 0.2 256);
+  --admin-accent: oklch(55% 0.18 256);
   --admin-accent-ink: oklch(100% 0 0);
-  --admin-focus: oklch(58% 0.2 256);
+  --admin-focus: var(--admin-ink);
   --admin-grade-critical: var(--color-danger);
   --admin-grade-high: var(--color-warn);
   --admin-grade-moderate: var(--color-calm);
@@ -16,11 +16,7 @@
   --admin-space-3: 1rem;
   --admin-space-4: 1.5rem;
   --admin-space-5: 2rem;
-  --admin-space-6: 3rem;
   --admin-radius-control: 0.375rem;
-  --admin-radius-surface: 0.625rem;
-  --admin-font-display: var(--font-sans);
-  --admin-font-body: var(--font-sans);
+  --admin-font-display: "Noto Serif KR", "AppleMyungjo", Georgia, serif;
   --admin-font-meta: var(--font-sans);
-  --admin-motion-fast: 160ms;
 }
