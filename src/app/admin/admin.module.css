@@ -879,6 +879,10 @@
   content: " /";
 }
 
+.grade2 {
+  color: var(--color-status-warning-strong);
+}
+
 .buildingPanel,
 .priorityPanel,
 .workerPanel {

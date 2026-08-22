@@ -32,16 +32,16 @@ export const dynamic = "force-dynamic";
 
 /** 경보 단계별 배너 색 — 흰 글자가 읽히는 명도만 쓴다(60대 사용자 기준, PRD §9) */
 const LEVEL_BANNER: Record<AlertLevel, string> = {
-  [AlertLevel.ADVISORY]: "bg-slate",
-  [AlertLevel.WARNING]: "bg-warn-ink",
-  [AlertLevel.EMERGENCY]: "bg-danger",
+  [AlertLevel.ADVISORY]: "bg-action-secondary",
+  [AlertLevel.WARNING]: "bg-status-warning-strong",
+  [AlertLevel.EMERGENCY]: "bg-status-critical",
 };
 
 /** 등급 요약 글자색 (Figma ① 8:1833) */
 const GRADE_TEXT: Record<RiskGrade, string> = {
-  [RiskGrade.CRITICAL]: "text-danger-ink",
-  [RiskGrade.HIGH]: "text-warn-ink",
-  [RiskGrade.MODERATE]: "text-slate",
+  [RiskGrade.CRITICAL]: "text-status-critical-strong",
+  [RiskGrade.HIGH]: "text-status-warning-strong",
+  [RiskGrade.MODERATE]: "text-text-tertiary",
 };
 
 const GRADE_ORDER: readonly RiskGrade[] = [
@@ -61,10 +61,10 @@ function Greeting({
 }) {
   return (
     <header className="flex flex-col gap-1">
-      <h1 className="text-2xl font-bold text-ink">
+      <h1 className="text-heading-24 text-text-primary">
         {workerName ? `어서오세요 ${workerName}님` : "어서오세요"}
       </h1>
-      <p className="text-base text-ink">
+      <p className="text-body-16 text-text-primary">
         {dateLabel}
         {dong ? ` · ${dong}` : ""}
       </p>
@@ -79,14 +79,14 @@ function AlertBanner({ board }: { board: AlertedBoard }) {
 
   return (
     <p
-      className={`flex w-full items-center gap-2.5 rounded-full px-4.5 py-3 text-white ${LEVEL_BANNER[board.level]}`}
+      className={`flex w-full items-center gap-2.5 rounded-full px-4.5 py-3 text-text-inverse ${LEVEL_BANNER[board.level]}`}
     >
       <AlertCircleIcon className="size-6 shrink-0" />
       <span className="flex flex-col">
-        <span className="text-lg font-bold">
+        <span className="text-heading-18">
           오늘은 폭염 {board.levelLabel} 단계입니다
         </span>
-        <span className="text-[15px] opacity-90">
+        <span className="text-body-15 opacity-90">
           체감 {board.feelsLikeMax}℃ · {GRADE_LABEL[RiskGrade.CRITICAL]}{" "}
           {criticalTotal}명
         </span>
@@ -98,22 +98,22 @@ function AlertBanner({ board }: { board: AlertedBoard }) {
 /** 요약 카드 — 왼쪽은 "오늘 남은 일", 오른쪽은 등급별 미처리 수 (Figma ① 8:1833) */
 function SummaryCard({ board }: { board: AlertedBoard }) {
   return (
-    <div className="flex w-full items-center rounded-[10px] border border-line bg-white px-8 py-4.5">
+    <div className="flex w-full items-center rounded-[10px] border border-border-default bg-surface-default px-8 py-4.5">
       <div className="flex flex-1 items-center justify-between">
-        <div className="flex flex-col items-center gap-1 text-ink">
-          <span className="text-[15px] font-bold">연락 필요</span>
-          <span className="text-xl font-bold">
+        <div className="flex flex-col items-center gap-1 text-text-primary">
+          <span className="text-label-15">연락 필요</span>
+          <span className="text-heading-20">
             {board.summary.open} / {board.summary.total}
           </span>
         </div>
-        <div aria-hidden className="h-6 w-px bg-line" />
+        <div aria-hidden className="h-6 w-px bg-border-default" />
         {GRADE_ORDER.map((grade) => (
           <div
             key={grade}
             className={`flex flex-col items-center gap-1 ${GRADE_TEXT[grade]}`}
           >
-            <span className="text-[15px] font-bold">{GRADE_LABEL[grade]}</span>
-            <span className="text-xl font-bold">
+            <span className="text-label-15">{GRADE_LABEL[grade]}</span>
+            <span className="text-heading-20">
               {board.summary.openByGrade[grade]}명
             </span>
           </div>
@@ -133,13 +133,13 @@ function SilentBoardView({
 }) {
   return (
     <>
-      <div className="flex w-full items-center justify-between rounded-[10px] border border-line bg-white px-8 py-4.5">
-        <span className="text-[15px] font-bold text-ink-soft">담당 가구</span>
-        <span className="text-xl font-bold text-ink">
+      <div className="flex w-full items-center justify-between rounded-[10px] border border-border-default bg-surface-default px-8 py-4.5">
+        <span className="text-label-15 text-text-secondary">담당 가구</span>
+        <span className="text-heading-20 text-text-primary">
           {board.subjects.length}가구
         </span>
       </div>
-      <p className="text-[15px] leading-6 text-ink-soft">
+      <p className="text-body-15-relaxed text-text-secondary">
         오늘은 경보가 없습니다. 폭염·한파 경보가 내려지면 누구부터 확인할지
         순서를 정해 드립니다.
       </p>
@@ -178,7 +178,7 @@ export default async function TodayPage(props: PageProps<"/today">) {
       workerId={workerId}
       returnGrade={selectedGrade}
     >
-      <main className="mx-auto flex w-full max-w-[520px] flex-1 flex-col gap-8 bg-surface px-5 pt-11 pb-[100px]">
+      <main className="mx-auto flex w-full max-w-[520px] flex-1 flex-col gap-8 bg-background-subtle px-5 pt-11 pb-[100px]">
         <div className="flex flex-col gap-5">
           <Greeting
             workerName={board.worker?.name ?? null}

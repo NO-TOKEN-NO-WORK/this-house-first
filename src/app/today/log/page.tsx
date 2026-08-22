@@ -36,10 +36,10 @@ export default async function LogPage(props: PageProps<"/today/log">) {
 
   return (
     <>
-      <main className="mx-auto flex w-full max-w-[520px] flex-1 flex-col gap-8 bg-surface px-5 pt-11 pb-[100px]">
+      <main className="mx-auto flex w-full max-w-[520px] flex-1 flex-col gap-8 bg-background-subtle px-5 pt-11 pb-[100px]">
         <header className="flex flex-col gap-1">
-          <h1 className="text-2xl font-bold text-ink">기록</h1>
-          <p className="text-base text-ink">
+          <h1 className="text-heading-24 text-text-primary">기록</h1>
+          <p className="text-body-16 text-text-primary">
             {log.worker
               ? `${log.worker.name}님의 확인 기록`
               : "확인 기록"}
@@ -48,13 +48,13 @@ export default async function LogPage(props: PageProps<"/today/log">) {
 
         {log.items.length === 0 ? (
           <section
-            className="flex flex-col gap-2 rounded-[10px] border border-line bg-white px-8 py-8"
+            className="flex flex-col gap-2 rounded-[10px] border border-border-default bg-surface-default px-8 py-8"
             aria-label="빈 기록"
           >
-            <p className="text-xl font-bold text-ink">
+            <p className="text-heading-20 text-text-primary">
               아직 확인 기록이 없습니다
             </p>
-            <p className="text-[15px] leading-6 text-ink-soft">
+            <p className="text-body-15-relaxed text-text-secondary">
               경보일에 남긴 전화·방문 결과가 여기에 모입니다.
             </p>
           </section>
@@ -62,7 +62,7 @@ export default async function LogPage(props: PageProps<"/today/log">) {
           <div className="flex flex-col gap-8">
             {log.groups.map((group) => (
               <section key={group.date} className="flex flex-col gap-4">
-                <h2 className="text-[17px] font-bold text-ink">
+                <h2 className="text-title-17 text-text-primary">
                   {group.dateLabel}
                 </h2>
                 <ul className="flex flex-col gap-4">
@@ -70,12 +70,12 @@ export default async function LogPage(props: PageProps<"/today/log">) {
                     <li key={item.id}>
                       <Link
                         href={subjectHref(item, workerId)}
-                        className="flex min-h-12 w-full items-center justify-between gap-4 rounded-[10px] border border-line bg-white px-5 py-6"
+                        className="flex min-h-12 w-full items-center justify-between gap-4 rounded-[10px] border border-border-default bg-surface-default px-5 py-6"
                       >
-                        <span className="text-2xl font-bold text-ink">
+                        <span className="text-heading-24 text-text-primary">
                           {item.subjectName}
                         </span>
-                        <span className="shrink-0 text-base font-bold text-ink-soft">
+                        <span className="shrink-0 text-label-16-compact text-text-secondary">
                           {item.kindLabel} · {item.resultLabel}
                         </span>
                       </Link>

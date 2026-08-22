@@ -20,9 +20,11 @@
   --admin-success: oklch(61% 0.16 150);
   --admin-success-soft: oklch(96% 0.035 150);
   --admin-focus: var(--admin-ink);
-  --admin-grade-critical: var(--color-danger);
-  --admin-grade-high: var(--color-warn);
-  --admin-grade-moderate: var(--color-calm);
+  /* 등급 색만 디자인 시스템(ADR-0015) Semantic 토큰을 그대로 쓴다 —
+     담당자 화면과 관리자 화면에서 같은 등급이 다른 색으로 보이면 안 된다 */
+  --admin-grade-critical: var(--color-status-critical);
+  --admin-grade-high: var(--color-status-warning);
+  --admin-grade-moderate: var(--color-status-neutral);
   --admin-shadow-subtle: 0 1px 2px oklch(22% 0.025 264 / 0.05);
   --admin-shadow-panel: 0 4px 16px oklch(22% 0.025 264 / 0.06);
   --admin-shadow-strong: 0 12px 32px oklch(22% 0.025 264 / 0.16);
