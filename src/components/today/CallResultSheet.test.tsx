@@ -22,11 +22,18 @@ vi.mock("react", async (importOriginal) => ({
 
 /** CallResultSheet의 useState 호출 순서 */
 const RESULT = 0;
-const PENDING = 2;
-const ERROR = 3;
+const COOLING = 1;
+const PENDING = 3;
+const ERROR = 4;
 
 import { CallResultSheet } from "./CallResultSheet";
-import { CallResult, CALL_RESULT_LABEL, RiskGrade } from "@/lib/domain";
+import {
+  CallResult,
+  CALL_RESULT_LABEL,
+  CoolingStatus,
+  COOLING_STATUS_LABEL,
+  RiskGrade,
+} from "@/lib/domain";
 
 function contentOf(element: ReactNode): string {
   if (!isValidElement<{ children?: ReactNode }>(element)) {
@@ -74,13 +81,13 @@ describe("CallResultSheet", () => {
     expect(html).not.toContain(CALL_RESULT_LABEL[CallResult.UNREACHABLE]);
   });
 
-  it("바텀 시트로 연다", () => {
+  it("Figma처럼 화면을 채우는 풀스크린 시트로 연다", () => {
     hooks.cursor = 0;
     const sheet = CallResultSheet(base) as ReactElement<{
       placement?: string;
     }>;
 
-    expect(sheet.props.placement).toBe("bottom");
+    expect(sheet.props.placement).toBe("fullscreen");
   });
 
   it("대상자 머리글과 메모 입력을 함께 보여 준다", () => {
@@ -89,6 +96,10 @@ describe("CallResultSheet", () => {
     expect(html).toContain("김순자");
     expect(html).toContain("대구광역시 서구 비산동 1");
     expect(html).toContain("통화 어땠나요?");
+    expect(html).toContain("냉방기 설비 상태 점검");
+    for (const label of Object.values(COOLING_STATUS_LABEL)) {
+      expect(html).toContain(label);
+    }
     expect(html).toContain("메모 (선택)");
   });
 
@@ -98,17 +109,26 @@ describe("CallResultSheet", () => {
     expect(html).toMatch(/<button[^>]*disabled[^>]*>\s*저장하기/);
   });
 
-  it("결과를 고르면 저장 버튼이 열린다", () => {
+  it("통화 결과만 고르면 냉방기 상태가 비어 있어 아직 저장할 수 없다", () => {
     hooks.values[RESULT] = CallResult.OK;
     const html = render(base);
 
-    expect(html).not.toMatch(/<button[^>]*disabled[^>]*>\s*저장하기/);
-    // 고른 칸만 선택 표시가 붙는다
+    expect(html).toMatch(/<button[^>]*disabled[^>]*>\s*저장하기/);
     expect(html).toContain('aria-pressed="true"');
+  });
+
+  it("통화 결과와 냉방기 상태를 모두 고르면 저장 버튼이 열린다", () => {
+    hooks.values[RESULT] = CallResult.NO_ANSWER;
+    hooks.values[COOLING] = CoolingStatus.NEEDS_CHECK;
+    const html = render(base);
+
+    expect(html).not.toMatch(/<button[^>]*disabled[^>]*>\s*저장하기/);
+    expect(html.match(/aria-pressed="true"/g)).toHaveLength(2);
   });
 
   it("저장 중에는 다시 누를 수 없다", () => {
     hooks.values[RESULT] = CallResult.OK;
+    hooks.values[COOLING] = CoolingStatus.NORMAL;
     hooks.values[PENDING] = true;
     const html = render(base);
 
@@ -120,6 +140,7 @@ describe("CallResultSheet", () => {
 
   it("저장이 실패하면 이유를 그대로 보여 주고 시트를 닫지 않는다", () => {
     hooks.values[RESULT] = CallResult.NO_ANSWER;
+    hooks.values[COOLING] = CoolingStatus.UNKNOWN;
     hooks.values[ERROR] =
       "재전화는 첫 무응답 기록 30분 후 가능합니다. 12분 뒤 다시 시도하세요.";
     const html = render(base);

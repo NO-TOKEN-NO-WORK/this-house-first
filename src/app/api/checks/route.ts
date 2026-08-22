@@ -3,9 +3,13 @@ import {
   type CallResult,
   CALL_RESULT_LABEL,
   CheckKind,
+  coolingStatusSubjectPatch,
+  type CoolingStatus,
+  COOLING_STATUS_LABEL,
   HOUSEHOLD_STATUS_LABEL,
   isCallResult,
   isCheckKind,
+  isCoolingStatus,
   isVisitResult,
   parseHouseholdStatus,
   type VisitResult,
@@ -31,7 +35,7 @@ import { dispatchDueNotifications } from "@/lib/notifications/push";
 /**
  * 확인 기록 (FR-5) — 전화·방문 결과 원터치 기록.
  *
- * `POST /api/checks { subjectId, kind: "CALL"|"VISIT", result, memo?, date?, workerId? }`
+ * `POST /api/checks { subjectId, kind: "CALL"|"VISIT", result, coolingStatus?, memo?, date?, workerId? }`
  *
  * 기록 원장(CheckEvent)을 남기고 상태머신 전이 결과를 HouseholdDayStatus에 반영한다.
  * 전이 규칙 자체는 순수 함수(`src/lib/escalation/transition.ts`)가 갖고 있다.
@@ -61,6 +65,16 @@ function allowedList(labels: Record<string, string>): string {
   return Object.keys(labels).join(" · ");
 }
 
+function optionalCoolingStatus(value: unknown): CoolingStatus | undefined {
+  if (value == null) return undefined;
+  if (!isCoolingStatus(value)) {
+    throw badRequest(
+      `냉방기 상태는 ${allowedList(COOLING_STATUS_LABEL)} 중 하나여야 합니다.`,
+    );
+  }
+  return value;
+}
+
 function parseCheck(kind: unknown, result: unknown): ParsedCheck {
   if (!isCheckKind(kind)) {
     throw badRequest("kind는 CALL 또는 VISIT이어야 합니다.");
@@ -88,6 +102,10 @@ export async function POST(request: Request): Promise<Response> {
     const subjectId = requiredId(body.subjectId, "subjectId");
     // 전화·방문 결과는 문자열 값이 일부 겹치므로(OK 등) kind별로 따로 좁힌다
     const check = parseCheck(body.kind, body.result);
+    const coolingStatus = optionalCoolingStatus(body.coolingStatus);
+    if (coolingStatus && check.kind !== CheckKind.CALL) {
+      throw badRequest("냉방기 상태는 전화 확인에서만 기록할 수 있습니다.");
+    }
     const memo = optionalMemo(body.memo);
     const date = optionalIsoDate(body.date) ?? todayInKst();
     const requestedWorkerId = optionalId(body.workerId, "workerId");
@@ -186,6 +204,11 @@ export async function POST(request: Request): Promise<Response> {
         await tx.subject.update({
           where: { id: subjectId },
           data: { airconBroken: true, hasAircon: false },
+        });
+      } else if (coolingStatus) {
+        await tx.subject.update({
+          where: { id: subjectId },
+          data: coolingStatusSubjectPatch(coolingStatus),
         });
       }
 

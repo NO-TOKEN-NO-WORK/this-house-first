@@ -22,7 +22,12 @@ import {
 } from "@/lib/board/detail";
 import type { SubjectDetail } from "@/lib/board/subject";
 import type { Board } from "@/lib/board/today";
-import { type CallResult, CheckKind, type RiskGrade } from "@/lib/domain";
+import {
+  type CallResult,
+  CheckKind,
+  type CoolingStatus,
+  type RiskGrade,
+} from "@/lib/domain";
 
 /**
  * 보드→상세를 같은 문서 안에서 전환한다.
@@ -163,7 +168,11 @@ export function TodayWorkspace({
    *
    * `workerId`는 싣지 않는다 — 생략하면 API가 대상자의 배정 담당자를 기록자로 쓴다(RecordGrid와 같다).
    */
-  async function handleCallSaved(result: CallResult, memo: string) {
+  async function handleCallSaved(
+    result: CallResult,
+    coolingStatus: CoolingStatus,
+    memo: string,
+  ) {
     if (!callSubjectId) return;
 
     let response: Response;
@@ -176,6 +185,7 @@ export function TodayWorkspace({
           subjectId: callSubjectId,
           kind: CheckKind.CALL,
           result,
+          coolingStatus,
           ...(memo ? { memo } : {}),
           date: board.date,
         }),

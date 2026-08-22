@@ -12,7 +12,7 @@ import { XIcon } from "@/components/today/icons";
 
 /**
  * 공용 다이얼로그 — 스크림 + 카드 + 닫기.
- * 가운데 카드(Figma ④ 7:2577)와 바텀 시트(⑤ 7:2488)가 같은 컴포넌트다. `placement`만 다르다.
+ * 가운데 카드(Figma 38:4993)와 풀스크린 시트(99:1267)가 같은 컴포넌트다. `placement`만 다르다.
  *
  * 내용은 넣는 쪽이 정한다. 이 컴포넌트가 책임지는 것은 껍데기와 접근성뿐이다:
  * Esc·바깥 클릭으로 닫기, 포커스 가두기·복원, 뒤 배경 스크롤 잠금, `role="dialog"`.
@@ -33,9 +33,10 @@ interface Props {
   onClose: () => void;
   /**
    * `center` — 가운데 카드. 오른쪽 위 X로 닫는다 (④)
-   * `bottom` — 화면 아래에 붙는 시트. 위쪽 손잡이로 닫는다 (⑤)
+   * `bottom` — 내용 높이만큼 화면 아래에 붙는 시트
+   * `fullscreen` — Figma처럼 상단 47px만 남기고 모바일 화면을 채우는 시트 (⑤)
    */
-  placement?: "center" | "bottom";
+  placement?: "center" | "bottom" | "fullscreen";
   /** 다이얼로그 이름이 될 요소의 id. 없으면 `label`을 쓴다 */
   labelledBy?: string;
   /** `labelledBy`를 줄 수 없을 때의 이름 */
@@ -110,13 +111,14 @@ export function Dialog({
 
   if (!open || !hydrated) return null;
 
-  const bottom = placement === "bottom";
+  const sheet = placement !== "center";
+  const fullscreen = placement === "fullscreen";
 
   return createPortal(
     // 스크림을 누르면 닫는다. 카드 안에서 시작한 드래그가 밖에서 끝나도 닫히지 않게 target을 본다
     <div
       className={`fixed inset-0 z-50 flex justify-center bg-overlay-scrim motion-safe:animate-scrim-in ${
-        bottom ? "items-end" : "items-center px-6"
+        sheet ? "items-end" : "items-center px-3"
       }`}
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
@@ -133,9 +135,11 @@ export function Dialog({
           그 설정을 켠 사람에게 움직임은 도움이 아니라 방해다.
         */
         className={`relative w-full overflow-y-auto bg-surface-default outline-none ${
-          bottom
-            ? "max-h-[85dvh] max-w-[520px] rounded-t-[20px] pb-[var(--safe-bottom)] motion-safe:animate-sheet-in"
-            : "max-h-[calc(100dvh-48px)] max-w-[366px] rounded-[20px] motion-safe:animate-dialog-in"
+          fullscreen
+            ? "h-[calc(100dvh-47px)] max-w-[390px] rounded-t-[20px] pb-[var(--safe-bottom)] motion-safe:animate-sheet-in"
+            : sheet
+              ? "max-h-[85dvh] max-w-[520px] rounded-t-[20px] pb-[var(--safe-bottom)] motion-safe:animate-sheet-in"
+              : "max-h-[calc(100dvh-48px)] max-w-[366px] rounded-[20px] motion-safe:animate-dialog-in"
         }`}
       >
         {label && !labelledBy && (
@@ -143,7 +147,7 @@ export function Dialog({
             {label}
           </span>
         )}
-        {bottom ? (
+        {sheet ? (
           /*
             Figma(7:2531)의 손잡이는 그림이지만 버튼으로 만든다. 끌어서 닫기를 구현하지 않는 한
             그림만 두면 시트에 보이는 닫기 수단이 없다. 누르는 자리는 44px 높이다(PRD §9).
@@ -165,7 +169,7 @@ export function Dialog({
             type="button"
             onClick={onClose}
             aria-label={closeLabel}
-            className="absolute top-2.5 right-3 flex size-11 items-center justify-center text-icon-default"
+            className="absolute top-2.5 right-3.5 flex size-11 items-center justify-center text-icon-default"
           >
             <XIcon className="size-6" />
           </button>
