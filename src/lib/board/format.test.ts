@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { ageOf, dongOf, formatBoardDate, yearOfIsoDate } from "./format";
+import {
+  ageOf,
+  dongOf,
+  formatBoardDate,
+  isIsoDate,
+  yearOfIsoDate,
+} from "./format";
 
 describe("formatBoardDate", () => {
   it("경보일 날짜를 화면 표기로 바꾼다", () => {
@@ -16,6 +22,12 @@ describe("formatBoardDate", () => {
   it("형식이 다르면 조용히 넘기지 않고 던진다", () => {
     expect(() => formatBoardDate("20260821")).toThrow();
     expect(() => formatBoardDate("")).toThrow();
+  });
+
+  it("형식만 맞고 실제 달력에 없는 날짜도 거절한다", () => {
+    expect(isIsoDate("2026-02-29")).toBe(false);
+    expect(isIsoDate("2024-02-29")).toBe(true);
+    expect(() => formatBoardDate("2026-02-31")).toThrow();
   });
 });
 

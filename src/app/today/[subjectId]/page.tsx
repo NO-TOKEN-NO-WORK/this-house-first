@@ -11,7 +11,8 @@ import {
   UserIcon,
 } from "@/components/today/icons";
 import { getSubjectDetail, type SubjectDetail } from "@/lib/board/subject";
-import { CheckKind, RiskGrade } from "@/lib/domain";
+import { isIsoDate } from "@/lib/board/format";
+import { CheckKind, isRiskGrade, RiskGrade } from "@/lib/domain";
 import {
   NO_ANSWER_PROMOTE_AT,
   NO_ANSWER_RETRY_INTERVAL_MS,
@@ -32,9 +33,9 @@ import {
 export const dynamic = "force-dynamic";
 
 const GRADE_CHIP: Record<RiskGrade, string> = {
-  [RiskGrade.CRITICAL]: "bg-danger",
-  [RiskGrade.HIGH]: "bg-warn",
-  [RiskGrade.MODERATE]: "bg-calm",
+  [RiskGrade.CRITICAL]: "bg-danger text-white",
+  [RiskGrade.HIGH]: "bg-warn text-ink",
+  [RiskGrade.MODERATE]: "bg-calm text-ink",
 };
 
 const REASON_ICON: Record<ReasonCategory, typeof UserIcon> = {
@@ -84,6 +85,15 @@ function RecordArea({ detail }: { detail: SubjectDetail }) {
     );
   }
 
+  if (detail.status === null) {
+    return (
+      <Callout>
+        이 대상자는 해당 경보일의 확인 대상에 포함되지 않아 결과를 기록할 수
+        없습니다.
+      </Callout>
+    );
+  }
+
   if (detail.nextCheckKind === null) {
     return (
       <Callout>
@@ -122,12 +132,24 @@ export default async function SubjectDetailPage(
 ) {
   const { subjectId } = await props.params;
   const params = await props.searchParams;
-  const date = typeof params.date === "string" ? params.date : undefined;
+  let date: string | undefined;
+  if (params.date !== undefined) {
+    if (!isIsoDate(params.date)) notFound();
+    date = params.date;
+  }
+  const workerId =
+    typeof params.workerId === "string" ? params.workerId : undefined;
+  const gradeValue = typeof params.grade === "string" ? Number(params.grade) : null;
+  const returnGrade = isRiskGrade(gradeValue) ? gradeValue : null;
 
   const detail = await getSubjectDetail({ subjectId, date });
   if (!detail) notFound();
 
-  const backHref = date ? `/today?date=${date}` : "/today";
+  const backQuery = new URLSearchParams();
+  if (date) backQuery.set("date", date);
+  if (workerId) backQuery.set("workerId", workerId);
+  if (returnGrade) backQuery.set("grade", String(returnGrade));
+  const backHref = backQuery.size > 0 ? `/today?${backQuery}` : "/today";
   /*
    * 방문 대상 가구에는 전화 걸기를 큰 버튼으로 내밀지 않는다 — 1등급은 전화로 '괜찮다'를
    * 확인하지 않는 것이 설계다 (PRD F3). 번호 자체는 위 연락처 줄에서 그대로 누를 수 있다.
@@ -155,7 +177,7 @@ export default async function SubjectDetailPage(
           {detail.assessment && (
             <p>
               <span
-                className={`inline-block rounded-full px-3 py-1.5 text-[15px] font-bold text-white ${GRADE_CHIP[detail.assessment.grade]}`}
+                className={`inline-block rounded-full px-3 py-1.5 text-[15px] font-bold ${GRADE_CHIP[detail.assessment.grade]}`}
               >
                 {detail.assessment.severityLabel}
               </span>

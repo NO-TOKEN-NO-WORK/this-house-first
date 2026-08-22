@@ -8,6 +8,41 @@ const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
 
 const WEEKDAY_LABEL = ["일", "월", "화", "수", "목", "금", "토"] as const;
 
+interface IsoDateParts {
+  year: number;
+  month: number;
+  day: number;
+}
+
+function parseIsoDateParts(value: string): IsoDateParts | null {
+  const match = ISO_DATE.exec(value);
+  if (!match) return null;
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const parsed = new Date(Date.UTC(year, month - 1, day));
+  if (
+    parsed.getUTCFullYear() !== year ||
+    parsed.getUTCMonth() !== month - 1 ||
+    parsed.getUTCDate() !== day
+  ) {
+    return null;
+  }
+  return { year, month, day };
+}
+
+/** URL의 날짜 검색값까지 포함해 실제 달력에 존재하는 ISO 날짜인지 검사한다. */
+export function isIsoDate(value: unknown): value is string {
+  return typeof value === "string" && parseIsoDateParts(value) !== null;
+}
+
+function requireIsoDateParts(value: string): IsoDateParts {
+  const parts = parseIsoDateParts(value);
+  if (!parts) throw new Error(`유효한 YYYY-MM-DD 날짜가 아닙니다: ${value}`);
+  return parts;
+}
+
 /**
  * `"2026-08-21"` → `"8월 21일(금)"`
  *
@@ -15,19 +50,15 @@ const WEEKDAY_LABEL = ["일", "월", "화", "수", "목", "금", "토"] as const
  * 요일만 UTC 기준으로 계산한다 — 날짜 문자열을 그대로 UTC 자정에 놓으면 요일이 어긋나지 않는다.
  */
 export function formatBoardDate(isoDate: string): string {
-  const m = ISO_DATE.exec(isoDate);
-  if (!m) throw new Error(`YYYY-MM-DD 형식이 아닙니다: ${isoDate}`);
-  const [, y, mo, d] = m as unknown as [string, string, string, string];
+  const { year, month, day } = requireIsoDateParts(isoDate);
   const weekday =
-    WEEKDAY_LABEL[new Date(Date.UTC(Number(y), Number(mo) - 1, Number(d))).getUTCDay()];
-  return `${Number(mo)}월 ${Number(d)}일(${weekday})`;
+    WEEKDAY_LABEL[new Date(Date.UTC(year, month - 1, day)).getUTCDay()];
+  return `${month}월 ${day}일(${weekday})`;
 }
 
 /** 경보일 날짜에서 나이 계산 기준 연도를 뽑는다 — 스코어링 엔진과 같은 기준을 쓰기 위한 것 */
 export function yearOfIsoDate(isoDate: string): number {
-  const m = ISO_DATE.exec(isoDate);
-  if (!m) throw new Error(`YYYY-MM-DD 형식이 아닙니다: ${isoDate}`);
-  return Number(m[1]);
+  return requireIsoDateParts(isoDate).year;
 }
 
 /**

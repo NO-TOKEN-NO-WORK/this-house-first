@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { BottomNav } from "@/components/today/BottomNav";
 import { SubjectCard } from "@/components/today/SubjectCard";
 import { AlertCircleIcon } from "@/components/today/icons";
@@ -8,7 +9,13 @@ import {
   getBoard,
   type SilentBoard,
 } from "@/lib/board/today";
-import { AlertLevel, GRADE_LABEL, RiskGrade } from "@/lib/domain";
+import { isIsoDate } from "@/lib/board/format";
+import {
+  AlertLevel,
+  GRADE_LABEL,
+  isRiskGrade,
+  RiskGrade,
+} from "@/lib/domain";
 
 /**
  * 담당자(생활지원사) 오늘의 대응 보드 — FR-4, PRD F3
@@ -32,9 +39,9 @@ const LEVEL_BANNER: Record<AlertLevel, string> = {
 
 /** 등급 칩 배경 / 등급 요약·소제목 글자색 (Figma ① 8:1861·8:1864) */
 const GRADE_CHIP: Record<RiskGrade, string> = {
-  [RiskGrade.CRITICAL]: "bg-danger",
-  [RiskGrade.HIGH]: "bg-warn",
-  [RiskGrade.MODERATE]: "bg-calm",
+  [RiskGrade.CRITICAL]: "bg-danger text-white",
+  [RiskGrade.HIGH]: "bg-warn text-ink",
+  [RiskGrade.MODERATE]: "bg-calm text-ink",
 };
 const GRADE_TEXT: Record<RiskGrade, string> = {
   [RiskGrade.CRITICAL]: "text-danger-ink",
@@ -47,10 +54,6 @@ const GRADE_ORDER: readonly RiskGrade[] = [
   RiskGrade.HIGH,
   RiskGrade.MODERATE,
 ];
-
-function isRiskGrade(value: unknown): value is RiskGrade {
-  return GRADE_ORDER.includes(Number(value) as RiskGrade);
-}
 
 function Greeting({
   workerName,
@@ -165,12 +168,22 @@ function GradeTabs({
   );
 }
 
-function GradeSection({ group, date }: { group: BoardGroup; date: string }) {
+function GradeSection({
+  group,
+  date,
+  workerId,
+  returnGrade,
+}: {
+  group: BoardGroup;
+  date: string;
+  workerId?: string;
+  returnGrade: RiskGrade | null;
+}) {
   return (
     <section className="flex flex-col gap-4">
       <h2 className="flex items-center gap-2">
         <span
-          className={`rounded-full px-3.5 py-1 text-base font-bold text-white ${GRADE_CHIP[group.grade]}`}
+          className={`rounded-full px-3.5 py-1 text-base font-bold ${GRADE_CHIP[group.grade]}`}
         >
           {group.gradeLabel}
         </span>
@@ -188,6 +201,8 @@ function GradeSection({ group, date }: { group: BoardGroup; date: string }) {
             statusLabel={subject.open ? undefined : subject.statusLabel}
             nextCheckKind={subject.open ? subject.nextCheckKind : null}
             date={date}
+            workerId={workerId}
+            returnGrade={returnGrade ?? undefined}
           />
         ))}
       </ul>
@@ -196,7 +211,13 @@ function GradeSection({ group, date }: { group: BoardGroup; date: string }) {
 }
 
 /** 비경보일 (Figma ①-b) — 등급도 순서도 없이 담당 가구만 */
-function SilentBoardView({ board }: { board: SilentBoard }) {
+function SilentBoardView({
+  board,
+  workerId,
+}: {
+  board: SilentBoard;
+  workerId?: string;
+}) {
   return (
     <>
       <div className="flex w-full items-center justify-between rounded-[10px] border border-line bg-white px-8 py-4.5">
@@ -217,6 +238,7 @@ function SilentBoardView({ board }: { board: SilentBoard }) {
             nextCheckKind={null}
             callOnly
             date={board.date}
+            workerId={workerId}
           />
         ))}
       </ul>
@@ -226,10 +248,15 @@ function SilentBoardView({ board }: { board: SilentBoard }) {
 
 export default async function TodayPage(props: PageProps<"/today">) {
   const params = await props.searchParams;
-  const date = typeof params.date === "string" ? params.date : undefined;
+  let date: string | undefined;
+  if (params.date !== undefined) {
+    if (!isIsoDate(params.date)) notFound();
+    date = params.date;
+  }
   const workerId =
     typeof params.workerId === "string" ? params.workerId : undefined;
-  const selectedGrade = isRiskGrade(params.grade) ? Number(params.grade) as RiskGrade : null;
+  const gradeValue = typeof params.grade === "string" ? Number(params.grade) : null;
+  const selectedGrade = isRiskGrade(gradeValue) ? gradeValue : null;
   const board = await getBoard({ date, workerId });
 
   const hrefOf = (grade: RiskGrade | null) => {
@@ -269,12 +296,18 @@ export default async function TodayPage(props: PageProps<"/today">) {
               {board.groups
                 .filter((g) => selectedGrade === null || g.grade === selectedGrade)
                 .map((group) => (
-                  <GradeSection key={group.grade} group={group} date={board.date} />
+                  <GradeSection
+                    key={group.grade}
+                    group={group}
+                    date={board.date}
+                    workerId={workerId}
+                    returnGrade={selectedGrade}
+                  />
                 ))}
             </div>
           </>
         ) : (
-          <SilentBoardView board={board} />
+          <SilentBoardView board={board} workerId={workerId} />
         )}
       </main>
       <BottomNav current="today" />

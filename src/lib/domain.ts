@@ -45,6 +45,14 @@ export const GRADE_LABEL: Record<RiskGrade, string> = {
   3: "3등급",
 };
 
+export function isRiskGrade(value: unknown): value is RiskGrade {
+  return (
+    value === RiskGrade.CRITICAL ||
+    value === RiskGrade.HIGH ||
+    value === RiskGrade.MODERATE
+  );
+}
+
 /**
  * 등급별 대응 지시 (PRD F3) — 담당자 화면이 그대로 표시한다.
  * 1등급에 전화가 없는 것은 누락이 아니라 설계다: 전화로 '괜찮다'를 신뢰할 수 없는 군이라

@@ -133,10 +133,8 @@ export async function getSubjectDetail(options: {
     }),
   ]);
 
-  const status = statusRow
-    ? parseHouseholdStatus(statusRow.status)
-    : HouseholdStatus.UNCHECKED;
-  const open = isOpenHouseholdStatus(status);
+  const status = statusRow ? parseHouseholdStatus(statusRow.status) : null;
+  const open = status !== null && isOpenHouseholdStatus(status);
   const grade = assessmentRow ? (assessmentRow.grade as RiskGrade) : null;
 
   return {
@@ -155,7 +153,7 @@ export async function getSubjectDetail(options: {
           }
         : null,
     status,
-    statusLabel: HOUSEHOLD_STATUS_LABEL[status],
+    statusLabel: status ? HOUSEHOLD_STATUS_LABEL[status] : null,
     callAttempts: statusRow?.callAttempts ?? 0,
     open,
     // 방문 큐에 오른 가구는 전화가 아니라 방문 기록을 받는다 (escalation/transition.ts CALLABLE·VISITABLE)

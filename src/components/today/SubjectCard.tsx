@@ -35,6 +35,10 @@ interface Props {
   callOnly?: boolean;
   /** 상세로 넘길 경보일. 보드에서 다른 날짜를 보고 있으면 그 날짜를 그대로 잇는다 */
   date: string;
+  /** 로그인 없는 v0에서 선택한 담당자 문맥을 상세→보드 왕복 동안 보존한다. */
+  workerId?: string;
+  /** 등급 필터를 적용한 채 상세에 들어갔다면 뒤로 갈 때 같은 필터로 돌아간다. */
+  returnGrade?: RiskGrade;
 }
 
 export function SubjectCard({
@@ -44,8 +48,13 @@ export function SubjectCard({
   nextCheckKind,
   callOnly = false,
   date,
+  workerId,
+  returnGrade,
 }: Props) {
-  const href = `/today/${subject.subjectId}?date=${date}`;
+  const query = new URLSearchParams({ date });
+  if (workerId) query.set("workerId", workerId);
+  if (returnGrade) query.set("grade", String(returnGrade));
+  const href = `/today/${subject.subjectId}?${query.toString()}`;
   const closed = nextCheckKind === null;
   const border = closed || !grade ? "border-line-soft" : GRADE_BORDER[grade];
 

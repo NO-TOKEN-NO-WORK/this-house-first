@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, type ReactNode } from "react";
+import { useState, useTransition, type ReactNode } from "react";
 import {
   CallResult,
   CALL_RESULT_LABEL,
@@ -111,6 +111,7 @@ export function RecordGrid({ subjectId, kind, date, lastResult }: Props) {
   const router = useRouter();
   const [pending, setPending] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isRefreshing, startRefresh] = useTransition();
 
   const isCall = kind === CheckKind.CALL;
   const options = isCall ? CALL_OPTIONS : VISIT_OPTIONS;
@@ -130,7 +131,8 @@ export function RecordGrid({ subjectId, kind, date, lastResult }: Props) {
         setError(json.error?.message ?? "기록하지 못했습니다.");
         return;
       }
-      router.refresh();
+      // 서버 컴포넌트가 최신 상태를 반영할 때까지 버튼을 잠가 연속 탭의 중복 기록을 막는다.
+      startRefresh(() => router.refresh());
     } catch {
       setError("연결이 끊겨 기록하지 못했습니다. 다시 눌러 주세요.");
     } finally {
@@ -151,7 +153,7 @@ export function RecordGrid({ subjectId, kind, date, lastResult }: Props) {
             <button
               key={option.value}
               type="button"
-              disabled={pending !== null}
+              disabled={pending !== null || isRefreshing}
               onClick={() => record(option.value)}
               aria-pressed={selected}
               className={`relative flex min-h-[86px] flex-col items-center justify-center gap-1.5 rounded-lg border text-[17px] font-bold disabled:opacity-60 ${option.tone} ${selected ? "border-2 border-ink-strong" : ""}`}
@@ -169,7 +171,7 @@ export function RecordGrid({ subjectId, kind, date, lastResult }: Props) {
                 <span className="text-[13px] font-normal">{option.hint}</span>
               )}
               {option.badge && (
-                <span className="rounded-full bg-warn px-2 py-px text-[11px] font-bold text-white">
+                <span className="rounded-full bg-warn px-2 py-px text-[11px] font-bold text-ink">
                   {option.badge}
                 </span>
               )}
