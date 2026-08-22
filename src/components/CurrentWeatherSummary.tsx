@@ -127,9 +127,11 @@ function LocationControl({
 export function CurrentWeatherSummary({
   variant,
   valuesOnly = false,
+  demoTemperature,
 }: {
   variant: "today" | "admin";
   valuesOnly?: boolean;
+  demoTemperature?: number;
 }) {
   const [weather, setWeather] = useState<CurrentWeather | null>(null);
   const [failed, setFailed] = useState(false);
@@ -141,6 +143,8 @@ export function CurrentWeatherSummary({
   useEffect(() => {
     let cancelled = false;
     let latestRequest = 0;
+
+    if (demoTemperature !== undefined) return;
 
     async function refresh() {
       const request = ++latestRequest;
@@ -163,7 +167,7 @@ export function CurrentWeatherSummary({
       cancelled = true;
       clearInterval(interval);
     };
-  }, [grid]);
+  }, [demoTemperature, grid]);
 
   useEffect(
     () => () => {
@@ -189,6 +193,26 @@ export function CurrentWeatherSummary({
   const locationControl = (
     <LocationControl onRequest={() => void requestLocation()} status={locationStatus} />
   );
+
+  if (demoTemperature !== undefined) {
+    return (
+      <section aria-label="현재 날씨" className={ROOT_CLASS[variant]}>
+        <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+          <p className="text-body-15 text-text-secondary">
+            현재 {valuesOnly ? "온도" : "기온"}{" "}
+            <strong className={VALUE_CLASS[variant]}>{demoTemperature}°C</strong>
+          </p>
+          <p className="text-body-15 text-text-secondary">
+            {valuesOnly ? "체감 온도" : "현재 체감"}{" "}
+            <strong className={VALUE_CLASS[variant]}>{demoTemperature}°C</strong>
+          </p>
+        </div>
+        {valuesOnly ? null : (
+          <p className="text-body-14 text-text-tertiary">데모 설정</p>
+        )}
+      </section>
+    );
+  }
 
   if (valuesOnly) {
     return (

@@ -7,6 +7,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { GradeFilter } from "@/components/today/GradeFilter";
 import { TodayAppSettings } from "@/components/today/TodayAppSettings";
+import { TodayWorkspace } from "@/components/today/TodayWorkspace";
 import type {
   AlertedBoard,
   BoardSubject,
@@ -64,6 +65,7 @@ function subject(name: string, grade: 1 | 2 | 3): BoardSubject {
 
 const board: AlertedBoard = {
   alerted: true,
+  isDemo: true,
   date: "2026-08-21",
   dateLabel: "8월 21일(금)",
   worker: { id: "worker-1", name: "담당자" },
@@ -148,6 +150,12 @@ function findAppSettings(node: ReactNode): ReactElement | null {
   return findAppSettings(node.props.children);
 }
 
+function findTodayWorkspace(node: ReactNode): ReactElement | null {
+  if (!isValidElement<{ children?: ReactNode }>(node)) return null;
+  if (node.type === TodayWorkspace) return node;
+  return findTodayWorkspace(node.props.children);
+}
+
 describe("TodayPage 위험 단계 필터", () => {
   it("경보 여부와 무관하게 현재 날씨를 표시하지 않는다", async () => {
     for (const currentBoard of [board, silentBoard]) {
@@ -208,6 +216,45 @@ describe("TodayPage 위험 단계 필터", () => {
     });
 
     expect(findGradeFilter(page)?.key).toBe("2");
+  });
+
+  it("데모 ON→OFF→ON이면 기록 상세와 통화 상태를 새로 마운트한다", async () => {
+    const offBoard = { ...silentBoard, date: board.date };
+    const keys: Array<string | null> = [];
+
+    for (const currentBoard of [board, offBoard, board]) {
+      getBoard.mockResolvedValue(currentBoard);
+      const page = await TodayPage({
+        params: Promise.resolve({}),
+        searchParams: Promise.resolve({ date: board.date }),
+      });
+      keys.push(findTodayWorkspace(page)?.key ?? null);
+    }
+
+    expect(keys).toEqual([
+      `alerted:demo:${board.date}`,
+      `silent:${board.date}`,
+      `alerted:demo:${board.date}`,
+    ]);
+  });
+
+  it("데모 경보가 실제 경보로 교체되면 기록 상세 상태를 새로 마운트한다", async () => {
+    const realBoard = { ...board, isDemo: false };
+    const keys: Array<string | null> = [];
+
+    for (const currentBoard of [board, realBoard]) {
+      getBoard.mockResolvedValue(currentBoard);
+      const page = await TodayPage({
+        params: Promise.resolve({}),
+        searchParams: Promise.resolve({ date: board.date }),
+      });
+      keys.push(findTodayWorkspace(page)?.key ?? null);
+    }
+
+    expect(keys).toEqual([
+      `alerted:demo:${board.date}`,
+      `alerted:real:${board.date}`,
+    ]);
   });
 
   it("비상 단계에만 폭염 배너를 띄운다", async () => {

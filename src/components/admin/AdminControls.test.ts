@@ -2,7 +2,6 @@ import { readFileSync } from "node:fs";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
-import { AlertLevel } from "../../lib/domain";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh: vi.fn() }),
@@ -21,18 +20,21 @@ describe("requestDemoTrigger", () => {
     expect(source).toContain("3_000");
   });
 
-  it("경보 단계 세 개를 즉시 발령하는 버튼으로 제공한다", () => {
+  it("38도 폭염 데모를 켜고 끄는 단일 스위치를 제공한다", () => {
     const html = renderToStaticMarkup(
-      createElement(AdminControls, { date: "2026-08-22" }),
+      createElement(AdminControls, {
+        date: "2026-08-22",
+        demoEnabled: false,
+      }),
     );
 
-    expect(html).toContain('aria-label="주의 단계 발령"');
-    expect(html).toContain('aria-label="경계 단계 발령"');
-    expect(html).toContain('aria-label="비상 단계 발령"');
-    expect(html).not.toContain("<select");
+    expect(html).toContain('role="switch"');
+    expect(html).toContain('aria-checked="false"');
+    expect(html).toContain("38°C 폭염 데모");
+    expect(html).not.toContain("주의 단계 발령");
   });
 
-  it("선택 날짜와 도메인 경보 단계를 보내고 Push 결과를 돌려받는다", async () => {
+  it("선택 날짜에 38도 데모 발령을 요청하고 Push 결과를 돌려받는다", async () => {
     const fetcher = vi.fn(async () =>
       Response.json({
         data: { alerted: true, targetDate: "2026-08-22" },
@@ -41,7 +43,7 @@ describe("requestDemoTrigger", () => {
     );
 
     const result = await requestDemoTrigger(
-      { date: "2026-08-22", level: AlertLevel.EMERGENCY },
+      { date: "2026-08-22", enabled: true },
       fetcher,
     );
 
@@ -50,10 +52,27 @@ describe("requestDemoTrigger", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         targetDate: "20260822",
-        level: AlertLevel.EMERGENCY,
+        demo: true,
       }),
     });
     expect(result).toEqual({ configured: true, claimed: 2, sent: 2, failed: 0 });
+  });
+
+  it("데모 종료는 선택 날짜만 DELETE로 초기화한다", async () => {
+    const fetcher = vi.fn(async () =>
+      Response.json({ data: { reset: true, targetDate: "2026-08-22" } }),
+    );
+
+    await requestDemoTrigger(
+      { date: "2026-08-22", enabled: false },
+      fetcher,
+    );
+
+    expect(fetcher).toHaveBeenCalledWith("/api/trigger", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ targetDate: "20260822" }),
+    });
   });
 
   it("발령 성공과 Push 결과를 구분해 관리자에게 알린다", () => {
@@ -116,10 +135,7 @@ describe("requestDemoTrigger", () => {
     );
 
     await expect(
-      requestDemoTrigger(
-        { date: "2026-08-22", level: AlertLevel.WARNING },
-        fetcher,
-      ),
+      requestDemoTrigger({ date: "2026-08-22", enabled: true }, fetcher),
     ).resolves.toBeNull();
   });
 
@@ -132,10 +148,7 @@ describe("requestDemoTrigger", () => {
     );
 
     await expect(
-      requestDemoTrigger(
-        { date: "2026-08-22", level: AlertLevel.WARNING },
-        fetcher,
-      ),
+      requestDemoTrigger({ date: "2026-08-22", enabled: true }, fetcher),
     ).rejects.toThrow("대상자가 없습니다.");
   });
 
@@ -143,10 +156,7 @@ describe("requestDemoTrigger", () => {
     const fetcher = vi.fn(async () => new Response("not json", { status: 500 }));
 
     await expect(
-      requestDemoTrigger(
-        { date: "2026-08-22", level: AlertLevel.ADVISORY },
-        fetcher,
-      ),
+      requestDemoTrigger({ date: "2026-08-22", enabled: true }, fetcher),
     ).rejects.toThrow("데모 경보를 발령하지 못했습니다.");
   });
 
@@ -156,10 +166,7 @@ describe("requestDemoTrigger", () => {
     );
 
     await expect(
-      requestDemoTrigger(
-        { date: "2026-08-22", level: AlertLevel.ADVISORY },
-        fetcher,
-      ),
+      requestDemoTrigger({ date: "2026-08-22", enabled: true }, fetcher),
     ).rejects.toThrow("데모 경보를 발령하지 못했습니다.");
   });
 });

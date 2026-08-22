@@ -18,6 +18,7 @@ import {
   applyCheckOutcome,
   detailFromBoard,
   findBoardSubject,
+  resolveWorkspaceDetail,
   type CheckOutcome,
 } from "@/lib/board/detail";
 import type { SubjectDetail } from "@/lib/board/subject";
@@ -150,14 +151,18 @@ export function TodayWorkspace({
       setSelectedId(id);
       setOverride(null);
     }
+    const refresh = () => router.refresh();
     window.addEventListener("popstate", onPopState);
-    return () => window.removeEventListener("popstate", onPopState);
-  }, []);
+    window.addEventListener("focus", refresh);
+    return () => {
+      window.removeEventListener("popstate", onPopState);
+      window.removeEventListener("focus", refresh);
+    };
+  }, [router]);
 
   const selected =
     selectedId && board.alerted ? findBoardSubject(board, selectedId) : null;
-  const detail =
-    override ?? (selected && board.alerted ? detailFromBoard(selected, board) : null);
+  const detail = resolveWorkspaceDetail(board, selectedId, override);
 
   /**
    * 통화 결과 저장 — `RecordGrid`와 같은 계약으로 `/api/checks`에 남긴다.

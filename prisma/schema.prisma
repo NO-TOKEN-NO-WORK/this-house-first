@@ -83,6 +83,7 @@ model AlertDay {
   date          String               @unique // "YYYY-MM-DD" (KST)
   level         String // domain.ts AlertLevel: ADVISORY | WARNING | EMERGENCY
   feelsLikeMax  Float // 당일 최고 체감온도
+  isDemo        Boolean              @default(false) // 관리자 38도 데모 토글로 만든 경보만 안전하게 초기화
   regionCode    String? // 읍면동 코드 (기상청 격자 매핑용)
   assessments   RiskAssessment[]
   dayStatuses   HouseholdDayStatus[]

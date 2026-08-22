@@ -3,11 +3,13 @@ import { AlertLevel } from "@/lib/domain";
 
 const mocks = vi.hoisted(() => ({
   declareTrigger: vi.fn(),
+  resetDemoTrigger: vi.fn(),
   dispatchDueNotifications: vi.fn(),
 }));
 
 vi.mock("@/lib/trigger/declare", () => ({
   declareTrigger: mocks.declareTrigger,
+  resetDemoTrigger: mocks.resetDemoTrigger,
   TriggerError: class TriggerError extends Error {
     constructor(
       message: string,
@@ -23,7 +25,7 @@ vi.mock("@/lib/notifications/push", () => ({
   dispatchDueNotifications: mocks.dispatchDueNotifications,
 }));
 
-import { POST } from "./route";
+import { DELETE, POST } from "./route";
 
 const outcome = {
   alerted: true,
@@ -50,6 +52,7 @@ describe("POST /api/trigger", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.declareTrigger.mockResolvedValue(outcome);
+    mocks.dispatchDueNotifications.mockResolvedValue(null);
   });
 
   it("발령 결과와 Push 발송 결과를 함께 반환한다", async () => {
@@ -72,5 +75,55 @@ describe("POST /api/trigger", () => {
 
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ data: outcome, push: null });
+  });
+
+  it("데모 요청은 서버가 정한 38도를 발령 엔진에 전달한다", async () => {
+    const response = await POST(
+      new Request("http://localhost/api/trigger", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          targetDate: "20260822",
+          demo: true,
+          level: AlertLevel.ADVISORY,
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(mocks.declareTrigger).toHaveBeenCalledWith(
+      expect.objectContaining({
+        targetDate: "20260822",
+        feelsLikeMax: 38,
+        level: AlertLevel.EMERGENCY,
+        demo: true,
+      }),
+    );
+  });
+});
+
+describe("DELETE /api/trigger", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.resetDemoTrigger.mockResolvedValue({
+      reset: true,
+      targetDate: "2026-08-22",
+    });
+  });
+
+  it("선택 날짜의 데모 기록을 초기화한다", async () => {
+    const response = await DELETE(
+      new Request("http://localhost/api/trigger", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ targetDate: "20260822" }),
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      data: { reset: true, targetDate: "2026-08-22" },
+    });
+    expect(mocks.resetDemoTrigger).toHaveBeenCalledWith("20260822");
   });
 });
