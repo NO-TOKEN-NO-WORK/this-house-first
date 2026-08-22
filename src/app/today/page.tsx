@@ -1,11 +1,11 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BottomNav } from "@/components/today/BottomNav";
+import { GradeFilter } from "@/components/today/GradeFilter";
 import { SubjectCard } from "@/components/today/SubjectCard";
+import { TodayWorkspace } from "@/components/today/TodayWorkspace";
 import { AlertCircleIcon } from "@/components/today/icons";
 import {
   type AlertedBoard,
-  type BoardGroup,
   getBoard,
   type SilentBoard,
 } from "@/lib/board/today";
@@ -37,12 +37,7 @@ const LEVEL_BANNER: Record<AlertLevel, string> = {
   [AlertLevel.EMERGENCY]: "bg-danger",
 };
 
-/** 등급 칩 배경 / 등급 요약·소제목 글자색 (Figma ① 8:1861·8:1864) */
-const GRADE_CHIP: Record<RiskGrade, string> = {
-  [RiskGrade.CRITICAL]: "bg-danger text-white",
-  [RiskGrade.HIGH]: "bg-warn text-ink",
-  [RiskGrade.MODERATE]: "bg-calm text-ink",
-};
+/** 등급 요약 글자색 (Figma ① 8:1833) */
 const GRADE_TEXT: Record<RiskGrade, string> = {
   [RiskGrade.CRITICAL]: "text-danger-ink",
   [RiskGrade.HIGH]: "text-warn-ink",
@@ -128,88 +123,6 @@ function SummaryCard({ board }: { board: AlertedBoard }) {
   );
 }
 
-/** 등급 필터 — 링크로 갈아끼운다. 탭 하나로 목록이 바뀌므로 결정은 여전히 화면당 1개다 */
-function GradeTabs({
-  groups,
-  selected,
-  hrefOf,
-}: {
-  groups: BoardGroup[];
-  selected: RiskGrade | null;
-  hrefOf: (grade: RiskGrade | null) => string;
-}) {
-  const tabs: { key: string; label: string; grade: RiskGrade | null }[] = [
-    { key: "all", label: "전체", grade: null },
-    ...GRADE_ORDER.filter((grade) => groups.some((g) => g.grade === grade)).map(
-      (grade) => ({ key: String(grade), label: GRADE_LABEL[grade], grade }),
-    ),
-  ];
-
-  return (
-    <nav aria-label="등급 필터" className="flex w-full">
-      {tabs.map((tab) => {
-        const active = tab.grade === selected;
-        return (
-          <Link
-            key={tab.key}
-            href={hrefOf(tab.grade)}
-            aria-current={active ? "true" : undefined}
-            className={`flex flex-1 items-center justify-center px-3 py-2 text-base ${
-              active
-                ? "border-b-2 border-brand-deep font-bold text-ink"
-                : "border-b border-line text-ink"
-            }`}
-          >
-            {tab.label}
-          </Link>
-        );
-      })}
-    </nav>
-  );
-}
-
-function GradeSection({
-  group,
-  date,
-  workerId,
-  returnGrade,
-}: {
-  group: BoardGroup;
-  date: string;
-  workerId?: string;
-  returnGrade: RiskGrade | null;
-}) {
-  return (
-    <section className="flex flex-col gap-4">
-      <h2 className="flex items-center gap-2">
-        <span
-          className={`rounded-full px-3.5 py-1 text-base font-bold ${GRADE_CHIP[group.grade]}`}
-        >
-          {group.gradeLabel}
-        </span>
-        {/* 대응 지시는 도메인 상수(GRADE_PLAN) 그대로 — 화면에서 다시 쓰지 않는다 */}
-        <span className={`text-[17px] font-bold ${GRADE_TEXT[group.grade]}`}>
-          {group.subjects.length}명 | {group.plan}
-        </span>
-      </h2>
-      <ul className="flex flex-col gap-4">
-        {group.subjects.map((subject) => (
-          <SubjectCard
-            key={subject.subjectId}
-            subject={subject}
-            grade={subject.grade}
-            statusLabel={subject.open ? undefined : subject.statusLabel}
-            nextCheckKind={subject.open ? subject.nextCheckKind : null}
-            date={date}
-            workerId={workerId}
-            returnGrade={returnGrade ?? undefined}
-          />
-        ))}
-      </ul>
-    </section>
-  );
-}
-
 /** 비경보일 (Figma ①-b) — 등급도 순서도 없이 담당 가구만 */
 function SilentBoardView({
   board,
@@ -259,17 +172,12 @@ export default async function TodayPage(props: PageProps<"/today">) {
   const selectedGrade = isRiskGrade(gradeValue) ? gradeValue : null;
   const board = await getBoard({ date, workerId });
 
-  const hrefOf = (grade: RiskGrade | null) => {
-    const query = new URLSearchParams();
-    if (date) query.set("date", date);
-    if (workerId) query.set("workerId", workerId);
-    if (grade) query.set("grade", String(grade));
-    const qs = query.toString();
-    return qs ? `/today?${qs}` : "/today";
-  };
-
   return (
-    <>
+    <TodayWorkspace
+      board={board}
+      workerId={workerId}
+      returnGrade={selectedGrade}
+    >
       <main className="mx-auto flex w-full max-w-[520px] flex-1 flex-col gap-8 bg-surface px-5 pt-11 pb-[100px]">
         <div className="flex flex-col gap-5">
           <Greeting
@@ -286,31 +194,18 @@ export default async function TodayPage(props: PageProps<"/today">) {
         </div>
 
         {board.alerted ? (
-          <>
-            <GradeTabs
-              groups={board.groups}
-              selected={selectedGrade}
-              hrefOf={hrefOf}
-            />
-            <div className="flex flex-col gap-8">
-              {board.groups
-                .filter((g) => selectedGrade === null || g.grade === selectedGrade)
-                .map((group) => (
-                  <GradeSection
-                    key={group.grade}
-                    group={group}
-                    date={board.date}
-                    workerId={workerId}
-                    returnGrade={selectedGrade}
-                  />
-                ))}
-            </div>
-          </>
+          <GradeFilter
+            key={selectedGrade ?? "all"}
+            groups={board.groups}
+            initialGrade={selectedGrade}
+            date={board.date}
+            workerId={workerId}
+          />
         ) : (
           <SilentBoardView board={board} workerId={workerId} />
         )}
       </main>
-      <BottomNav current="today" />
-    </>
+      <BottomNav current="today" date={date} workerId={workerId} />
+    </TodayWorkspace>
   );
 }

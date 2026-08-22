@@ -162,6 +162,24 @@ export function isCheckKind(value: unknown): value is CheckKind {
   return value === CheckKind.CALL || value === CheckKind.VISIT;
 }
 
+/**
+ * 이 상태에서 담당자가 남길 기록 종류.
+ * 1등급·승격 가구는 방문, 미확인·무응답 1회는 전화, 끝난 가구는 null (PRD F3·F4).
+ */
+export function nextCheckKindOf(status: HouseholdStatus): CheckKind | null {
+  if (!isOpenHouseholdStatus(status)) return null;
+  return status === HouseholdStatus.VISIT_QUEUED ||
+    status === HouseholdStatus.VISITING
+    ? CheckKind.VISIT
+    : CheckKind.CALL;
+}
+
+/** 확인 기록 종류 라벨 — 기록 탭 목록에 그대로 쓴다. UI에서 다시 쓰지 않는다 */
+export const CHECK_KIND_LABEL: Record<CheckKind, string> = {
+  CALL: "전화",
+  VISIT: "방문",
+};
+
 /** 전화 결과 원터치 기록 (PRD F4) */
 export const CallResult = {
   OK: "OK",

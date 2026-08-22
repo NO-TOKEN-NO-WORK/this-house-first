@@ -10,6 +10,7 @@ import {
   isHouseholdStatus,
   isRiskGrade,
   isVisitResult,
+  nextCheckKindOf,
   parseHouseholdStatus,
   RiskGrade,
   VisitResult,
@@ -46,6 +47,17 @@ describe("확인 기록 값 검증", () => {
     // 값이 겹치는 것(OK)과 겹치지 않는 것(NO_ANSWER / ACTED)을 모두 확인한다
     expect(isVisitResult(CallResult.NO_ANSWER)).toBe(false);
     expect(isCallResult(VisitResult.ACTED)).toBe(false);
+  });
+
+  it("가구 상태에서 다음에 받을 기록 종류를 정한다", () => {
+    expect(nextCheckKindOf(HouseholdStatus.UNCHECKED)).toBe(CheckKind.CALL);
+    expect(nextCheckKindOf(HouseholdStatus.NO_ANSWER_1)).toBe(CheckKind.CALL);
+    expect(nextCheckKindOf(HouseholdStatus.VISIT_QUEUED)).toBe(CheckKind.VISIT);
+    expect(nextCheckKindOf(HouseholdStatus.VISITING)).toBe(CheckKind.VISIT);
+    expect(nextCheckKindOf(HouseholdStatus.CALL_OK)).toBeNull();
+    expect(nextCheckKindOf(HouseholdStatus.RESOLVED)).toBeNull();
+    expect(nextCheckKindOf(HouseholdStatus.EMERGENCY_119)).toBeNull();
+    expect(nextCheckKindOf(HouseholdStatus.UNREACHABLE)).toBeNull();
   });
 
   it("Object 프로토타입 속성은 결과값으로 허용하지 않는다", () => {
