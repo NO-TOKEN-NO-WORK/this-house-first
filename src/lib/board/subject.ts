@@ -2,12 +2,13 @@ import { prisma } from "../db";
 import {
   AlertLevel,
   ALERT_LEVEL_LABEL,
-  CheckKind,
+  type CheckKind,
   GRADE_PLAN,
   GRADE_SEVERITY_LABEL,
   HouseholdStatus,
   HOUSEHOLD_STATUS_LABEL,
   isOpenHouseholdStatus,
+  nextCheckKindOf,
   parseHouseholdStatus,
   RiskGrade,
 } from "../domain";
@@ -157,12 +158,7 @@ export async function getSubjectDetail(options: {
     callAttempts: statusRow?.callAttempts ?? 0,
     open,
     // 방문 큐에 오른 가구는 전화가 아니라 방문 기록을 받는다 (escalation/transition.ts CALLABLE·VISITABLE)
-    nextCheckKind: !open
-      ? null
-      : status === HouseholdStatus.VISIT_QUEUED ||
-          status === HouseholdStatus.VISITING
-        ? CheckKind.VISIT
-        : CheckKind.CALL,
+    nextCheckKind: status ? nextCheckKindOf(status) : null,
     lastResult: lastCheck?.result ?? null,
   };
 }

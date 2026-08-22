@@ -2,12 +2,13 @@ import { prisma } from "../db";
 import {
   AlertLevel,
   ALERT_LEVEL_LABEL,
-  CheckKind,
+  type CheckKind,
   GRADE_LABEL,
   GRADE_PLAN,
   HouseholdStatus,
   HOUSEHOLD_STATUS_LABEL,
   isOpenHouseholdStatus,
+  nextCheckKindOf,
   parseHouseholdStatus,
   RiskGrade,
   WorkerRole,
@@ -42,6 +43,8 @@ export interface RosterSubject {
 }
 
 export interface BoardSubject extends RosterSubject {
+  /** 상세 화면이 보드 데이터만으로 그려질 때 나이와 함께 보존한다 */
+  birthYear: number;
   grade: RiskGrade;
   score: number;
   /** 스코어링 엔진이 반환한 위험 사유 — 화면에 그대로 표시 */
@@ -51,8 +54,10 @@ export interface BoardSubject extends RosterSubject {
   callAttempts: number;
   /** 아직 담당자 손이 필요한가 */
   open: boolean;
-  /** 이번 기록에서 받아야 할 기록 종류 — 1등급·승격 가구는 방문 */
-  nextCheckKind: CheckKind;
+  /** 이번 기록에서 받아야 할 기록 종류 — 1등급·승격 가구는 방문, 끝난 가구는 null */
+  nextCheckKind: CheckKind | null;
+  /** 오늘 마지막 확인 결과 — 상세 기록 버튼의 "선택됨"에 쓴다 */
+  lastResult: string | null;
 }
 
 export interface BoardGroup {
@@ -197,7 +202,20 @@ export async function getBoard(
       alertDayId: alertDay.id,
       ...(workerId ? { subject: { workerId } } : { subjectId: { in: [] } }),
     },
-    include: { subject: { include: { building: true } } },
+    include: {
+      subject: {
+        include: {
+          building: true,
+          // 상세를 보드 데이터로 열 때 "선택됨" 표시에 필요 — 왕복을 늘리지 않고 끼워 넣는다
+          checkEvents: {
+            where: { alertDayId: alertDay.id },
+            orderBy: { createdAt: "desc" },
+            take: 1,
+            select: { result: true },
+          },
+        },
+      },
+    },
     orderBy: { score: "desc" },
   });
 
@@ -241,6 +259,7 @@ export async function getBoard(
       buildingId: row.subject.building.id,
       name: row.subject.name,
       age: ageOf(row.subject.birthYear, year),
+      birthYear: row.subject.birthYear,
       livesAlone: row.subject.livesAlone,
       phone: row.subject.phone,
       address: row.subject.building.address,
@@ -254,12 +273,8 @@ export async function getBoard(
       statusLabel: HOUSEHOLD_STATUS_LABEL[status],
       callAttempts: statusRow?.callAttempts ?? 0,
       open: isOpen,
-      // 방문 큐에 오른 가구는 전화가 아니라 방문 기록을 받는다 (escalation/transition.ts)
-      nextCheckKind:
-        status === HouseholdStatus.VISIT_QUEUED ||
-        status === HouseholdStatus.VISITING
-          ? CheckKind.VISIT
-          : CheckKind.CALL,
+      nextCheckKind: nextCheckKindOf(status),
+      lastResult: row.subject.checkEvents[0]?.result ?? null,
     });
   }
 

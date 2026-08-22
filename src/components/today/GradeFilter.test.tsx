@@ -43,6 +43,7 @@ function subject(name: string, grade: RiskGradeValue): BoardSubject {
     buildingId: `building-${grade}`,
     name,
     age: 80,
+    birthYear: 1946,
     livesAlone: true,
     phone: "010-0000-0000",
     address: "대구광역시 서구 비산동 1",
@@ -55,6 +56,7 @@ function subject(name: string, grade: RiskGradeValue): BoardSubject {
     open: true,
     nextCheckKind:
       grade === RiskGrade.CRITICAL ? CheckKind.VISIT : CheckKind.CALL,
+    lastResult: null,
     roadAddress: null,
     lat: 35.8,
     lng: 128.5,

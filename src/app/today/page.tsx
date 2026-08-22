@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { BottomNav } from "@/components/today/BottomNav";
 import { GradeFilter } from "@/components/today/GradeFilter";
 import { SubjectCard } from "@/components/today/SubjectCard";
+import { TodayWorkspace } from "@/components/today/TodayWorkspace";
 import { AlertCircleIcon } from "@/components/today/icons";
 import {
   type AlertedBoard,
@@ -172,7 +173,11 @@ export default async function TodayPage(props: PageProps<"/today">) {
   const board = await getBoard({ date, workerId });
 
   return (
-    <>
+    <TodayWorkspace
+      board={board}
+      workerId={workerId}
+      returnGrade={selectedGrade}
+    >
       <main className="mx-auto flex w-full max-w-[520px] flex-1 flex-col gap-8 bg-surface px-5 pt-11 pb-[100px]">
         <div className="flex flex-col gap-5">
           <Greeting
@@ -201,6 +206,6 @@ export default async function TodayPage(props: PageProps<"/today">) {
         )}
       </main>
       <BottomNav current="today" date={date} workerId={workerId} />
-    </>
+    </TodayWorkspace>
   );
 }

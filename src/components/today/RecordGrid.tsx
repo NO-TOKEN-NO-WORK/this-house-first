@@ -2,10 +2,12 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition, type ReactNode } from "react";
+import type { CheckOutcome } from "@/lib/board/detail";
 import {
   CallResult,
   CALL_RESULT_LABEL,
   CheckKind,
+  isHouseholdStatus,
   VisitResult,
   VISIT_RESULT_LABEL,
 } from "@/lib/domain";
@@ -105,9 +107,17 @@ interface Props {
   date: string;
   /** 오늘 마지막으로 기록한 결과값 — 같은 버튼에 "선택됨"을 표시한다 */
   lastResult: string | null;
+  /** 보드에서 연 상세는 서버 재조회 없이 이 콜백으로 화면을 갱신한다 */
+  onRecorded?: (outcome: CheckOutcome) => void;
 }
 
-export function RecordGrid({ subjectId, kind, date, lastResult }: Props) {
+export function RecordGrid({
+  subjectId,
+  kind,
+  date,
+  lastResult,
+  onRecorded,
+}: Props) {
   const router = useRouter();
   const [pending, setPending] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -125,13 +135,30 @@ export function RecordGrid({ subjectId, kind, date, lastResult }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ subjectId, kind, result, date }),
       });
-      const json: { error?: { message?: string } } = await res.json();
+      const json: {
+        data?: {
+          status: string;
+          statusLabel: string;
+          callAttempts: number;
+        };
+        error?: { message?: string };
+      } = await res.json();
       if (!res.ok) {
         // 상태머신이 막은 기록(재전화 30분 규칙 등)은 이유를 그대로 보여준다
         setError(json.error?.message ?? "기록하지 못했습니다.");
         return;
       }
-      // 서버 컴포넌트가 최신 상태를 반영할 때까지 버튼을 잠가 연속 탭의 중복 기록을 막는다.
+      if (onRecorded && json.data && isHouseholdStatus(json.data.status)) {
+        onRecorded({
+          status: json.data.status,
+          statusLabel: json.data.statusLabel,
+          callAttempts: json.data.callAttempts,
+          result,
+        });
+        router.refresh();
+        return;
+      }
+      // 직접 진입한 상세는 서버 컴포넌트가 최신 상태를 반영할 때까지 버튼을 잠근다.
       startRefresh(() => router.refresh());
     } catch {
       setError("연결이 끊겨 기록하지 못했습니다. 다시 눌러 주세요.");
