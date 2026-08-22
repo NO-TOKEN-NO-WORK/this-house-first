@@ -2,22 +2,38 @@ import { prisma } from "../db";
 import {
   AlertLevel,
   ALERT_LEVEL_LABEL,
-  type CheckKind,
+  type CallResult,
+  CALL_RESULT_LABEL,
+  CHECK_KIND_LABEL,
+  CheckKind,
   GRADE_PLAN,
   GRADE_SEVERITY_LABEL,
   HouseholdStatus,
   HOUSEHOLD_STATUS_LABEL,
+  isCallResult,
+  isCheckKind,
   isOpenHouseholdStatus,
+  isRiskGrade,
+  isVisitResult,
   nextCheckKindOf,
   parseHouseholdStatus,
   RiskGrade,
+  VisitResult,
+  VISIT_GRADE_CHANGE_REASON,
+  VISIT_RESULT_LABEL,
 } from "../domain";
 import { labelReasons, type LabeledReason } from "../scoring/reasons";
-import { ageOf, dongOf, formatBoardDate, yearOfIsoDate } from "./format";
+import {
+  ageOf,
+  dongOf,
+  formatBoardDate,
+  formatHistoryDate,
+  yearOfIsoDate,
+} from "./format";
 import { todayInKst } from "./today";
 
 /**
- * 대상자 상세 (Figma ② 3:505 — 담당자 · 대상자 상세 + 원터치 기록).
+ * 대상자 상세 (Figma ② 3:505 일반 상세 · 25:347 방문 화면).
  *
  * 보드(`today.ts`)가 "누구부터"를 답한다면 이 화면은 "이 사람에게 지금 무엇을 하고 무엇을
  * 기록할 것인가" 하나만 답한다 (화면당 결정 1개 — PRD §9).
@@ -61,6 +77,27 @@ export interface SubjectDetail {
   nextCheckKind: CheckKind | null;
   /** 오늘 마지막으로 기록한 결과값 — 기록 버튼에 "선택됨"을 표시한다 (Figma ② 1:848) */
   lastResult: string | null;
+  /** 최근 전화·방문 기록 — 방문 전 맥락을 빠르게 읽는 타임라인 (Figma 25:347) */
+  recentHistory: SubjectHistoryItem[];
+  /** 직전 경보일부터 위험 단계가 올라갔고 원인을 확인할 수 있을 때만 보여 주는 안내 */
+  gradeChange: SubjectGradeChange | null;
+}
+
+export interface SubjectHistoryItem {
+  id: string;
+  date: string;
+  dateLabel: string;
+  kind: CheckKind;
+  kindLabel: string;
+  result: CallResult | VisitResult;
+  resultLabel: string;
+  memo: string | null;
+}
+
+export interface SubjectGradeChange {
+  previousGrade: RiskGrade;
+  currentGrade: RiskGrade;
+  reason: string;
 }
 
 function parseReasons(raw: string): string[] {
@@ -118,25 +155,101 @@ export async function getSubjectDetail(options: {
       open: false,
       nextCheckKind: null,
       lastResult: null,
+      recentHistory: [],
+      gradeChange: null,
     };
   }
 
   const key = {
     alertDayId_subjectId: { alertDayId: alertDay.id, subjectId: subject.id },
   };
-  const [assessmentRow, statusRow, lastCheck] = await Promise.all([
-    prisma.riskAssessment.findUnique({ where: key }),
-    prisma.householdDayStatus.findUnique({ where: key }),
-    prisma.checkEvent.findFirst({
-      where: { alertDayId: alertDay.id, subjectId: subject.id },
-      orderBy: { createdAt: "desc" },
-      select: { result: true },
-    }),
-  ]);
+  const [assessmentRow, statusRow, recentChecks, previousAssessment, airconIssue] =
+    await Promise.all([
+      prisma.riskAssessment.findUnique({ where: key }),
+      prisma.householdDayStatus.findUnique({ where: key }),
+      prisma.checkEvent.findMany({
+        // 과거 날짜를 열었을 때 미래의 확인 기록을 보여 주지 않는다.
+        where: {
+          subjectId: subject.id,
+          alertDay: { date: { lte: date } },
+        },
+        orderBy: { createdAt: "desc" },
+        take: 3,
+        include: { alertDay: { select: { date: true } } },
+      }),
+      prisma.riskAssessment.findFirst({
+        where: {
+          subjectId: subject.id,
+          alertDay: { date: { lt: date } },
+        },
+        orderBy: { alertDay: { date: "desc" } },
+      }),
+      prisma.checkEvent.findFirst({
+        where: {
+          subjectId: subject.id,
+          kind: CheckKind.VISIT,
+          result: VisitResult.AIRCON_ISSUE,
+          alertDay: { date: { lt: date } },
+        },
+        orderBy: { createdAt: "desc" },
+      }),
+    ]);
 
   const status = statusRow ? parseHouseholdStatus(statusRow.status) : null;
   const open = status !== null && isOpenHouseholdStatus(status);
-  const grade = assessmentRow ? (assessmentRow.grade as RiskGrade) : null;
+  const grade =
+    assessmentRow && isRiskGrade(assessmentRow.grade)
+      ? assessmentRow.grade
+      : null;
+
+  const recentHistory: SubjectHistoryItem[] = [];
+  for (const row of recentChecks) {
+    if (!isCheckKind(row.kind)) continue;
+    if (row.kind === CheckKind.CALL) {
+      if (!isCallResult(row.result)) continue;
+      recentHistory.push({
+        id: row.id,
+        date: row.alertDay.date,
+        dateLabel: formatHistoryDate(row.alertDay.date),
+        kind: row.kind,
+        kindLabel: CHECK_KIND_LABEL[row.kind],
+        result: row.result,
+        resultLabel: CALL_RESULT_LABEL[row.result],
+        memo: row.memo,
+      });
+      continue;
+    }
+    if (!isVisitResult(row.result)) continue;
+    recentHistory.push({
+      id: row.id,
+      date: row.alertDay.date,
+      dateLabel: formatHistoryDate(row.alertDay.date),
+      kind: row.kind,
+      kindLabel: CHECK_KIND_LABEL[row.kind],
+      result: row.result,
+      resultLabel: VISIT_RESULT_LABEL[row.result],
+      memo: row.memo,
+    });
+  }
+
+  const previousGrade =
+    previousAssessment && isRiskGrade(previousAssessment.grade)
+      ? previousAssessment.grade
+      : null;
+  const gradeChangeReason = airconIssue
+    ? VISIT_GRADE_CHANGE_REASON[VisitResult.AIRCON_ISSUE]
+    : null;
+  const gradeChange =
+    grade &&
+    previousGrade &&
+    grade < previousGrade &&
+    gradeChangeReason
+      ? {
+          previousGrade,
+          currentGrade: grade,
+          reason: gradeChangeReason,
+        }
+      : null;
 
   return {
     ...base,
@@ -159,6 +272,9 @@ export async function getSubjectDetail(options: {
     open,
     // 방문 큐에 오른 가구는 전화가 아니라 방문 기록을 받는다 (escalation/transition.ts CALLABLE·VISITABLE)
     nextCheckKind: status ? nextCheckKindOf(status) : null,
-    lastResult: lastCheck?.result ?? null,
+    lastResult:
+      recentChecks.find((row) => row.alertDayId === alertDay.id)?.result ?? null,
+    recentHistory,
+    gradeChange,
   };
 }

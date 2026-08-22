@@ -99,6 +99,8 @@ describe("detailFromBoard", () => {
       ReasonCategory.BUILDING,
       ReasonCategory.WEATHER,
     ]);
+    expect(detail.recentHistory).toEqual([]);
+    expect(detail.gradeChange).toBeNull();
   });
 
   it("심각·방문 대기 가구는 전화가 아니라 방문 기록을 받는다", () => {

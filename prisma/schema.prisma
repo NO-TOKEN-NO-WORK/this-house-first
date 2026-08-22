@@ -124,7 +124,7 @@ model CheckEvent {
   workerId   String
   kind       String // domain.ts CheckKind: CALL | VISIT
   result     String // domain.ts CallResult | VisitResult
-  memo       String? // 담당자가 남긴 통화 메모 — 관리자 화면에서 읽는다. 담당자 화면에는 노출하지 않으므로 읽는 곳이 없어 보여도 미사용 컬럼이 아니다
+  memo       String? // 담당자가 남긴 통화·방문 메모 — 관리자 상세와 다음 방문의 히스토리에서 읽는다
   createdAt  DateTime @default(now())
 }
 

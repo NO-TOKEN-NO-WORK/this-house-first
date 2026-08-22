@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { ageOf, dongOf, formatBoardDate, formatClockTime, isIsoDate, yearOfIsoDate } from "./format";
+import {
+  ageOf,
+  dongOf,
+  formatBoardDate,
+  formatClockTime,
+  formatHistoryDate,
+  isIsoDate,
+  yearOfIsoDate,
+} from "./format";
 
 describe("formatBoardDate", () => {
   it("경보일 날짜를 화면 표기로 바꾼다", () => {
@@ -28,6 +36,13 @@ describe("formatBoardDate", () => {
 describe("yearOfIsoDate", () => {
   it("나이 계산 기준 연도를 뽑는다", () => {
     expect(yearOfIsoDate("2026-08-21")).toBe(2026);
+  });
+});
+
+describe("formatHistoryDate", () => {
+  it("방문 히스토리에 맞는 짧은 날짜와 요일을 만든다", () => {
+    expect(formatHistoryDate("2026-08-20")).toBe("8/20 (목)");
+    expect(formatHistoryDate("2026-08-17")).toBe("8/17 (월)");
   });
 });
 
