@@ -1,4 +1,10 @@
 import { renderToStaticMarkup } from "react-dom/server";
+import {
+  Children,
+  isValidElement,
+  type ReactElement,
+  type ReactNode,
+} from "react";
 import { describe, expect, it, vi } from "vitest";
 import type { CurrentWeather } from "@/lib/public-data/kma";
 
@@ -21,6 +27,7 @@ vi.mock("react", async (importOriginal) => ({
       hooks.setters[index] ?? vi.fn(),
     ];
   },
+  useRef: <T,>(initial: T) => ({ current: initial }),
 }));
 
 import {
@@ -42,7 +49,32 @@ const weather: CurrentWeather = {
 /** CurrentWeatherSummary의 useState 호출 순서 */
 const WEATHER = 0;
 const FAILED = 1;
+const GRID = 2;
 const LOCATION_STATUS = 3;
+
+type ButtonElement = ReactElement<{
+  children?: ReactNode;
+  onClick: () => void;
+}>;
+
+function findButton(node: ReactNode): ButtonElement | null {
+  if (!isValidElement(node)) return null;
+  const element = node as ReactElement<{
+    children?: ReactNode;
+    onClick?: () => void;
+  }>;
+  if (element.type === "button" && element.props.onClick) {
+    return element as ButtonElement;
+  }
+  if (typeof element.type === "function") {
+    return findButton(element.type(element.props));
+  }
+  for (const child of Children.toArray(element.props.children)) {
+    const button = findButton(child);
+    if (button) return button;
+  }
+  return null;
+}
 
 function render(variant: "today" | "admin" = "today") {
   hooks.cursor = 0;
@@ -178,6 +210,88 @@ describe("CurrentWeatherSummary", () => {
 
     expect(html).toContain("위치를 확인하지 못했습니다");
     expect(html).toContain('role="alert"');
+  });
+
+  it("현재 위치 날씨 조회 실패를 GPS 위치 실패로 바꾸지 않는다", async () => {
+    resetHooks();
+    const setWeather = vi.fn();
+    const setFailed = vi.fn();
+    const setLocationStatus = vi.fn();
+    hooks.values[GRID] = { nx: 60, ny: 127 };
+    hooks.setters = [setWeather, setFailed, vi.fn(), setLocationStatus];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(new Response(null, { status: 503 })),
+    );
+    vi.stubGlobal("setInterval", vi.fn().mockReturnValue(123));
+    vi.stubGlobal("clearInterval", vi.fn());
+
+    CurrentWeatherSummary({ variant: "today" });
+    const cleanup = hooks.effects[0]?.();
+    await settle();
+
+    expect(setFailed).toHaveBeenCalledWith(true);
+    expect(setLocationStatus).not.toHaveBeenCalledWith("failed");
+    cleanup?.();
+  });
+
+  it("연속 위치 요청에서는 가장 최근 GPS 응답만 적용한다", async () => {
+    resetHooks();
+    const callbacks: PositionCallback[] = [];
+    const setGrid = vi.fn();
+    const setLocationStatus = vi.fn();
+    hooks.setters = [vi.fn(), vi.fn(), setGrid, setLocationStatus];
+    vi.stubGlobal("navigator", {
+      geolocation: {
+        getCurrentPosition(success: PositionCallback) {
+          callbacks.push(success);
+        },
+      },
+    });
+
+    const button = findButton(CurrentWeatherSummary({ variant: "today" }));
+    expect(button).not.toBeNull();
+    button!.props.onClick();
+    button!.props.onClick();
+
+    callbacks[0]!({
+      coords: { latitude: 37.5665, longitude: 126.978 },
+    } as GeolocationPosition);
+    await settle();
+    expect(setGrid).not.toHaveBeenCalled();
+
+    callbacks[1]!({
+      coords: { latitude: 37.5665, longitude: 126.978 },
+    } as GeolocationPosition);
+    await settle();
+    expect(setGrid).toHaveBeenCalledTimes(1);
+    expect(setGrid).toHaveBeenCalledWith({ nx: 60, ny: 127 });
+    expect(setLocationStatus).toHaveBeenLastCalledWith("active");
+  });
+
+  it("화면 해제 뒤 도착한 GPS 응답을 무시한다", async () => {
+    resetHooks();
+    let callback: PositionCallback | undefined;
+    const setGrid = vi.fn();
+    hooks.setters = [vi.fn(), vi.fn(), setGrid, vi.fn()];
+    vi.stubGlobal("navigator", {
+      geolocation: {
+        getCurrentPosition(success: PositionCallback) {
+          callback = success;
+        },
+      },
+    });
+
+    const button = findButton(CurrentWeatherSummary({ variant: "today" }));
+    button!.props.onClick();
+    const cleanup = hooks.effects.at(-1)?.();
+    cleanup?.();
+    callback!({
+      coords: { latitude: 37.5665, longitude: 126.978 },
+    } as GeolocationPosition);
+    await settle();
+
+    expect(setGrid).not.toHaveBeenCalled();
   });
 
   it("현재 날씨 요청이 실패하면 나머지 화면을 막지 않는 오류 문구를 표시한다", () => {

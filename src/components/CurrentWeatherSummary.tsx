@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { CurrentWeather } from "@/lib/public-data/kma";
 import { toKmaGrid, type KmaGrid } from "@/lib/public-data/kma-grid";
 
@@ -134,6 +134,7 @@ export function CurrentWeatherSummary({
   const [grid, setGrid] = useState<KmaGrid | null>(null);
   const [locationStatus, setLocationStatus] =
     useState<LocationStatus>("idle");
+  const locationRequest = useRef(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -146,12 +147,10 @@ export function CurrentWeatherSummary({
         if (!cancelled && request === latestRequest) {
           setWeather(currentWeather);
           setFailed(false);
-          if (grid) setLocationStatus("active");
         }
       } catch {
         if (!cancelled && request === latestRequest) {
           setFailed(true);
-          if (grid) setLocationStatus("failed");
         }
       }
     }
@@ -164,13 +163,24 @@ export function CurrentWeatherSummary({
     };
   }, [grid]);
 
+  useEffect(
+    () => () => {
+      locationRequest.current += 1;
+    },
+    [],
+  );
+
   async function requestLocation() {
+    const request = ++locationRequest.current;
     setLocationStatus("locating");
     try {
       if (!navigator.geolocation) throw new Error("Geolocation unavailable");
-      setGrid(await requestCurrentLocationGrid(navigator.geolocation));
+      const nextGrid = await requestCurrentLocationGrid(navigator.geolocation);
+      if (request !== locationRequest.current) return;
+      setGrid(nextGrid);
+      setLocationStatus("active");
     } catch {
-      setLocationStatus("failed");
+      if (request === locationRequest.current) setLocationStatus("failed");
     }
   }
 
