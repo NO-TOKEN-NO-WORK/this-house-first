@@ -34,9 +34,16 @@ export interface VisitRoute {
 }
 
 const EARTH_RADIUS_METERS = 6_371_000;
-/** 잠정 — 자동차 API 응답 전 화면의 차량 예상속도를 시가지 20km/h로 본다. */
-const DRIVING_METERS_PER_MINUTE = 333;
-const STREET_DISTANCE_FACTOR = 1.25;
+/**
+ * 카카오 응답 전·실패 시 쓰는 차량 예상치. 도보 기준이던 75m/분·1.25배를 차량 실측값으로 대체했다 (ADR-0018).
+ *
+ * 출처 — 2026-08-22 대구 서구 비산동·평리동 좌표로 카카오모빌리티 길찾기(`priority: DISTANCE`) 실호출:
+ * 도로거리 / 직선거리 = 1.43~1.70(15개 구간 합계 1.59, 별도 15가구 표본 1.61) → 1.6,
+ * 평균 속도 14.3~21.3km/h(합계 19.1km/h) → 319m/분.
+ * 도보값을 그대로 두면 예상 이동시간이 실제보다 약 28% 짧게 나온다.
+ */
+const DRIVING_METERS_PER_MINUTE = 319;
+const STREET_DISTANCE_FACTOR = 1.6;
 
 function radians(degrees: number): number {
   return (degrees * Math.PI) / 180;

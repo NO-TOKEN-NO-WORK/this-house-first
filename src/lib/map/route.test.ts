@@ -123,6 +123,17 @@ describe("toVisitRoute", () => {
     ]);
   });
 
+  it("폴백 예상치는 도보가 아니라 실측한 차량 값으로 계산한다", () => {
+    // 직선 약 1km 떨어진 두 가구 — 실측 도로 배율 1.6배·319m/분 (ADR-0018)
+    const from = subject("from", { score: 40, lat: 35.8, lng: 128.5 });
+    const to = subject("to", { score: 30, lat: 35.809, lng: 128.5 });
+
+    const [, second] = toVisitRoute(alertedBoard([from, to])).stops;
+
+    expect(second.metersFromPrevious).toBe(1601);
+    expect(second.minutesFromPrevious).toBe(5);
+  });
+
   it("도로명 주소와 스코어링 사유 원문을 보존한다", () => {
     const route = toVisitRoute(
       alertedBoard([
