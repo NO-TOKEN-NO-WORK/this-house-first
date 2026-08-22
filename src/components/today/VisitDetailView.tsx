@@ -98,12 +98,24 @@ function chipTone(selected: boolean): string {
     : "bg-surface-default text-text-secondary";
 }
 
-/** 오늘 남긴 방문 기록 1건 — 완료 화면이 되읽어 보여 준다 */
-function todayVisitMemo(detail: SubjectDetail): string | null {
+/**
+ * 오늘 남긴 방문 기록 1건 — 되읽기 화면이 결과·메모를 여기서 가져온다.
+ *
+ * `detail.lastResult`를 쓰지 않는다. 그 값은 "오늘 마지막 확인"이라 전화 기록일 수 있고,
+ * 전화·방문 결과는 문자열이 겹쳐(`OK`·`SYMPTOM`·`EMERGENCY_119`) 가드로도 못 가른다 —
+ * 주소로 `?view=record`에 바로 들어오면 통화 결과가 방문 결과로 보인다.
+ */
+function todayVisitRecord(
+  detail: SubjectDetail,
+): { result: VisitResult | null; memo: string | null } {
   const record = detail.recentHistory.find(
     (item) => item.kind === CheckKind.VISIT && item.date === detail.date,
   );
-  return record?.memo ?? null;
+  if (!record) return { result: null, memo: null };
+  return {
+    result: isVisitResult(record.result) ? record.result : null,
+    memo: record.memo,
+  };
 }
 
 /**
@@ -127,11 +139,12 @@ function VisitRecordForm({
 }) {
   const router = useRouter();
   const memoId = useId();
-  const savedResult =
-    readOnly && isVisitResult(detail.lastResult) ? detail.lastResult : null;
-  const [result, setResult] = useState<VisitResult | null>(savedResult);
+  const saved = readOnly
+    ? todayVisitRecord(detail)
+    : { result: null, memo: null };
+  const [result, setResult] = useState<VisitResult | null>(saved.result);
   const [coolingStatus, setCoolingStatus] = useState<CoolingStatus | null>(null);
-  const [memo, setMemo] = useState(readOnly ? (todayVisitMemo(detail) ?? "") : "");
+  const [memo, setMemo] = useState(saved.memo ?? "");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
 

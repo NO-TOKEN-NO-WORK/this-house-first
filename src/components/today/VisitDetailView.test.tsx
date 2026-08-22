@@ -152,10 +152,22 @@ describe("VisitDetailView", () => {
     expect(html).toMatch(/<button[^>]*disabled=""[^>]*>저장하기<\/button>/);
   });
 
-  it("되읽기 화면(123:2971)은 저장 없이 기록한 결과를 보여 준다", () => {
+  /** 오늘 남긴 방문 기록 — 되읽기 화면이 여기서 결과·메모를 가져온다 */
+  const todayVisit = {
+    id: "check-0",
+    date: detail.date,
+    dateLabel: "8/22 (토)",
+    kind: CheckKind.VISIT,
+    kindLabel: CHECK_KIND_LABEL[CheckKind.VISIT],
+    result: VisitResult.ABSENT,
+    resultLabel: VISIT_RESULT_LABEL[VisitResult.ABSENT],
+    memo: "문을 두드렸지만 인기척 없음",
+  };
+
+  it("되읽기 화면(123:2971)은 저장 없이 기록한 결과·메모를 보여 준다", () => {
     const html = renderToStaticMarkup(
       <VisitDetailView
-        detail={{ ...detail, lastResult: VisitResult.ABSENT }}
+        detail={{ ...detail, recentHistory: [todayVisit, ...detail.recentHistory] }}
         backHref="/today"
         readOnly
       />,
@@ -163,6 +175,7 @@ describe("VisitDetailView", () => {
 
     expect(html).toContain("방문 기록");
     expect(html).not.toContain("저장하기");
+    expect(html).toContain(todayVisit.memo);
     // 기록한 결과 버튼만 눌린 상태(aria-pressed)로 남는다
     expect(html).toMatch(
       new RegExp(
@@ -170,6 +183,22 @@ describe("VisitDetailView", () => {
         "s",
       ),
     );
+  });
+
+  it("되읽기 화면은 오늘 마지막 확인이 전화면 결과를 고르지 않는다", () => {
+    /*
+      전화·방문 결과는 문자열이 겹친다(OK·SYMPTOM·EMERGENCY_119). `lastResult`를 그대로
+      믿으면 주소로 ?view=record에 들어왔을 때 통화 결과가 방문 결과로 보인다.
+    */
+    const html = renderToStaticMarkup(
+      <VisitDetailView
+        detail={{ ...detail, lastResult: CallResult.OK, recentHistory: [] }}
+        backHref="/today"
+        readOnly
+      />,
+    );
+
+    expect(html).not.toContain('aria-pressed="true"');
   });
 
   it("최근 기록은 결과 라벨을 항상 보여 주고 메모를 함께 표시한다", () => {
