@@ -274,6 +274,16 @@
   }
 }
 
+/*
+ * 안전 영역 — `viewport-fit=cover`(layout.tsx)로 배경은 화면 끝까지 칠하되,
+ * 고정된 조작 요소는 이만큼 안쪽으로 밀어 홈 인디케이터·노치와 겹치지 않게 한다.
+ * 데스크톱·안전 영역이 없는 기기에서는 0px이라 아무것도 달라지지 않는다.
+ */
+:root {
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
 /* 좁은 화면에서 가로 스크롤이 생기지 않게 한다 (관리자 지도·표) */
 html,
 body {

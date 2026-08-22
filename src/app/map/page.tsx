@@ -23,7 +23,7 @@ export default async function MapPage(props: PageProps<"/map">) {
 
   return (
     <>
-      <main className="mx-auto flex w-full max-w-[390px] flex-1 flex-col gap-4 bg-surface-default px-3.5 pt-8 pb-[100px]">
+      <main className="mx-auto flex w-full max-w-[390px] flex-1 flex-col gap-4 bg-surface-default px-3.5 pt-[calc(--spacing(8)_+_var(--safe-top))] pb-[calc(100px_+_var(--safe-bottom))]">
         <h1 className="text-heading-24 text-text-primary">방문 동선</h1>
         <VisitRouteView
           apiKey={process.env.NEXT_PUBLIC_KAKAO_MAP_KEY}

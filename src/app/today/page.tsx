@@ -176,7 +176,7 @@ export default async function TodayPage(props: PageProps<"/today">) {
       workerId={workerId}
       returnGrade={selectedGrade}
     >
-      <main className="mx-auto flex w-full max-w-[520px] flex-1 flex-col gap-8 bg-surface-default px-5 pt-11 pb-[100px]">
+      <main className="mx-auto flex w-full max-w-[520px] flex-1 flex-col gap-8 bg-surface-default px-5 pt-[calc(--spacing(11)_+_var(--safe-top))] pb-[calc(100px_+_var(--safe-bottom))]">
         <div className="flex flex-col gap-5">
           <Greeting
             workerName={board.worker?.name ?? null}

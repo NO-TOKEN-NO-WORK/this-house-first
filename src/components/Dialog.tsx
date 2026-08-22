@@ -134,7 +134,7 @@ export function Dialog({
         */
         className={`relative w-full overflow-y-auto bg-surface-default outline-none ${
           bottom
-            ? "max-h-[85dvh] max-w-[520px] rounded-t-[20px] motion-safe:animate-sheet-in"
+            ? "max-h-[85dvh] max-w-[520px] rounded-t-[20px] pb-[var(--safe-bottom)] motion-safe:animate-sheet-in"
             : "max-h-[calc(100dvh-48px)] max-w-[366px] rounded-[20px] motion-safe:animate-dialog-in"
         }`}
       >
