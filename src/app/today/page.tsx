@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BottomNav } from "@/components/today/BottomNav";
 import { SubjectCard } from "@/components/today/SubjectCard";
+import { TodayWorkspace } from "@/components/today/TodayWorkspace";
 import { AlertCircleIcon } from "@/components/today/icons";
 import {
   type AlertedBoard,
@@ -199,7 +200,7 @@ function GradeSection({
             subject={subject}
             grade={subject.grade}
             statusLabel={subject.open ? undefined : subject.statusLabel}
-            nextCheckKind={subject.open ? subject.nextCheckKind : null}
+            nextCheckKind={subject.nextCheckKind}
             date={date}
             workerId={workerId}
             returnGrade={returnGrade ?? undefined}
@@ -269,7 +270,11 @@ export default async function TodayPage(props: PageProps<"/today">) {
   };
 
   return (
-    <>
+    <TodayWorkspace
+      board={board}
+      workerId={workerId}
+      returnGrade={selectedGrade}
+    >
       <main className="mx-auto flex w-full max-w-[520px] flex-1 flex-col gap-8 bg-surface px-5 pt-11 pb-[100px]">
         <div className="flex flex-col gap-5">
           <Greeting
@@ -311,6 +316,6 @@ export default async function TodayPage(props: PageProps<"/today">) {
         )}
       </main>
       <BottomNav current="today" />
-    </>
+    </TodayWorkspace>
   );
 }
