@@ -17,6 +17,9 @@ export const AlertLevel = {
 } as const;
 export type AlertLevel = (typeof AlertLevel)[keyof typeof AlertLevel];
 
+/** 관리자 토글이 두 서비스에 보여 주는 폭염 데모 온도 (PRD §10 시나리오 2). */
+export const DEMO_HEAT_TEMPERATURE = 38;
+
 /**
  * 경보 단계 화면 문구 (ADR-0019가 ADR-0016의 `심각`을 `비상`으로 대체).
  *

@@ -107,6 +107,7 @@ export interface AdminSilentDashboard extends AdminDashboardBase {
 
 export interface AdminAlertedDashboard extends AdminDashboardBase {
   alerted: true;
+  isDemo: boolean;
   level: AlertLevel;
   levelLabel: string;
   feelsLikeMax: number;
@@ -445,6 +446,7 @@ export async function getAdminDashboard(
   return {
     ...base,
     alerted: true,
+    isDemo: alertDay.isDemo,
     level: alertDay.level,
     levelLabel: ALERT_LEVEL_LABEL[alertDay.level],
     feelsLikeMax: alertDay.feelsLikeMax,

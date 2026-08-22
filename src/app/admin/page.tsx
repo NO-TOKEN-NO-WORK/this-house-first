@@ -18,6 +18,7 @@ import { isIsoDate } from "../../lib/board/format";
 import {
   AlertLevel,
   ALERT_LEVEL_LABEL,
+  DEMO_HEAT_TEMPERATURE,
   GRADE_LABEL,
   HouseholdStatus,
   HOUSEHOLD_STATUS_LABEL,
@@ -120,6 +121,7 @@ const PREVIEW_SUBJECT: AdminDashboardSubject = {
 
 const PREVIEW_DASHBOARD: AdminAlertedDashboard = {
   alerted: true,
+  isDemo: false,
   date: "2026-08-22",
   dateLabel: "8월 22일(토)",
   selectedWorkerId: null,
@@ -718,7 +720,17 @@ export function AdminDashboardView({
           { icon: "/admin/clock.png", label: "마지막 갱신", value: <time dateTime={dashboard.generatedAt}>{LAST_UPDATED_FORMAT.format(new Date(dashboard.generatedAt))}</time> },
           { icon: "/admin/refresh.png", label: "자동 갱신", live: true, value: "켜짐" },
         ]}
-        metaTail={<CurrentWeatherSummary valuesOnly variant="admin" />}
+        metaTail={
+          <CurrentWeatherSummary
+            demoTemperature={
+              dashboard.alerted && dashboard.isDemo
+                ? DEMO_HEAT_TEMPERATURE
+                : undefined
+            }
+            valuesOnly
+            variant="admin"
+          />
+        }
         title="관리자 관제"
       />}
       pageClassName={styles.page}
@@ -848,7 +860,12 @@ export default async function AdminPage(props: PageProps<"/admin">) {
 
   return (
     <AdminDashboardView
-      controls={<AdminControls date={dashboard.date} />}
+      controls={
+        <AdminControls
+          date={dashboard.date}
+          demoEnabled={dashboard.alerted && dashboard.isDemo}
+        />
+      }
       dashboard={dashboard}
       filters={{ subjectQuery, workerQuery, selectedStatuses }}
       mapKey={process.env.NEXT_PUBLIC_KAKAO_MAP_KEY?.trim() ?? ""}

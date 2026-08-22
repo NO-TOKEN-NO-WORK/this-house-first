@@ -37,6 +37,7 @@ function subject(
 function alertedBoard(subjects: BoardSubject[]): AlertedBoard {
   return {
     alerted: true,
+    isDemo: false,
     date: "2026-08-21",
     dateLabel: "8월 21일(금)",
     worker: { id: "worker-1", name: "담당자" },

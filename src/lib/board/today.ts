@@ -108,6 +108,7 @@ export interface SilentBoard extends BoardBase {
 
 export interface AlertedBoard extends BoardBase {
   alerted: true;
+  isDemo: boolean;
   level: AlertLevel;
   levelLabel: string;
   feelsLikeMax: number;
@@ -303,6 +304,7 @@ export async function getBoard(
 
   return {
     alerted: true,
+    isDemo: alertDay.isDemo,
     date,
     dateLabel,
     worker,

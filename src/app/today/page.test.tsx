@@ -64,6 +64,7 @@ function subject(name: string, grade: 1 | 2 | 3): BoardSubject {
 
 const board: AlertedBoard = {
   alerted: true,
+  isDemo: true,
   date: "2026-08-21",
   dateLabel: "8월 21일(금)",
   worker: { id: "worker-1", name: "담당자" },

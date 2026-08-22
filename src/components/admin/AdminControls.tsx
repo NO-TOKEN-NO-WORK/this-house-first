@@ -1,14 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  AlertLevel,
-  ALERT_LEVEL_LABEL,
-  isAlertLevel,
-  type AlertLevel as AlertLevelValue,
-} from "../../lib/domain";
 import styles from "../../app/admin/admin.module.css";
 
 const DEMO_TRIGGER_FAILURE_MESSAGE = "데모 경보를 발령하지 못했습니다.";
@@ -48,13 +42,16 @@ function errorMessage(payload: unknown): string {
 }
 
 export async function requestDemoTrigger(
-  { date, level }: { date: string; level: AlertLevelValue },
+  { date, enabled }: { date: string; enabled: boolean },
   fetcher: Fetcher = fetch,
 ): Promise<PushDispatchResult | null> {
   const response = await fetcher("/api/trigger", {
-    method: "POST",
+    method: enabled ? "POST" : "DELETE",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ targetDate: date.replaceAll("-", ""), level }),
+    body: JSON.stringify({
+      targetDate: date.replaceAll("-", ""),
+      ...(enabled ? { demo: true } : {}),
+    }),
   });
 
   const payload: unknown = await response.json().catch(() => null);
@@ -135,9 +132,15 @@ export function pushDispatchMessage(result: PushDispatchResult | null): string {
   return `경보 발령 · Push ${result.sent}건 전송`;
 }
 
-export function AdminControls({ date }: { date: string }) {
+export function AdminControls({
+  date,
+  demoEnabled,
+}: {
+  date: string;
+  demoEnabled: boolean;
+}) {
   const router = useRouter();
-  const [pendingLevel, setPendingLevel] = useState<AlertLevelValue | null>(null);
+  const [pending, setPending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -151,47 +154,47 @@ export function AdminControls({ date }: { date: string }) {
     return () => window.clearTimeout(timer);
   }, [message]);
 
-  async function submitDemoTrigger(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const submitter = (event.nativeEvent as SubmitEvent)
-      .submitter as HTMLButtonElement | null;
-    const level = submitter?.value;
-    if (!isAlertLevel(level)) return;
-
-    setPendingLevel(level);
+  async function toggleDemo() {
+    setPending(true);
     setMessage(null);
     try {
-      const push = await requestDemoTrigger({ date, level });
-      setMessage(pushDispatchMessage(push));
+      const enabled = !demoEnabled;
+      const push = await requestDemoTrigger({ date, enabled });
+      setMessage(
+        enabled
+          ? pushDispatchMessage(push)
+          : "데모를 종료하고 오늘 기록을 초기화했습니다.",
+      );
       router.refresh();
     } catch (error) {
       setMessage(
         error instanceof Error ? error.message : DEMO_TRIGGER_FAILURE_MESSAGE,
       );
     } finally {
-      setPendingLevel(null);
+      setPending(false);
     }
   }
 
   return (
-    <section className={styles.alertControls} aria-label="데모 경보 단계">
-      <span className={styles.alertControlLabel}>경보 단계</span>
-      <form className={styles.alertButtons} onSubmit={submitDemoTrigger}>
-        {Object.values(AlertLevel).map((level) => (
-          <button
-            aria-busy={pendingLevel === level}
-            aria-label={`${ALERT_LEVEL_LABEL[level]} 단계 발령`}
-            className={styles.alertButton}
-            data-level={level}
-            disabled={pendingLevel !== null}
-            key={level}
-            type="submit"
-            value={level}
-          >
-            {pendingLevel === level ? "발령 중…" : ALERT_LEVEL_LABEL[level]}
-          </button>
-        ))}
-      </form>
+    <section className={styles.alertControls} aria-label="폭염 데모 설정">
+      <span className={styles.alertControlLabel}>38°C 폭염 데모</span>
+      <div className={styles.alertButtons}>
+        <button
+          aria-label="38°C 폭염 데모"
+          aria-busy={pending}
+          aria-checked={demoEnabled}
+          className={styles.alertButton}
+          data-enabled={demoEnabled}
+          disabled={pending}
+          onClick={() => void toggleDemo()}
+          role="switch"
+          type="button"
+        >
+          {pending
+            ? "변경 중…"
+            : `38°C 데모 ${demoEnabled ? "켜짐" : "꺼짐"}`}
+        </button>
+      </div>
       {message ? (
         <p className={styles.alertMessage} role="status" aria-live="polite">
           {message}

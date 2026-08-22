@@ -65,6 +65,8 @@ export interface TriggerInput {
   level?: AlertLevel;
   /** 수동 발령 체감온도. level 없이 이 값만 주면 실제 판정 로직을 태운다 */
   feelsLikeMax?: number;
+  /** 관리자 38도 데모 토글로 만든 경보인지 여부 */
+  demo?: boolean;
   /** 읍면동 코드 (선택) */
   regionCode?: string | null;
 }
@@ -98,6 +100,37 @@ export interface AlertedOutcome extends OutcomeBase {
 }
 
 export type TriggerOutcome = SilentOutcome | AlertedOutcome;
+
+/** 데모 토글 OFF — 실제 경보는 건드리지 않고 데모 날짜의 원장만 함께 초기화한다. */
+export async function resetDemoTrigger(
+  targetDate: string,
+  deps: { client?: PrismaClient } = {},
+): Promise<{ reset: boolean; targetDate: string }> {
+  const date = toIsoDate(targetDate);
+  const client = deps.client ?? prisma;
+
+  return client.$transaction(async (tx) => {
+    const alertDay = await tx.alertDay.findUnique({ where: { date } });
+    if (!alertDay) return { reset: false, targetDate: date };
+    if (!alertDay.isDemo) {
+      throw new TriggerError(
+        "실제 경보일은 데모 토글로 초기화할 수 없습니다.",
+        "NOT_DEMO_ALERT",
+        409,
+      );
+    }
+
+    const where = { alertDayId: alertDay.id };
+    await Promise.all([
+      tx.notification.deleteMany({ where }),
+      tx.checkEvent.deleteMany({ where }),
+      tx.householdDayStatus.deleteMany({ where }),
+      tx.riskAssessment.deleteMany({ where }),
+    ]);
+    await tx.alertDay.delete({ where: { id: alertDay.id } });
+    return { reset: true, targetDate: date };
+  });
+}
 
 /** 트리거 판정 → 경보일이면 발령까지. 관리자 수동 시뮬레이션과 실제 예보가 같은 경로를 탄다 */
 export async function declareTrigger(
@@ -160,7 +193,14 @@ export async function declareTrigger(
   }
 
   return declareAlertDay(
-    { date, level, feelsLikeMax: feelsLikeMax ?? LEVEL_MIN_FEELS_LIKE[level], regionCode: input.regionCode, source },
+    {
+      date,
+      level,
+      feelsLikeMax: feelsLikeMax ?? LEVEL_MIN_FEELS_LIKE[level],
+      isDemo: input.demo === true,
+      regionCode: input.regionCode,
+      source,
+    },
     deps.client ?? prisma,
     now,
   );
@@ -171,13 +211,14 @@ async function declareAlertDay(
     date: string;
     level: AlertLevel;
     feelsLikeMax: number;
+    isDemo: boolean;
     regionCode?: string | null;
     source: TriggerSource;
   },
   client: PrismaClient,
   now: Date,
 ): Promise<AlertedOutcome> {
-  const { date, level, feelsLikeMax, source } = input;
+  const { date, level, feelsLikeMax, isDemo, source } = input;
   const year = yearOfCompactDate(date.replaceAll("-", ""));
 
   const subjects = await client.subject.findMany({
@@ -194,12 +235,28 @@ async function declareAlertDay(
   }
 
   return client.$transaction(async (tx) => {
+    const existing = await tx.alertDay.findUnique({ where: { date } });
+    if (isDemo && existing && !existing.isDemo) {
+      throw new TriggerError(
+        "이미 실제 경보가 있는 날짜에는 데모를 시작할 수 없습니다.",
+        "DEMO_CONFLICT",
+        409,
+      );
+    }
+
     const alertDay = await tx.alertDay.upsert({
       where: { date },
-      create: { date, level, feelsLikeMax, regionCode: input.regionCode ?? null },
+      create: {
+        date,
+        level,
+        feelsLikeMax,
+        isDemo,
+        regionCode: input.regionCode ?? null,
+      },
       update: {
         level,
         feelsLikeMax,
+        isDemo,
         ...(input.regionCode === undefined
           ? {}
           : { regionCode: input.regionCode }),

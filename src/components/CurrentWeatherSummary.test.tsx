@@ -80,9 +80,12 @@ function findButton(node: ReactNode): ButtonElement | null {
 function render(
   variant: "today" | "admin" = "today",
   valuesOnly = false,
+  demoTemperature?: number,
 ) {
   hooks.cursor = 0;
-  return renderToStaticMarkup(CurrentWeatherSummary({ variant, valuesOnly }));
+  return renderToStaticMarkup(
+    CurrentWeatherSummary({ variant, valuesOnly, demoTemperature }),
+  );
 }
 
 describe("requestCurrentWeather", () => {
@@ -164,6 +167,18 @@ describe("CurrentWeatherSummary", () => {
   async function settle() {
     await new Promise<void>((resolve) => setTimeout(resolve, 0));
   }
+
+  it("데모 모드에서는 외부 관측값 대신 38도와 데모 출처를 표시한다", () => {
+    resetHooks();
+    hooks.values[WEATHER] = weather;
+
+    const html = render("today", false, 38);
+
+    expect(html).toMatch(/현재 기온.*38°C/);
+    expect(html).toMatch(/현재 체감.*38°C/);
+    expect(html).toContain("데모 설정");
+    expect(html).not.toContain("기상청 초단기실황 조회서비스");
+  });
 
   it("성공한 현재 기온·체감온도·관측시각과 출처를 표시한다", () => {
     resetHooks();

@@ -7,6 +7,7 @@ describe("toMapBuildings", () => {
   it("같은 건물을 합치고 가장 높은 위험 단계와 원본 사유를 보존한다", () => {
     const board: Board = {
       alerted: true,
+      isDemo: false,
       date: "2026-08-21",
       dateLabel: "8월 21일(금)",
       worker: { id: "worker-1", name: "담당자" },

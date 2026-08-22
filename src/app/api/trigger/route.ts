@@ -1,11 +1,20 @@
-import { type AlertLevel, ALERT_LEVEL_LABEL, isAlertLevel } from "@/lib/domain";
+import {
+  type AlertLevel,
+  ALERT_LEVEL_LABEL,
+  DEMO_HEAT_TEMPERATURE,
+  isAlertLevel,
+} from "@/lib/domain";
 import {
   invalidParameter,
   toPublicDataErrorResponse,
 } from "@/lib/public-data/client";
 import { getHeatForecast } from "@/lib/public-data/kma";
 import { toIsoDate } from "@/lib/trigger/alert-date";
-import { declareTrigger, TriggerError } from "@/lib/trigger/declare";
+import {
+  declareTrigger,
+  resetDemoTrigger,
+  TriggerError,
+} from "@/lib/trigger/declare";
 import { dispatchDueNotifications } from "@/lib/notifications/push";
 
 /**
@@ -136,6 +145,7 @@ export async function POST(request: Request): Promise<Response> {
 
     const nxRaw = asString(field("nx"));
     const nyRaw = asString(field("ny"));
+    const demo = field("demo") === true;
 
     const outcome = await declareTrigger({
       nx: nxRaw == null ? undefined : gridCoordinate(nxRaw, "nx"),
@@ -144,7 +154,10 @@ export async function POST(request: Request): Promise<Response> {
       baseDate,
       baseTime,
       level: optionalLevel(field("level")),
-      feelsLikeMax: optionalTemperature(field("feelsLikeMax"), "feelsLikeMax"),
+      feelsLikeMax: demo
+        ? DEMO_HEAT_TEMPERATURE
+        : optionalTemperature(field("feelsLikeMax"), "feelsLikeMax"),
+      demo,
       regionCode: optionalRegionCode(field("regionCode")),
     });
 
@@ -159,6 +172,30 @@ export async function POST(request: Request): Promise<Response> {
       : null;
 
     return Response.json({ data: outcome, push });
+  } catch (error) {
+    if (error instanceof TriggerError) {
+      return Response.json(
+        { error: { code: error.code, message: error.message } },
+        { status: error.status },
+      );
+    }
+    return toPublicDataErrorResponse(error);
+  }
+}
+
+export async function DELETE(request: Request): Promise<Response> {
+  try {
+    const query = new URL(request.url).searchParams;
+    const body = await readJsonBody(request);
+    const rawTargetDate = Object.prototype.hasOwnProperty.call(body, "targetDate")
+      ? body.targetDate
+      : query.get("targetDate");
+    const targetDate = optionalDate(asString(rawTargetDate), "targetDate");
+    if (!targetDate) {
+      throw invalidParameter("targetDate는 YYYYMMDD 형식으로 보내야 합니다.");
+    }
+
+    return Response.json({ data: await resetDemoTrigger(targetDate) });
   } catch (error) {
     if (error instanceof TriggerError) {
       return Response.json(

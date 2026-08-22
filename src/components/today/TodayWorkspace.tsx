@@ -150,9 +150,14 @@ export function TodayWorkspace({
       setSelectedId(id);
       setOverride(null);
     }
+    const refresh = () => router.refresh();
     window.addEventListener("popstate", onPopState);
-    return () => window.removeEventListener("popstate", onPopState);
-  }, []);
+    window.addEventListener("focus", refresh);
+    return () => {
+      window.removeEventListener("popstate", onPopState);
+      window.removeEventListener("focus", refresh);
+    };
+  }, [router]);
 
   const selected =
     selectedId && board.alerted ? findBoardSubject(board, selectedId) : null;

@@ -11,6 +11,7 @@ import MapPage from "./page";
 
 const board: AlertedBoard = {
   alerted: true,
+  isDemo: false,
   date: "2026-08-21",
   dateLabel: "8월 21일(금)",
   worker: { id: "worker-1", name: "담당자" },
