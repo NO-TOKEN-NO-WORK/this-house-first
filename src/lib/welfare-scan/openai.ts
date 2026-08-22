@@ -6,6 +6,21 @@ import {
 
 const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses";
 const ALLOWED_ISSUES = new Set<string>(Object.values(WelfareIssue));
+const SAFE_MEMO_TERMS: Record<WelfareIssue, readonly string[]> = {
+  [WelfareIssue.COOLING_ISSUE]: ["에어컨", "냉방기", "선풍기", "냉방", "더위", "미지근", "시원하지"],
+  [WelfareIssue.ENERGY_COST]: ["전기세", "전기요금", "관리비", "가스비", "난방비", "요금"],
+  [WelfareIssue.MOBILITY]: ["거동", "보행", "계단", "휠체어", "지팡이", "외출", "이동"],
+  [WelfareIssue.SAFETY_EQUIPMENT]: ["화재", "감지기", "응급벨", "가스누출", "안전손잡이", "미끄럼"],
+  [WelfareIssue.HOUSING_REPAIR]: ["누수", "곰팡이", "단열", "창호", "도배", "보일러", "지붕", "수선"],
+};
+const SAFE_CONTEXT_TERMS = ["고장", "없음", "불편", "부담", "필요"] as const;
+const ISSUE_EVIDENCE_LABEL: Record<WelfareIssue, string> = {
+  [WelfareIssue.COOLING_ISSUE]: "냉방 설비 관련 표현",
+  [WelfareIssue.ENERGY_COST]: "에너지 비용 관련 표현",
+  [WelfareIssue.MOBILITY]: "거동 관련 표현",
+  [WelfareIssue.SAFETY_EQUIPMENT]: "안전 설비 관련 표현",
+  [WelfareIssue.HOUSING_REPAIR]: "주거 수선 관련 표현",
+};
 
 export class OpenAIWelfareError extends Error {
   constructor(
@@ -45,9 +60,18 @@ function outputText(payload: unknown): string | null {
   return null;
 }
 
+function extractSafeMemoTerms(memo: string | null): string[] {
+  const words = memo?.match(/[가-힣]+/g) ?? [];
+  const allowedTerms = [...Object.values(SAFE_MEMO_TERMS).flat(), ...SAFE_CONTEXT_TERMS];
+  return [...new Set(allowedTerms.filter((term) => words.some((word) => word.includes(term))))];
+}
+
 function parseSignals(
   text: string,
-  profilesByAlias: Map<string, WelfareSubjectProfile>,
+  profilesByAlias: Map<
+    string,
+    { profile: WelfareSubjectProfile; fieldRecordTerms: string[] }
+  >,
 ): WelfareSignal[] {
   let parsed: unknown;
   try {
@@ -84,20 +108,23 @@ function parseSignals(
         "INVALID_OPENAI_RESPONSE",
       );
     }
-    const profile = profilesByAlias.get(value.subjectId)!;
+    const { profile, fieldRecordTerms } = profilesByAlias.get(value.subjectId)!;
     const hasCoolingIssue = profile.hasAircon === false || profile.airconBroken;
-    const issues = (value.issues as WelfareSignal["issues"]).filter(
-      (issue) => issue === WelfareIssue.COOLING_ISSUE && hasCoolingIssue,
+    const memoIssues = (value.issues as WelfareSignal["issues"]).filter(
+      (issue) => SAFE_MEMO_TERMS[issue].some((term) => fieldRecordTerms.includes(term)),
     );
+    const issues = [
+      ...(hasCoolingIssue ? [WelfareIssue.COOLING_ISSUE] : []),
+      ...memoIssues,
+    ].filter((issue, index, values) => values.indexOf(issue) === index);
     return {
       subjectId: profile.subjectId,
       issues,
-      evidence: issues.length === 0
-        ? []
-        : [
-            ...(profile.hasAircon === false ? ["냉방기기 없음 기록"] : []),
-            ...(profile.airconBroken ? ["냉방기기 고장 기록"] : []),
-          ],
+      evidence: [
+        ...(profile.hasAircon === false ? ["냉방기기 없음 기록"] : []),
+        ...(profile.airconBroken ? ["냉방기기 고장 기록"] : []),
+        ...memoIssues.map((issue) => `현장 기록에서 ${ISSUE_EVIDENCE_LABEL[issue]} 감지`),
+      ],
     };
   });
 }
@@ -116,7 +143,10 @@ export async function extractWelfareSignals(
   }
   const fetcher = options.fetcher ?? fetch;
   const profilesByAlias = new Map(
-    profiles.map((profile, index) => [`scan-${index + 1}`, profile]),
+    profiles.map((profile, index) => [
+      `scan-${index + 1}`,
+      { profile, fieldRecordTerms: extractSafeMemoTerms(profile.latestMemo) },
+    ] as const),
   );
   let response: Response;
   try {
@@ -135,7 +165,7 @@ export async function extractWelfareSignals(
           {
             role: "system",
             content:
-              "당신은 제공된 구조화 사실에서 지원이 필요한 생활 문제만 분류합니다. 수급 자격이나 선정 여부는 판단하지 말고, 제공되지 않은 문제는 만들지 마세요.",
+              "당신은 제공된 구조화 사실과 개인정보를 제거한 현장 기록 용어에서 지원이 필요한 생활 문제만 분류합니다. 수급 자격이나 선정 여부는 판단하지 말고, 제공되지 않은 문제는 만들지 마세요.",
           },
           {
             role: "user",
@@ -146,6 +176,7 @@ export async function extractWelfareSignals(
                 livesAlone: profile.livesAlone,
                 hasAircon: profile.hasAircon,
                 airconBroken: profile.airconBroken,
+                fieldRecordTerms: extractSafeMemoTerms(profile.latestMemo),
               })),
             ),
           },
