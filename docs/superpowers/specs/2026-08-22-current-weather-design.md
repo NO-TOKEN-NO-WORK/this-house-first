@@ -89,7 +89,7 @@ export async function getCurrentWeather(
     "fetchedAt": "2026-08-22T14:12:00.000Z",
     "temperature": 31.2,
     "humidity": 68,
-    "feelsLikeTemperature": 33.8
+    "feelsLikeTemperature": 32.3
   }
 }
 ```

@@ -132,7 +132,7 @@ git commit -m "feat: expose current weather endpoint"
 
 - [ ] **Step 1: 표시 계약 실패 테스트 작성**
 
-성공 데이터에서 `현재 기온 31.2°C`, `현재 체감 33.8°C`, 관측시각을 표시하고 오류 payload에서는 `현재 날씨를 불러오지 못했습니다`를 표시하는 테스트를 작성한다. 네트워크 상태 전이는 exported `requestCurrentWeather(fetcher)` 함수로 분리해 테스트한다.
+성공 데이터에서 `현재 기온 31.2°C`, `현재 체감 32.3°C`, 관측시각을 표시하고 오류 payload에서는 `현재 날씨를 불러오지 못했습니다`를 표시하는 테스트를 작성한다. 네트워크 상태 전이는 exported `requestCurrentWeather(fetcher)` 함수로 분리해 테스트한다.
 
 - [ ] **Step 2: 실패 확인**
 
