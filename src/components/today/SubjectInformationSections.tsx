@@ -59,8 +59,10 @@ export function VisitChecklist() {
 }
 
 function historyMarker(item: SubjectHistoryItem, isLast: boolean): string {
+  // 그날 대응이 매끄럽지 않았던 기록만 주황 표식 (Figma 113:2297의 `에어컨 고장 확인`)
   if (
     item.result === VisitResult.AIRCON_ISSUE ||
+    item.result === VisitResult.SYMPTOM ||
     item.result === VisitResult.EMERGENCY_119
   ) {
     return "/icons/visit/timeline-warning.svg";

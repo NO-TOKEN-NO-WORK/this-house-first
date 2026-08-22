@@ -42,7 +42,7 @@ Next.js 16 App Router 모놀리스([ADR-0001](docs/adr/0001-nextjs-fullstack-mon
 2. **상태값 문자열 하드코딩 금지.** 경보 단계·가구 상태·확인 결과 코드는 `src/lib/domain.ts`의 `as const` 상수만 사용 (DB 컬럼이 String이라 도메인 상수·가드가 유일한 방어선 — ADR-0013)
 3. **설명 가능성**: 사용자에게 보이는 모든 위험 판단은 스코어링 엔진이 반환한 `reasons`를 그대로 표시한다. UI에서 위험 사유를 재작성하지 않는다
 4. **알림 침묵 원칙**: 비경보일에는 어떤 알림도 만들지 않는다. 경보일에도 요약 1건 + 승격 이벤트만 (PRD §9)
-5. **담당자(`/today`) UI 원칙**: 60대 사용자 기준 — 큰 글자, 화면당 결정 1개, 어떤 기록도 탭 2회 이내 완료 (PRD §9). 관리자 화면에는 이 제약이 없다. 화면 디자인은 Figma `junction`을 따르되 **문구는 `domain.ts` 상수**를 쓴다 — 의도적으로 다른 지점 목록은 [ADR-0014](docs/adr/0014-figma-design-with-domain-terms.md)
+5. **담당자(`/today`) UI 원칙**: 60대 사용자 기준 — 큰 글자, 화면당 결정 1개, 어떤 기록도 탭 2회 이내 완료 (PRD §9). 관리자 화면에는 이 제약이 없다. 화면 디자인은 Figma `junction`을 따르되 **문구는 `domain.ts` 상수**를 쓴다 — 의도적으로 다른 지점 목록은 [ADR-0014](docs/adr/0014-figma-design-with-domain-terms.md)·[ADR-0021](docs/adr/0021-visit-record-flow.md)
 6. **담당자·공용 Tailwind 화면의 색·글자는 Semantic 토큰만 쓴다** (ADR-0015). `src/app/globals.css`의 2층 구조에서 화면이 쓸 수 있는 것은 2층뿐이다 — `text-text-primary`·`bg-status-critical`·`text-label-15`처럼 Figma 스와치에 적힌 이름을 그대로 쓴다. 1층 원시 색(`--neutral-500` 등)은 유틸리티가 없고, Tailwind 기본 팔레트(`bg-white`·`text-zinc-500`)는 지워져 있다. 임의값(`text-[15px]`, `bg-[#fff]`)도 금지 — 필요한 값이 없으면 Figma 변수를 먼저 확인하고, 없으면 `globals.css` 확장 묶음에 `잠정` 주석과 함께 추가한다. 관리자 CSS Module은 기존 `tokens.css`의 `--admin-*` 체계를 유지하되, 위험 단계 색은 전역 Semantic 토큰을 참조한다
 7. 스코어링·상태머신은 **순수 함수**로 유지하고, 수정 시 `*.test.ts`를 함께 갱신한다
 

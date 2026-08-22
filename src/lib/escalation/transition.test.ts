@@ -146,6 +146,19 @@ describe("방문 기록 전이", () => {
     ).toBe(HouseholdStatus.EMERGENCY_119);
   });
 
+  it("걱정돼요·안 계셨어요는 방문 큐에 그대로 남긴다 (ADR-0021)", () => {
+    for (const result of [VisitResult.SYMPTOM, VisitResult.ABSENT]) {
+      const r = visit(HouseholdStatus.VISIT_QUEUED, result);
+      expect(r.status).toBe(HouseholdStatus.VISIT_QUEUED);
+      // 이미 큐에 있던 가구라 새 승격이 아니다 — 관리자 알림이 중복으로 나가지 않는다
+      expect(r.promoted).toBe(false);
+      expect(r.airconIssue).toBe(false);
+    }
+    expect(visit(HouseholdStatus.VISITING, VisitResult.ABSENT).status).toBe(
+      HouseholdStatus.VISIT_QUEUED,
+    );
+  });
+
   it("에어컨 없음·고장은 조치 완료로 닫되 익일 가중 플래그를 세운다 (FR-8)", () => {
     const r = visit(HouseholdStatus.VISIT_QUEUED, VisitResult.AIRCON_ISSUE);
     expect(r.status).toBe(HouseholdStatus.RESOLVED);

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { BoardGroup, BoardSubject } from "@/lib/board/today";
 import {
+  CheckKind,
   GRADE_LABEL,
   HouseholdStatus,
   RiskGrade,
@@ -30,6 +31,16 @@ function retryNoteOf(subject: BoardSubject): string | undefined {
   return subject.lastCheckAtLabel
     ? `${subject.statusLabel} · ${subject.lastCheckAtLabel}`
     : subject.statusLabel;
+}
+
+/**
+ * 방문으로 오늘 대응이 끝난 가구인가 — 카드가 `방문 완료 기록 보기` 하나만 내민다 (Figma 115:2855).
+ *
+ * 상태만으로는 못 가른다: `119 연계`는 전화에서도 나오는 종결 상태라 마지막 확인이
+ * 무엇이었는지를 함께 본다 (ADR-0021).
+ */
+function visitRecordedOf(subject: BoardSubject): boolean {
+  return !subject.open && subject.lastCheckKind === CheckKind.VISIT;
 }
 
 export function GradeFilter({
@@ -120,6 +131,7 @@ export function GradeFilter({
                     grade={subject.grade}
                     statusLabel={subject.open ? undefined : subject.statusLabel}
                     retryNote={retryNoteOf(subject)}
+                    visitRecorded={visitRecordedOf(subject)}
                     nextCheckKind={subject.open ? subject.nextCheckKind : null}
                     date={date}
                     workerId={workerId}

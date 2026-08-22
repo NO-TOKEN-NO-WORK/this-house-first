@@ -48,6 +48,11 @@ interface Props {
    * 이게 있으면 카드에 배너가 붙고 전화 버튼이 `다시 전화하기`(주 행동)로 바뀐다.
    */
   retryNote?: string;
+  /**
+   * 방문으로 오늘 대응이 끝난 가구 — 두 버튼 대신 `방문 완료 기록 보기` 하나만 둔다
+   * (Figma 115:2855). 남은 결정이 없는 카드에 누를 수 없는 버튼 두 개를 남기지 않는다.
+   */
+  visitRecorded?: boolean;
 }
 
 export function SubjectCard({
@@ -60,6 +65,7 @@ export function SubjectCard({
   workerId,
   returnGrade,
   retryNote,
+  visitRecorded = false,
 }: Props) {
   const workspace = useTodayWorkspace();
   const query = new URLSearchParams({ date });
@@ -69,6 +75,9 @@ export function SubjectCard({
   const infoQuery = new URLSearchParams(query);
   infoQuery.set("view", "info");
   const infoHref = `/today/${subject.subjectId}?${infoQuery.toString()}`;
+  const recordQuery = new URLSearchParams(query);
+  recordQuery.set("view", "record");
+  const recordHref = `/today/${subject.subjectId}?${recordQuery.toString()}`;
   /*
     경보일의 `전화하기`는 상세 대신 전화 안내(④)를 연다 — 걸기 전에 무엇을 물을지 보여 주고,
     통화가 끝나면 결과 시트(⑤)로 이어진다 (FR-5).
@@ -119,24 +128,38 @@ export function SubjectCard({
       )}
 
       <div className="flex w-full gap-3">
-        <CardAction
-          href={href}
-          // 방문 화면은 최근 기록·직전 위험 단계까지 읽으므로 서버 상세 라우트로 이동한다.
-          enabled={nextCheckKind === CheckKind.VISIT}
-          label="방문하기"
-          icon={<MapPinIcon className="size-[18px]" />}
-        />
-        <CardAction
-          href={callOnly && subject.phone ? `tel:${subject.phone}` : href}
-          onOpen={callOnly ? undefined : openCallGuide}
-          enabled={
-            callOnly ? subject.phone !== null : nextCheckKind === CheckKind.CALL
-          }
-          external={callOnly}
-          primary={retryNote !== undefined}
-          label={retryNote ? "다시 전화하기" : "전화하기"}
-          icon={<PhoneIcon className="size-[21px]" />}
-        />
+        {visitRecorded ? (
+          // 끝난 방문은 되읽기 하나만 남는다 (Figma 123:2971로 이동)
+          <Link
+            href={recordHref}
+            className="flex h-12 flex-1 items-center justify-center rounded-lg border border-border-strong bg-background-default text-label-15 text-text-secondary active:bg-surface-soft"
+          >
+            방문 완료 기록 보기
+          </Link>
+        ) : (
+          <>
+            <CardAction
+              href={href}
+              // 방문 화면은 최근 기록·직전 위험 단계까지 읽으므로 서버 상세 라우트로 이동한다.
+              enabled={nextCheckKind === CheckKind.VISIT}
+              label="방문하기"
+              icon={<MapPinIcon className="size-[18px]" />}
+            />
+            <CardAction
+              href={callOnly && subject.phone ? `tel:${subject.phone}` : href}
+              onOpen={callOnly ? undefined : openCallGuide}
+              enabled={
+                callOnly
+                  ? subject.phone !== null
+                  : nextCheckKind === CheckKind.CALL
+              }
+              external={callOnly}
+              primary={retryNote !== undefined}
+              label={retryNote ? "다시 전화하기" : "전화하기"}
+              icon={<PhoneIcon className="size-[21px]" />}
+            />
+          </>
+        )}
       </div>
     </li>
   );

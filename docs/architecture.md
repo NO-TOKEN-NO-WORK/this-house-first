@@ -125,13 +125,15 @@ stateDiagram-v2
     UNCHECKED --> VISIT_QUEUED : 이상 징후 → 즉시 승격
     UNCHECKED --> UNREACHABLE : 연락두절
     VISIT_QUEUED --> VISITING : 출동
-    VISITING --> RESOLVED : 정상 / 조치함
-    VISITING --> EMERGENCY_119 : 119 연계
+    VISITING --> RESOLVED : 괜찮았어요 / 조치함
+    VISITING --> EMERGENCY_119 : 119 신고
+    VISITING --> VISIT_QUEUED : 걱정돼요 / 안 계셨어요 → 재방문 대상 (ADR-0021)
     RESOLVED --> [*]
 ```
 
 - 발령(`/api/trigger` POST)은 `[*] --> UNCHECKED`와 `[*] --> VISIT_QUEUED` 진입 화살표만 담당한다(`escalation/initial.ts`). 같은 날 재발령해도 진행 중인 상태는 보존한다
-- 방문 결과 `에어컨 없음·고장`은 상태와 별개로 `Subject.airconBroken` 플래그를 세우고 **익일 위험도에 가중**된다(FR-8) + 지원사업 연계 플래그(FR-11)
+- 방문 결과 `에어컨 없음·고장`은 상태와 별개로 `Subject.airconBroken` 플래그를 세우고 **익일 위험도에 가중**된다(FR-8) + 지원사업 연계 플래그(FR-11). 전화·방문 화면이 함께 받는 `coolingStatus`도 같은 두 필드로 들어간다([ADR-0021](adr/0021-visit-record-flow.md))
+- 방문 결과 `걱정돼요`·`안 계셨어요`는 가구를 방문 큐에 그대로 남긴다 — 그날 대응이 끝나지 않았으므로 미처리 수에서 빠지지 않는다([ADR-0021](adr/0021-visit-record-flow.md))
 - 방문 큐 2건 이상 → 위험 단계 우선 제약 안에서 실제 차량 도로거리 합이 가장 짧은 순서 제시(FR-7, 카카오모빌리티 자동차 길찾기 — [ADR-0018](adr/0018-kakao-driving-shortest-route.md))
 
 ## 5. 위험도 스코어링 (FR-3)
