@@ -63,6 +63,17 @@ printf '%s' "$DIRECT_URL"   | vercel env add DIRECT_URL preview --sensitive
 | `VAPID_SUBJECT` | `mailto:` 또는 `https:` 형식의 Push 운영 연락처 | 서버 전용 |
 | `CRON_SECRET` | 오전 알림 발송 Route Handler 인증 토큰(16자 이상 권장) | 서버 전용 |
 
+> **`KAKAO_REST_KEY`에 JS 앱 키를 넣지 않는다.** 두 키는 형태가 같아 눈으로 구분되지 않고, 잘못 넣어도 화면은 죽지 않는다 — 방문 동선이 조용히 `차량 경로를 불러오지 못해 직선거리 예상치`로 폴백할 뿐이다. 2026-08-22에 실제로 그렇게 배포돼 있었다. 넣은 뒤 아래 검증을 반드시 돌린다.
+
+```bash
+# 배포본이 실제 도로 경로를 쓰는지 — source가 estimate면 KAKAO_REST_KEY가 틀린 것이다
+curl -s "https://<프로젝트>.vercel.app/api/visit-queue?date=$(date +%F)" \
+  | grep -o '"source":"[^"]*"'
+# 기대: "source":"kakao-driving"
+```
+
+`estimate`가 나오면 `vercel logs <배포 URL>`에서 `카카오 자동차 ... 요청에 실패했습니다`의 상태 코드와 카카오 응답 본문을 확인한다(키는 마스킹돼 찍힌다).
+
 `NEXT_PUBLIC_` 접두사는 카카오맵 JS 키와 VAPID **공개키**에만 붙인다. VAPID 비밀키를 포함한 서버 전용 키에 붙이면 번들에 그대로 실린다(AGENTS.md 금지 사항).
 
 VAPID 키 쌍은 로컬에서 한 번 생성해 같은 공개·비밀키를 Production 환경에 함께 넣는다.
@@ -86,6 +97,8 @@ Hobby 플랜의 일 단위 Cron은 호출 시각이 한 시간 범위로 지연�
 Kakao Developers → 내 애플리케이션 → 플랫폼 → Web에 **배포 도메인을 추가**한다(`https://<프로젝트>.vercel.app`). 등록하지 않으면 배포 환경에서만 지도가 뜨지 않는다([ADR-0007](adr/0007-kakao-map.md)).
 
 프리뷰 배포는 도메인이 매번 바뀌므로, 지도를 프리뷰에서 확인하려면 고정 도메인을 쓰거나 그 도메인을 추가로 등록한다.
+
+**로컬 데모(`npm run dev`)도 같은 등록이 필요하다.** `http://localhost:3000`이 없으면 로컬에서만 지도가 `지도를 불러오지 못했습니다`로 뜬다(SDK가 401 `domain mismatched`를 준다). 로컬 데모가 기본 시연 경로이므로([ADR-0011](adr/0011-deploy-local-demo-first.md)) 배포 도메인과 함께 등록해 둔다.
 
 ## 6. 배포 후 시드
 

@@ -201,6 +201,27 @@ describe("withKakaoDrivingRoute", () => {
     expect(route.source).toBe("kakao-driving");
   });
 
+  it("실패 응답의 카카오 본문을 에러에 붙이되 앱 키는 가린다", async () => {
+    // 카카오는 401 본문에 보낸 키를 그대로 되돌려준다 — 로그에 새면 안 된다
+    const stops = [stop(0), stop(1)];
+    const fetcher = async () =>
+      new Response(
+        JSON.stringify({ code: -401, msg: "wrong appKey(rest-key) format" }),
+        { status: 401 },
+      );
+
+    const error = await withKakaoDrivingRoute(estimatedRoute(stops), {
+      apiKey: "rest-key",
+      fetcher: fetcher as typeof fetch,
+    }).catch((thrown: unknown) => thrown);
+
+    expect(error).toBeInstanceOf(Error);
+    const message = (error as Error).message;
+    expect(message).toContain("HTTP 401");
+    expect(message).toContain("wrong appKey(***) format");
+    expect(message).not.toContain("rest-key");
+  });
+
   it("연속 방문지가 같은 좌표면 API 호출 없이 이동시간을 0분으로 유지한다", async () => {
     const stops = [stop(0), { ...stop(1), lat: stop(0).lat, lng: stop(0).lng }];
     let called = false;
