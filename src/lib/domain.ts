@@ -45,6 +45,14 @@ export const GRADE_LABEL: Record<RiskGrade, string> = {
   3: "3등급",
 };
 
+export function isRiskGrade(value: unknown): value is RiskGrade {
+  return (
+    value === RiskGrade.CRITICAL ||
+    value === RiskGrade.HIGH ||
+    value === RiskGrade.MODERATE
+  );
+}
+
 /**
  * 등급별 대응 지시 (PRD F3) — 담당자 화면이 그대로 표시한다.
  * 1등급에 전화가 없는 것은 누락이 아니라 설계다: 전화로 '괜찮다'를 신뢰할 수 없는 군이라
@@ -54,6 +62,17 @@ export const GRADE_PLAN: Record<RiskGrade, string> = {
   1: "전화 생략 · 오전 방문",
   2: "오전 중 전화",
   3: "15시 이전 전화",
+};
+
+/**
+ * 등급 + 위험도 한 줄 표기 — 대상자 상세 화면의 배지에 그대로 쓴다 (Figma ② 3:529).
+ * 위험도 문구는 RiskGrade 주석의 정의(1: 초고위험 / 2: 고위험 / 3: 중위험)와 같은 값이다.
+ * 등급 숫자만 보면 "1등급이 제일 위험한가?"를 담당자가 매번 되묻게 되므로 배지에서 함께 읽힌다.
+ */
+export const GRADE_SEVERITY_LABEL: Record<RiskGrade, string> = {
+  1: "1등급 초고위험",
+  2: "2등급 고위험",
+  3: "3등급 중위험",
 };
 
 /** 담당자 역할 (PRD §4) */

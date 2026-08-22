@@ -7,7 +7,7 @@ import { optionalId, optionalIsoDate, toErrorResponse } from "@/lib/http";
  * `GET /api/subjects` — 오늘(KST)
  * `GET /api/subjects?date=2026-08-21&workerId=...`
  *
- * 비경보일에는 `{ alerted: false }`만 돌아온다 — 침묵이 스펙(PRD §9).
+ * 비경보일에는 등급·상태 없이 담당 가구 명단만 돌아온다. 알림은 여전히 0건이다(PRD §9).
  * `/today` 화면과 같은 조회 함수를 쓴다.
  */
 export const runtime = "nodejs";

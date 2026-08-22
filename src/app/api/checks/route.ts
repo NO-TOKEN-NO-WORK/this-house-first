@@ -8,7 +8,6 @@ import {
   isVisitResult,
   parseHouseholdStatus,
   type VisitResult,
-  WorkerRole,
 } from "@/lib/domain";
 import { todayInKst } from "@/lib/board/today";
 import {
@@ -31,7 +30,7 @@ import { transition, TransitionError } from "@/lib/escalation/transition";
  * 기록 원장(CheckEvent)을 남기고 상태머신 전이 결과를 HouseholdDayStatus에 반영한다.
  * 전이 규칙 자체는 순수 함수(`src/lib/escalation/transition.ts`)가 갖고 있다.
  *
- * v0에는 인증이 없어(ADR-0008 범위 밖) workerId를 생략하면 담당자 계정을 자동 선택한다.
+ * v0에는 인증이 없어(ADR-0008 범위 밖) workerId를 생략하면 대상자의 배정 담당자를 기록자로 쓴다.
  */
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -93,7 +92,10 @@ export async function POST(request: Request): Promise<Response> {
       const key = {
         alertDayId_subjectId: { alertDayId: alertDay.id, subjectId },
       };
-      const statusRow = await tx.householdDayStatus.findUnique({ where: key });
+      const statusRow = await tx.householdDayStatus.findUnique({
+        where: key,
+        include: { subject: { select: { workerId: true } } },
+      });
       if (!statusRow) {
         throw notFound(
           "해당 경보일의 대상자 가구를 찾지 못했습니다.",
@@ -101,9 +103,9 @@ export async function POST(request: Request): Promise<Response> {
         );
       }
 
-      const worker = requestedWorkerId
-        ? await tx.worker.findUnique({ where: { id: requestedWorkerId } })
-        : await tx.worker.findFirst({ where: { role: WorkerRole.WORKER } });
+      const worker = await tx.worker.findUnique({
+        where: { id: requestedWorkerId ?? statusRow.subject.workerId },
+      });
       if (!worker) {
         throw notFound("기록할 담당자를 찾지 못했습니다.", "WORKER_NOT_FOUND");
       }

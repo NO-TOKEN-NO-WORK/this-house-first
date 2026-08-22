@@ -8,8 +8,10 @@ import {
   isCallResult,
   isCheckKind,
   isHouseholdStatus,
+  isRiskGrade,
   isVisitResult,
   parseHouseholdStatus,
+  RiskGrade,
   VisitResult,
 } from "./domain";
 
@@ -17,6 +19,9 @@ describe("도메인 상태값 검증", () => {
   it("정의된 경보 단계와 가구 상태만 허용한다", () => {
     expect(isAlertLevel(AlertLevel.ADVISORY)).toBe(true);
     expect(isHouseholdStatus(HouseholdStatus.UNCHECKED)).toBe(true);
+    expect(isRiskGrade(RiskGrade.CRITICAL)).toBe(true);
+    expect(isRiskGrade(4)).toBe(false);
+    expect(isRiskGrade("1")).toBe(false);
   });
 
   it("Object 프로토타입의 속성은 상태값으로 허용하지 않는다", () => {

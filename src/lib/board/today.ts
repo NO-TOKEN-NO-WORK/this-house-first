@@ -10,9 +10,11 @@ import {
   isOpenHouseholdStatus,
   parseHouseholdStatus,
   RiskGrade,
+  WorkerRole,
 } from "../domain";
 import { formatKstDate } from "../public-data/kma";
 import { toIsoDate } from "../trigger/alert-date";
+import { ageOf, dongOf, formatBoardDate, yearOfIsoDate } from "./format";
 
 /**
  * 담당자 대응 보드 데이터 (FR-4, PRD F3).
@@ -24,10 +26,18 @@ import { toIsoDate } from "../trigger/alert-date";
  * UI에서 다시 쓰지 않는 것이 설명 가능성의 조건이다 (AGENTS.md 도메인 규칙 3).
  */
 
-export interface BoardSubject {
+/** 경보일·비경보일 카드가 공통으로 쓰는 대상자 정보 (Figma ① 8:1867 profile) */
+export interface RosterSubject {
   subjectId: string;
   name: string;
+  /** 경보일 기준 연도로 계산한 나이 — 스코어링 엔진의 "(88세)"와 같은 값 */
+  age: number;
+  livesAlone: boolean;
   phone: string | null;
+  address: string;
+}
+
+export interface BoardSubject extends RosterSubject {
   grade: RiskGrade;
   score: number;
   /** 스코어링 엔진이 반환한 위험 사유 — 화면에 그대로 표시 */
@@ -39,7 +49,6 @@ export interface BoardSubject {
   open: boolean;
   /** 이번 기록에서 받아야 할 기록 종류 — 1등급·승격 가구는 방문 */
   nextCheckKind: CheckKind;
-  address: string;
   roadAddress: string | null;
   lat: number;
   lng: number;
@@ -53,13 +62,31 @@ export interface BoardGroup {
   subjects: BoardSubject[];
 }
 
+/** 화면 상단 인사에 쓰는 담당자 (Figma ① 8:1981 "어서오세요 000님") */
+export interface BoardWorker {
+  id: string;
+  name: string;
+}
+
 interface BoardBase {
   /** "YYYY-MM-DD" (KST) */
   date: string;
+  /** "8월 21일(금)" */
+  dateLabel: string;
+  /** 담당자가 한 명도 없으면 null */
+  worker: BoardWorker | null;
+  /** 담당 구역 동 이름. 주소에서 못 뽑으면 null */
+  dong: string | null;
 }
 
 export interface SilentBoard extends BoardBase {
   alerted: false;
+  /**
+   * 비경보일 명단 (Figma ①-b 14:2926).
+   * 경보가 없으면 등급·상태가 없다 — 순서를 정해 주지 않고 담당 가구만 보여준다.
+   * 알림은 여전히 0건이다 (PRD §9 침묵 원칙은 알림에 대한 것이고, 명단 조회는 담당자가 연 화면이다).
+   */
+  subjects: RosterSubject[];
 }
 
 export interface AlertedBoard extends BoardBase {
@@ -75,6 +102,8 @@ export interface AlertedBoard extends BoardBase {
     /** 미확인 1등급 — 관리자 대시보드의 핵심 위젯(F5)과 같은 정의 */
     openCritical: number;
     visitQueued: number;
+    /** 등급별 미처리 가구 수 — 요약 카드의 등급 칸 (Figma ① 8:1833) */
+    openByGrade: Record<RiskGrade, number>;
   };
 }
 
@@ -104,19 +133,64 @@ const GRADE_ORDER: readonly RiskGrade[] = [
   RiskGrade.MODERATE,
 ];
 
+/**
+ * 보드를 볼 담당자를 정한다.
+ *
+ * `/today`는 담당자 한 사람의 화면이라 인사말과 명단이 같은 사람을 가리켜야 한다.
+ * v0에는 로그인이 없으므로(ADR-0008 범위 밖) workerId가 없으면 생활지원사 계정을 기본으로 쓴다.
+ */
+async function resolveWorker(workerId?: string): Promise<BoardWorker | null> {
+  const worker = workerId
+    ? await prisma.worker.findUnique({ where: { id: workerId } })
+    : await prisma.worker.findFirst({
+        where: { role: WorkerRole.WORKER },
+        orderBy: { id: "asc" },
+      });
+  return worker ? { id: worker.id, name: worker.name } : null;
+}
+
 export async function getBoard(
   options: { date?: string; workerId?: string; now?: Date } = {},
 ): Promise<Board> {
   const date = options.date ?? todayInKst(options.now);
+  const dateLabel = formatBoardDate(date);
+  const year = yearOfIsoDate(date);
+  const worker = await resolveWorker(options.workerId);
+  // 요청한 담당자를 못 찾았으면 남의 명단을 대신 보여주지 않는다 — 빈 명단이 맞다
+  const workerId = options.workerId ?? worker?.id ?? null;
 
   const alertDay = await prisma.alertDay.findUnique({ where: { date } });
-  // 비경보일에는 AlertDay 행이 없다 — 침묵이 스펙 (PRD §9)
-  if (!alertDay) return { alerted: false, date };
+
+  // 비경보일에는 AlertDay 행이 없다 — 등급도 상태도 없이 담당 가구만 보여준다 (Figma ①-b)
+  if (!alertDay) {
+    const rows = await prisma.subject.findMany({
+      where: workerId ? { workerId } : { id: { in: [] } },
+      include: { building: true },
+      // 경보일 정렬(위험 점수)이 없으므로 나이 많은 순으로 둔다
+      orderBy: [{ birthYear: "asc" }, { name: "asc" }],
+    });
+    const subjects: RosterSubject[] = rows.map((row) => ({
+      subjectId: row.id,
+      name: row.name,
+      age: ageOf(row.birthYear, year),
+      livesAlone: row.livesAlone,
+      phone: row.phone,
+      address: row.building.address,
+    }));
+    return {
+      alerted: false,
+      date,
+      dateLabel,
+      worker,
+      dong: subjects[0] ? dongOf(subjects[0].address) : null,
+      subjects,
+    };
+  }
 
   const assessments = await prisma.riskAssessment.findMany({
     where: {
       alertDayId: alertDay.id,
-      ...(options.workerId ? { subject: { workerId: options.workerId } } : {}),
+      ...(workerId ? { subject: { workerId } } : { subjectId: { in: [] } }),
     },
     include: { subject: { include: { building: true } } },
     orderBy: { score: "desc" },
@@ -135,8 +209,12 @@ export async function getBoard(
   }));
 
   let open = 0;
-  let openCritical = 0;
   let visitQueued = 0;
+  const openByGrade: Record<RiskGrade, number> = {
+    [RiskGrade.CRITICAL]: 0,
+    [RiskGrade.HIGH]: 0,
+    [RiskGrade.MODERATE]: 0,
+  };
 
   for (const row of assessments) {
     const statusRow = statusBySubject.get(row.subjectId);
@@ -146,15 +224,20 @@ export async function getBoard(
     const grade = row.grade as RiskGrade;
     const isOpen = isOpenHouseholdStatus(status);
 
-    if (isOpen) open += 1;
-    if (isOpen && grade === RiskGrade.CRITICAL) openCritical += 1;
+    if (isOpen) {
+      open += 1;
+      openByGrade[grade] += 1;
+    }
     if (status === HouseholdStatus.VISIT_QUEUED) visitQueued += 1;
 
     const group = groups.find((g) => g.grade === grade);
     group?.subjects.push({
       subjectId: row.subjectId,
       name: row.subject.name,
+      age: ageOf(row.subject.birthYear, year),
+      livesAlone: row.subject.livesAlone,
       phone: row.subject.phone,
+      address: row.subject.building.address,
       grade,
       score: row.score,
       reasons: parseReasons(row.reasons),
@@ -168,20 +251,30 @@ export async function getBoard(
         status === HouseholdStatus.VISITING
           ? CheckKind.VISIT
           : CheckKind.CALL,
-      address: row.subject.building.address,
       roadAddress: row.subject.building.roadAddress,
       lat: row.subject.building.lat,
       lng: row.subject.building.lng,
     });
   }
 
+  const firstAddress = groups.flatMap((g) => g.subjects)[0]?.address;
+
   return {
     alerted: true,
     date,
+    dateLabel,
+    worker,
+    dong: firstAddress ? dongOf(firstAddress) : null,
     level: alertDay.level as AlertLevel,
     levelLabel: ALERT_LEVEL_LABEL[alertDay.level as AlertLevel],
     feelsLikeMax: alertDay.feelsLikeMax,
     groups: groups.filter((g) => g.subjects.length > 0),
-    summary: { total: assessments.length, open, openCritical, visitQueued },
+    summary: {
+      total: assessments.length,
+      open,
+      openCritical: openByGrade[RiskGrade.CRITICAL],
+      visitQueued,
+      openByGrade,
+    },
   };
 }
