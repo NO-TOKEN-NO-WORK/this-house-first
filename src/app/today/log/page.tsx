@@ -36,7 +36,7 @@ export default async function LogPage(props: PageProps<"/today/log">) {
 
   return (
     <>
-      <main className="mx-auto flex w-full max-w-[520px] flex-1 flex-col gap-8 bg-background-subtle px-5 pt-11 pb-[100px]">
+      <main className="mx-auto flex w-full max-w-[520px] flex-1 flex-col gap-8 bg-background-subtle px-5 pt-[calc(--spacing(11)_+_var(--safe-top))] pb-[calc(100px_+_var(--safe-bottom))]">
         <header className="flex flex-col gap-1">
           <h1 className="text-heading-24 text-text-primary">기록</h1>
           <p className="text-body-16 text-text-primary">

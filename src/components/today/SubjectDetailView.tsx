@@ -130,7 +130,7 @@ export function SubjectDetailView({
 
   return (
     <div className="mx-auto flex w-full max-w-[520px] flex-1 flex-col bg-background-subtle">
-      <header className="sticky top-0 z-30 flex h-[53px] items-center gap-2.5 border-b border-border-default bg-surface-default px-3.5">
+      <header className="sticky top-0 z-30 flex h-[calc(53px_+_var(--safe-top))] items-center gap-2.5 pt-[var(--safe-top)] border-b border-border-default bg-surface-default px-3.5">
         {onBack ? (
           <button
             type="button"
@@ -193,7 +193,7 @@ export function SubjectDetailView({
       </main>
 
       {showCallCta && (
-        <div className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-[520px] border-t border-border-default bg-surface-default px-3.5 pt-3 pb-5">
+        <div className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-[520px] border-t border-border-default bg-surface-default px-3.5 pt-3 pb-[calc(--spacing(5)_+_var(--safe-bottom))]">
           <a
             href={`tel:${detail.phone}`}
             className="flex h-14 w-full items-center justify-center gap-2 rounded-lg bg-action-primary text-heading-19 text-text-inverse active:bg-action-primary-strong"

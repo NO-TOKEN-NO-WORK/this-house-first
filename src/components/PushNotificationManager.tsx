@@ -283,7 +283,7 @@ export function PushNotificationManager({
         role="status"
         aria-live="polite"
         // 하단 탭(79px) 위에 띄운다. 다이얼로그(z-50)보다는 아래다
-        className="pointer-events-none fixed inset-x-0 bottom-[79px] z-40 mx-auto flex w-full max-w-[520px] justify-center px-5 pb-3"
+        className="pointer-events-none fixed inset-x-0 bottom-[calc(79px_+_var(--safe-bottom))] z-40 mx-auto flex w-full max-w-[520px] justify-center px-5 pb-3"
       >
         <div className="pointer-events-auto flex w-full items-center gap-3 rounded-[14px] border border-border-default bg-surface-default p-4 shadow-lg motion-safe:animate-toast-in">
           <div className="min-w-0 flex-1">

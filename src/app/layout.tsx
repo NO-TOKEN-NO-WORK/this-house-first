@@ -16,6 +16,12 @@ export const viewport: Viewport = {
   themeColor: "#d93025",
   width: "device-width",
   initialScale: 1,
+  /*
+   * 화면 끝까지 그린다 — 이게 있어야 `env(safe-area-inset-*)`가 실제 값을 준다.
+   * 홈 인디케이터·노치를 피하는 일은 고정 요소(하단 탭·고정 버튼·상단 헤더)가
+   * `--safe-top`·`--safe-bottom`(globals.css)으로 각자 처리한다.
+   */
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

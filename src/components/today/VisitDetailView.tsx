@@ -285,7 +285,7 @@ export function VisitDetailView({
 
   return (
     <div className="mx-auto flex w-full max-w-[520px] flex-1 flex-col bg-surface-default">
-      <header className="sticky top-0 z-30 grid h-[53px] grid-cols-[44px_1fr_44px] items-center border-b border-border-default bg-surface-default px-1.5">
+      <header className="sticky top-0 z-30 grid h-[calc(53px_+_var(--safe-top))] grid-cols-[44px_1fr_44px] items-center pt-[var(--safe-top)] border-b border-border-default bg-surface-default px-1.5">
         {onBack ? (
           <button
             type="button"
