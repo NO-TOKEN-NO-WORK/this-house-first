@@ -4,6 +4,7 @@ import { GradeFilter } from "@/components/today/GradeFilter";
 import { SubjectCard } from "@/components/today/SubjectCard";
 import { TodayWorkspace } from "@/components/today/TodayWorkspace";
 import { AlertCircleIcon } from "@/components/today/icons";
+import { CurrentWeatherSummary } from "@/components/CurrentWeatherSummary";
 import { InstallPwaBanner } from "@/components/InstallPwaBanner";
 import { PushNotificationManager } from "@/components/PushNotificationManager";
 import {
@@ -183,6 +184,7 @@ export default async function TodayPage(props: PageProps<"/today">) {
             dateLabel={board.dateLabel}
             dong={board.dong}
           />
+          <CurrentWeatherSummary variant="today" />
           <InstallPwaBanner />
           {board.alerted ? (
             <div className="flex flex-col gap-3">

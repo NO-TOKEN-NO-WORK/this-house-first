@@ -1,5 +1,5 @@
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { AdminSubjectDetail } from "../../lib/admin/subject-detail";
 
 const detail = {
@@ -56,6 +56,33 @@ const detail = {
 } as unknown as AdminSubjectDetail;
 
 describe("관리자 대상자 상세·수정 화면", () => {
+  it("공용 헤더에 현재 날씨를 표시하고 고정 갱신 시각을 쓰지 않는다", async () => {
+    const { AdminManagementHeader } = await import("./AdminSubjectViews");
+    const html = renderToStaticMarkup(
+      <AdminManagementHeader detail={detail} label="대상자 상세" />,
+    );
+
+    expect(html).toContain('aria-label="현재 날씨"');
+    expect(html).not.toContain("14:32");
+  });
+
+  it("신규 관리 헤더의 날짜는 현재 KST 날짜를 쓴다", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2031-01-01T15:00:00.000Z"));
+
+    try {
+      const { AdminManagementHeader } = await import("./AdminSubjectViews");
+      const html = renderToStaticMarkup(
+        <AdminManagementHeader detail={null} label="대상자 등록" />,
+      );
+
+      expect(html).toContain("2031.01.02");
+      expect(html).not.toContain("2026.08.22");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("첨부 시안의 상세 정보 구획과 실제 위험 사유를 모두 보여준다", async () => {
     const { AdminSubjectDetailView } = await import("./AdminSubjectViews");
     const html = renderToStaticMarkup(<AdminSubjectDetailView detail={detail} />);

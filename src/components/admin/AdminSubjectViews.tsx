@@ -1,7 +1,10 @@
 import Image from "next/image";
 import Link from "next/link";
+import { CurrentWeatherSummary } from "../CurrentWeatherSummary";
 import type { AdminSubjectDetail } from "../../lib/admin/subject-detail";
 import { AlertLevel, ALERT_LEVEL_LABEL, GRADE_LABEL, HOUSEHOLD_STATUS_LABEL, HouseholdStatus, RiskGrade } from "../../lib/domain";
+import { formatKstDate } from "../../lib/public-data/kma";
+import { toIsoDate } from "../../lib/trigger/alert-date";
 import styles from "./admin-subject.module.css";
 
 type SubjectAction = (form: FormData) => void | Promise<void>;
@@ -31,7 +34,7 @@ export function AdminManagementHeader({
   meta?: { date: string; region: string; feelsLikeMax: number | null };
   sectionLabel?: string;
 }) {
-  const date = meta?.date ?? detail?.date ?? "2026-08-22";
+  const date = meta?.date ?? detail?.date ?? toIsoDate(formatKstDate(new Date()));
   const region = meta?.region ?? detail?.address.split(" ").slice(0, 3).join(" ") ?? "전체 지역";
   const feelsLikeMax = meta?.feelsLikeMax ?? detail?.feelsLikeMax ?? null;
   const breadcrumb = (
@@ -51,8 +54,8 @@ export function AdminManagementHeader({
         <dl><Image alt="" aria-hidden="true" height={20} src="/admin/calendar.png" width={20} /><dt>날짜</dt><dd>{date.replaceAll("-", ".")}</dd></dl>
         <dl><Image alt="" aria-hidden="true" height={20} src="/admin/location.png" width={20} /><dt>담당 지역</dt><dd>{region}</dd></dl>
         <dl><Image alt="" aria-hidden="true" height={20} src="/admin/thermometer.png" width={20} /><dt>담당 체감온도</dt><dd className={styles.hot}>{feelsLikeMax == null ? "—" : `${feelsLikeMax.toFixed(1)}°C`}</dd></dl>
-        <dl><Image alt="" aria-hidden="true" height={20} src="/admin/clock.png" width={20} /><dt>마지막 갱신</dt><dd>14:32</dd></dl>
         <dl><Image alt="" aria-hidden="true" height={20} src="/admin/refresh.png" width={20} /><dt>자동 갱신</dt><dd>켜짐</dd></dl>
+        <CurrentWeatherSummary variant="admin" />
       </div>
       <div className={styles.alertSteps} aria-label="경보 단계">
         <span>{ALERT_LEVEL_LABEL[AlertLevel.ADVISORY]}</span><span>{ALERT_LEVEL_LABEL[AlertLevel.WARNING]}</span><strong>{ALERT_LEVEL_LABEL[AlertLevel.EMERGENCY]}</strong>
