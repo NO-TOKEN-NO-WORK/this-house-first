@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+html,
+body {
+  overflow-x: clip;
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
