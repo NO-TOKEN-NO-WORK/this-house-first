@@ -54,6 +54,9 @@ export function detailFromBoard(
     open: subject.open,
     nextCheckKind: nextCheckKindOf(subject.status),
     lastResult: subject.lastResult,
+    // 보드의 빠른 상세는 전화 흐름용이다. 방문 버튼은 서버 상세로 이동해 이 두 값을 채운다.
+    recentHistory: [],
+    gradeChange: null,
   };
 }
 

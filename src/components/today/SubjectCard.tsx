@@ -10,8 +10,7 @@ import { AlertTriangleIcon, MapPinIcon, PhoneIcon } from "./icons";
  * 대상자 카드 (Figma ① 25:62 / 처리 완료본 25:80 / 비경보일 ①-b).
  *
  * 카드가 담는 결정은 하나다 — "이 가구를 지금 어떻게 할 것인가" (PRD §9 화면당 결정 1개).
- * 경보일의 두 버튼은 보드가 가진 데이터로 상세를 연다(서버 왕복 없음).
- * 거기서 한 번 더 누르면 기록이 끝난다(탭 2회 이내).
+ * 전화는 보드 위 안내 흐름을 열고, 방문은 최근 기록까지 읽는 서버 상세 라우트로 이동한다.
  */
 
 /** 위험 단계별 테두리 — 색 의미는 요약 카드·위험 단계 칩과 같아야 한다 (Figma ① 25:62 · 25:106 · 25:129) */
@@ -66,9 +65,6 @@ export function SubjectCard({
   if (workerId) query.set("workerId", workerId);
   if (returnGrade) query.set("grade", String(returnGrade));
   const href = `/today/${subject.subjectId}?${query.toString()}`;
-  const openDetail = workspace
-    ? () => workspace.openDetail(subject.subjectId)
-    : undefined;
   /*
     경보일의 `전화하기`는 상세 대신 전화 안내(④)를 연다 — 걸기 전에 무엇을 물을지 보여 주고,
     통화가 끝나면 결과 시트(⑤)로 이어진다 (FR-5).
@@ -109,7 +105,7 @@ export function SubjectCard({
       <div className="flex w-full gap-3">
         <CardAction
           href={href}
-          onOpen={openDetail}
+          // 방문 화면은 최근 기록·직전 위험 단계까지 읽으므로 서버 상세 라우트로 이동한다.
           enabled={nextCheckKind === CheckKind.VISIT}
           label="방문하기"
           icon={<MapPinIcon className="size-[18px]" />}

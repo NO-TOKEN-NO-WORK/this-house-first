@@ -4,7 +4,8 @@ import { GRADE_LABEL, type RiskGrade } from "@/lib/domain";
 
 /**
  * 대상자 머리글 — 등급 칩 · 이름/나이 · 연락처.
- * 전화 안내 다이얼로그(Figma ④ 7:2578)와 통화 결과 시트(⑤ 7:2489)가 픽셀까지 같은 블록을 쓴다.
+ * 전화 안내 다이얼로그(Figma ④ 7:2578)·통화 결과 시트(⑤ 7:2489)·방문 화면(25:347)이
+ * 같은 블록을 쓴다.
  *
  * 칩 문구는 Figma의 `심각`이 아니라 `GRADE_LABEL`이다 —
  * `주의`가 경보 단계 이름과 겹치기 때문이다 (ADR-0014, AGENTS.md 도메인 규칙 2).
@@ -51,10 +52,10 @@ export function SubjectSummary({
       */}
       <div className="flex items-start gap-3 text-body-15 text-text-supporting">
         {phone && (
-          <span className="flex shrink-0 items-center gap-2">
+          <a href={`tel:${phone}`} className="flex shrink-0 items-center gap-2">
             <PhoneIcon className="size-[21px] shrink-0 text-icon-default" />
             {phone}
-          </span>
+          </a>
         )}
         <span className="flex min-w-0 flex-1 items-start gap-2">
           <MapPinIcon className="size-[18px] shrink-0 translate-y-0.5 text-icon-default" />

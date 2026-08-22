@@ -56,6 +56,14 @@ export function formatBoardDate(isoDate: string): string {
   return `${month}월 ${day}일(${weekday})`;
 }
 
+/** `"2026-08-20"` → 방문 히스토리의 짧은 날짜 `"8/20 (목)"` */
+export function formatHistoryDate(isoDate: string): string {
+  const { year, month, day } = requireIsoDateParts(isoDate);
+  const weekday =
+    WEEKDAY_LABEL[new Date(Date.UTC(year, month - 1, day)).getUTCDay()];
+  return `${month}/${day} (${weekday})`;
+}
+
 /** 경보일 날짜에서 나이 계산 기준 연도를 뽑는다 — 스코어링 엔진과 같은 기준을 쓰기 위한 것 */
 export function yearOfIsoDate(isoDate: string): number {
   return requireIsoDateParts(isoDate).year;

@@ -292,6 +292,18 @@ export const VISIT_RESULT_LABEL: Record<VisitResult, string> = {
   AIRCON_ISSUE: "에어컨 없음·고장",
 };
 
+/**
+ * 방문 전에 담당자가 현장에서 확인할 항목 — 방문 화면이 그대로 표시한다 (Figma 25:347).
+ *
+ * 결과값과 달리 체크리스트는 저장하지 않는다. 담당자가 방문 중 놓치기 쉬운 폭염 위험을
+ * 같은 순서로 읽게 하는 안내다. 한파 모드를 넣을 때는 경보 종류별 상수로 분리해야 한다.
+ */
+export const VISIT_CHECKLIST: readonly string[] = [
+  "집 안이 더운지 확인해 주세요",
+  "얼굴 홍조나 어눌한 말이 보이면 119를 불러요",
+  "선풍기나 에어컨이 작동하는지 확인해 주세요",
+];
+
 export function isVisitResult(value: unknown): value is VisitResult {
   return (
     typeof value === "string" &&

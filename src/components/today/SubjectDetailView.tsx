@@ -4,14 +4,13 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { GRADE_CHIP } from "@/components/today/gradeStyles";
 import { RecordGrid } from "@/components/today/RecordGrid";
+import { RiskReasonsCard } from "@/components/today/RiskReasonsCard";
+import { VisitDetailView } from "@/components/today/VisitDetailView";
 import {
-  AlertCircleIcon,
   ChevronLeftIcon,
-  HomeIcon,
   InfoIcon,
   MapPinIcon,
   PhoneIcon,
-  UserIcon,
 } from "@/components/today/icons";
 import type { CheckOutcome } from "@/lib/board/detail";
 import type { SubjectDetail } from "@/lib/board/subject";
@@ -20,46 +19,14 @@ import {
   NO_ANSWER_PROMOTE_AT,
   NO_ANSWER_RETRY_INTERVAL_MS,
 } from "@/lib/escalation/transition";
-import {
-  type LabeledReason,
-  REASON_CATEGORY_LABEL,
-  ReasonCategory,
-} from "@/lib/scoring/reasons";
 
 /**
  * 담당자 · 대상자 상세 + 원터치 기록 — FR-4·FR-5
- * 화면 설계: Figma ② 3:505 (기록 버튼은 같은 화면의 이전 판 1:812)
+ * 일반 상세는 Figma ② 3:505, 방문 상태는 Figma 25:347의 `VisitDetailView`로 분기한다.
  *
  * 보드에서 연 때와 주소로 직접 들어올 때 같은 화면을 쓴다.
  * 위험 사유는 스코어링 엔진 문장을 그대로 싣고 분류 아이콘만 붙인다 (AGENTS.md 도메인 규칙 3).
  */
-
-const REASON_ICON: Record<ReasonCategory, typeof UserIcon> = {
-  [ReasonCategory.PERSONAL]: UserIcon,
-  [ReasonCategory.BUILDING]: HomeIcon,
-  [ReasonCategory.WEATHER]: AlertCircleIcon,
-};
-
-function ReasonRow({ reason }: { reason: LabeledReason }) {
-  const Icon = reason.category ? REASON_ICON[reason.category] : null;
-  return (
-    <li className="flex items-center gap-2.5 text-body-16 text-text-primary">
-      {Icon && (
-        <Icon
-          className={`size-5 shrink-0 ${
-            reason.category === ReasonCategory.WEATHER
-              ? "text-status-critical"
-              : "text-icon-default"
-          }`}
-        />
-      )}
-      {reason.category && (
-        <span className="font-bold">{REASON_CATEGORY_LABEL[reason.category]}</span>
-      )}
-      <span>{reason.text}</span>
-    </li>
-  );
-}
 
 function Callout({ children }: { children: ReactNode }) {
   return (
@@ -144,12 +111,22 @@ export function SubjectDetailView({
   onBack?: () => void;
   onRecorded?: (outcome: CheckOutcome) => void;
 }) {
+  if (detail.nextCheckKind === CheckKind.VISIT) {
+    return (
+      <VisitDetailView
+        detail={detail}
+        backHref={backHref}
+        onBack={onBack}
+      />
+    );
+  }
+
   /*
    * 방문 대상 가구에는 전화 걸기를 큰 버튼으로 내밀지 않는다 — 심각 단계는 전화로 '괜찮다'를
    * 확인하지 않는 것이 설계다 (PRD F3). 번호 자체는 위 연락처 줄에서 그대로 누를 수 있다.
    */
-  const showCallCta =
-    detail.phone !== null && detail.nextCheckKind !== CheckKind.VISIT;
+  // 방문 상태는 위에서 전용 화면으로 빠졌으므로 여기에는 전화·완료 상태만 남는다.
+  const showCallCta = detail.phone !== null;
 
   return (
     <div className="mx-auto flex w-full max-w-[520px] flex-1 flex-col bg-background-subtle">
@@ -209,17 +186,7 @@ export function SubjectDetailView({
         </section>
 
         {detail.assessment && (
-          <section className="flex w-full flex-col gap-2.5 rounded-[10px] border border-border-default bg-surface-default p-6">
-            <h2 className="text-label-15 text-text-secondary">위험 사유</h2>
-            <ul className="flex flex-col gap-2.5">
-              {detail.assessment.reasons.map((reason) => (
-                <ReasonRow key={reason.text} reason={reason} />
-              ))}
-            </ul>
-            <p className="text-body-15 text-text-secondary">
-              대응 지시 · {detail.assessment.plan}
-            </p>
-          </section>
+          <RiskReasonsCard assessment={detail.assessment} showPlan />
         )}
 
         <RecordArea detail={detail} onRecorded={onRecorded} />
