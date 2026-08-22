@@ -71,7 +71,13 @@ export function BottomNav({
             >
               <span
                 aria-hidden="true"
-                className="size-[26px] shrink-0"
+                /*
+                 * 상자는 30px인데 세로 여백을 2px씩 깎아 자리는 Figma의 26px 그대로 차지한다.
+                 * 핀(21.2334×24.3256)은 26px 상자 안에서 위아래 여유가 0.84px뿐이라
+                 * `mask-clip: border-box`가 기기에 따라 윗머리를 깎았다 — 여유를 2.84px로 늘린다.
+                 * `maskSize`는 그대로라 그려지는 아이콘 크기·위치는 달라지지 않는다.
+                 */
+                className="-my-[2px] size-[30px] shrink-0"
                 style={{
                   backgroundColor: "currentColor",
                   WebkitMaskImage: `url('${icon}')`,
