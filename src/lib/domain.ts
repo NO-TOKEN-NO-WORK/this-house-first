@@ -293,8 +293,8 @@ export const CALL_RESULT_LABEL: Record<CallResult, string> = {
 /**
  * 통화 결과 시트의 음성 파일 선택 문구 (Figma 163:3468 · 붙인 상태 164:9043).
  *
- * 데모 UI라 고른 파일은 서버로 가지 않는다. 그 사실을 화면에 적지는 않는다 —
- * 디자인에 없는 문구이고, 데모에서 먼저 보여 줄 것은 흐름이다 (ADR-0014 결과 9).
+ * 데모 UI라 고른 파일은 서버로 가지 않는다. 저장된 것으로 오해하지 않도록 비저장 안내를
+ * 함께 표시한다 (ADR-0014 결과 9).
  * `REMOVE`는 화면에 보이지 않는 `aria-label`이라 Figma에 대응하는 글자가 없다.
  */
 export const CALL_RECORDING_LABELS = {
@@ -302,6 +302,7 @@ export const CALL_RECORDING_LABELS = {
   EMPTY: "전화 음성 파일 (최대 1개)",
   REMOVE: "첨부한 음성 파일 지우기",
   GUIDE: "‘전화 앱 → 통화기록 → 해당 통화 → 녹음 확인’에서 확인",
+  NOT_SAVED: "현재 음성 파일은 저장되지 않습니다.",
 } as const;
 
 /**
@@ -319,6 +320,7 @@ export const VISIT_ATTACHMENT_LABELS = {
   PHOTO_REMOVE: "첨부한 사진 지우기",
   AUDIO_EMPTY: "음성 파일 (최대 1개)",
   AUDIO_REMOVE: "첨부한 음성 파일 지우기",
+  NOT_SAVED: "현재 사진과 음성 파일은 저장되지 않습니다.",
 } as const;
 
 /** 방문 기록에 붙일 수 있는 사진 수 — Figma 164:8695의 5칸과 `PHOTO_EMPTY` 문구가 함께 따른다 */
@@ -482,13 +484,12 @@ export const CONVERSATION_ONGOING_MAX = 3;
 /**
  * 대상자 정보 화면의 탭·상세 문구 (Figma 164:7618 · 기록 상세 모달 167:9539).
  *
- * `BRIEFING_TAB`은 Figma의 `AI 요약`을 그대로 쓴다 — 화면에 찍히는 이름은 디자인을 따르고,
- * 기획 문서·ADR의 개념 이름은 `맥락 브리핑`(FR-12 · ADR-0024)으로 남는다. 탭과 대상자 상세의
- * 인수인계 카드가 같은 값을 읽으므로 화면 두 곳의 이름이 갈라지지 않는다.
+ * Figma의 `AI 요약` 대신 제품 용어 `맥락 브리핑`을 쓴다. AI는 근거 기록을 바탕으로 일부
+ * 문장을 만들 뿐이고 기능 전체가 단순 요약은 아니다 (FR-12 · ADR-0024).
  */
 export const SUBJECT_INFORMATION_LABELS = {
   HISTORY_TAB: "방문 히스토리",
-  BRIEFING_TAB: "AI 요약",
+  BRIEFING_TAB: "맥락 브리핑",
   OVERVIEW: "한눈에 보기",
   CONVERSATION_SUMMARY: "대화 요약",
   CONVERSATION_SUGGESTIONS: "AI 대화 추천",

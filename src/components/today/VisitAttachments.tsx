@@ -15,7 +15,7 @@ import { VISIT_ATTACHMENT_LABELS, VISIT_PHOTO_MAX } from "@/lib/domain";
  * ⚠️ 화면만 있고 저장은 없다. 전화 시트의 음성 첨부(`CallResultSheet`)와 같다 — 고른 파일은
  * 이 화면 안에만 남고 `저장하기`로 서버에 올라가지 않는다. 실제로 저장하려면 저장소·보존
  * 기간·열람 권한을 정하는 ADR이 먼저다 (ADR-0024가 그은 경계는 텍스트 메모까지).
- * 그 사실을 화면에 적지는 않는다 — 디자인에 없는 문구다 (ADR-0014 결과 9).
+ * 저장된 것으로 오해하지 않도록 비저장 안내를 함께 표시한다 (ADR-0014 결과 9).
  *
  * 파일을 서버로 보내지 않으므로 미리보기는 `URL.createObjectURL`로 만든다. 만드는 자리는
  * 렌더가 아니라 change 핸들러다 — 렌더에서 만들면 리렌더마다 새 URL이 새고, 서버 렌더에서는
@@ -43,39 +43,38 @@ export function VisitAttachments({ disabled = false }: { disabled?: boolean }) {
     화면을 떠날 때 미리보기 URL을 되돌린다. 최신 목록을 ref로 들고 있어야 정리 이펙트가
     `photos`를 의존성으로 잡지 않는다 — 잡으면 사진을 추가할 때마다 살아 있는 URL을 되돌린다.
   */
-  const liveUrls = useRef<string[]>([]);
-  useEffect(() => {
-    liveUrls.current = photos.map((photo) => photo.url);
-  }, [photos]);
+  const photosRef = useRef<Photo[]>([]);
+  const nextPhotoId = useRef(0);
   useEffect(
     () => () => {
-      for (const url of liveUrls.current) URL.revokeObjectURL(url);
+      for (const photo of photosRef.current) URL.revokeObjectURL(photo.url);
     },
     [],
   );
 
   function addPhotos(files: FileList | null) {
     if (!files || files.length === 0) return;
-    setPhotos((current) => {
-      const room = VISIT_PHOTO_MAX - current.length;
-      if (room <= 0) return current;
-      const added = Array.from(files)
-        .slice(0, room)
-        .map((file, index) => ({
-          id: `${file.name}-${file.lastModified}-${current.length + index}`,
-          name: file.name,
-          url: URL.createObjectURL(file),
-        }));
-      return [...current, ...added];
-    });
+    const room = VISIT_PHOTO_MAX - photosRef.current.length;
+    if (room <= 0) return;
+    /* URL 생성은 상태 갱신 함수 밖에서 한다 — React가 갱신 함수를 재호출해도 blob URL이 새지 않는다. */
+    const added = Array.from(files)
+      .slice(0, room)
+      .map((file) => ({
+        id: `${file.name}-${file.lastModified}-${nextPhotoId.current++}`,
+        name: file.name,
+        url: URL.createObjectURL(file),
+      }));
+    const next = [...photosRef.current, ...added];
+    photosRef.current = next;
+    setPhotos(next);
   }
 
   function removePhoto(id: string) {
-    setPhotos((current) => {
-      const target = current.find((photo) => photo.id === id);
-      if (target) URL.revokeObjectURL(target.url);
-      return current.filter((photo) => photo.id !== id);
-    });
+    const target = photosRef.current.find((photo) => photo.id === id);
+    if (target) URL.revokeObjectURL(target.url);
+    const next = photosRef.current.filter((photo) => photo.id !== id);
+    photosRef.current = next;
+    setPhotos(next);
   }
 
   const full = photos.length >= VISIT_PHOTO_MAX;
@@ -95,14 +94,17 @@ export function VisitAttachments({ disabled = false }: { disabled?: boolean }) {
               <PhotoInput disabled={disabled} onPick={addPhotos} />
             </label>
           ) : (
-            <ul className="flex flex-1 items-center justify-center gap-2">
+            <ul className="flex min-w-0 flex-1 items-center justify-start gap-2 overflow-x-auto">
               {photos.map((photo) => (
-                <li key={photo.id} className="relative size-[58px] shrink-0">
+                <li
+                  key={photo.id}
+                  className="relative size-visit-attachment-thumbnail shrink-0"
+                >
                   {/* eslint-disable-next-line @next/next/no-img-element -- blob: 미리보기라 next/image의 최적화 파이프라인을 태울 수 없다 */}
                   <img
                     src={photo.url}
                     alt={photo.name}
-                    className="size-full rounded-[4px] object-cover"
+                    className="size-full rounded-sm object-cover"
                   />
                   {/*
                     누르는 자리는 44px이되 썸네일(58px) 안에 갇힌다 — 밖으로 넓히면 옆 사진의
@@ -124,7 +126,7 @@ export function VisitAttachments({ disabled = false }: { disabled?: boolean }) {
               {/* 다섯 장을 채우면 더 고를 자리를 내밀지 않는다 — 문구가 약속한 상한이다 */}
               {!full && (
                 <li className="shrink-0">
-                  <label className="flex size-11 cursor-pointer items-center justify-center rounded-[4px] border border-border-soft text-icon-secondary">
+                  <label className="flex size-11 cursor-pointer items-center justify-center rounded-sm border border-border-soft text-icon-secondary">
                     <PhotoIcon className="size-5" />
                     <span className="sr-only">
                       {VISIT_ATTACHMENT_LABELS.PHOTO_EMPTY}
@@ -172,6 +174,9 @@ export function VisitAttachments({ disabled = false }: { disabled?: boolean }) {
             </button>
           )}
         </div>
+        <p className="text-center text-body-14 text-status-warning-strong">
+          {VISIT_ATTACHMENT_LABELS.NOT_SAVED}
+        </p>
       </div>
     </section>
   );

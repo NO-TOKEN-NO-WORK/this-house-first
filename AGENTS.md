@@ -62,7 +62,7 @@ Next.js 16 App Router 모놀리스([ADR-0001](docs/adr/0001-nextjs-fullstack-mon
 - 도메인 개념 주석·UI 문자열은 한국어, 식별자는 영어
 - 서버 전용 로직은 `src/lib/`, 화면은 `src/app/`, 재사용 UI는 `src/components/`
 - 외부 API 호출은 Route Handler(`src/app/api/`)를 거친다 — 클라이언트에서 공공 API 직접 호출 금지
-- 용어 통일: 담당자(생활지원사) / 관리자 / 대상자 / 경보 단계(주의·경계·비상) / 위험 단계(심각·경계·주의) / 승격(방문 큐로) / 맥락 브리핑(FR-12 — 기획 문서·ADR·코드 주석의 개념 이름. 단, **화면에 찍히는 이름은 Figma대로 `AI 요약`**이며 그 문자열은 `SUBJECT_INFORMATION_LABELS.BRIEFING_TAB` 한 곳이 정한다)
+- 용어 통일: 담당자(생활지원사) / 관리자 / 대상자 / 경보 단계(주의·경계·비상) / 위험 단계(심각·경계·주의) / 승격(방문 큐로) / 맥락 브리핑(FR-12 — `요약`·`AI 분석`이라 부르지 않는다)
 
 ## Git / 협업
 

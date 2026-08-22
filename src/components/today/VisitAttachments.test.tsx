@@ -54,12 +54,8 @@ describe("VisitAttachments", () => {
     expect(html).not.toContain(VISIT_ATTACHMENT_LABELS.PHOTO_REMOVE);
   });
 
-  /*
-    저장은 없지만 그 사실을 화면에 적지도 않는다 — 디자인에 없는 문구다 (ADR-0014 결과 9).
-    저장 계약을 지키는 것은 `/api/checks` 본문이고, 이 검사는 문구가 다시 들어오는 것을 막는다.
-  */
-  it("디자인에 없는 안내 문구를 덧붙이지 않는다", () => {
-    expect(render()).not.toContain("저장되지 않습니다");
+  it("첨부가 저장되지 않는다는 안내를 보여 준다", () => {
+    expect(render()).toContain(VISIT_ATTACHMENT_LABELS.NOT_SAVED);
   });
 
   it("붙인 사진은 미리보기와 장별 지우기 버튼을 갖는다", () => {

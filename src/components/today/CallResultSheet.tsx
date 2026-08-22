@@ -209,8 +209,8 @@ export function CallResultSheet({
 
           통화 음성은 어르신의 육성이라 저장하려면 저장소·전사 도입과 개인정보 경계를 새로 정하는
           ADR이 먼저다 — ADR-0024가 정한 경계는 텍스트 메모까지다. 고른 파일 이름은 이 시트 안에만
-          남고 `저장하기`로 서버에 올라가지 않는다. 그 사실을 화면에 적지는 않는다 — 디자인에
-          없는 문구다 (ADR-0014 결과 9).
+          남고 `저장하기`로 서버에 올라가지 않는다. 저장된 것으로 오해하지 않도록 안내한다
+          (ADR-0014 결과 9).
         */}
         <section className="flex flex-col gap-5 pt-3">
           <h2 className="text-heading-18 text-text-subtle">
@@ -254,6 +254,9 @@ export function CallResultSheet({
             </div>
             <p className="text-center text-body-14 text-text-tertiary">
               {CALL_RECORDING_LABELS.GUIDE}
+            </p>
+            <p className="text-center text-body-14 text-status-warning-strong">
+              {CALL_RECORDING_LABELS.NOT_SAVED}
             </p>
           </div>
         </section>

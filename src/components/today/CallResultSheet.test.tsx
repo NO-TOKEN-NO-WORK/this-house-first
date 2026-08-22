@@ -143,7 +143,7 @@ describe("CallResultSheet", () => {
   /*
    * 음성 파일 첨부는 화면만 있고 저장은 없다 (Figma 163:3468 · 164:9043).
    * 아래 검사들은 그 사실을 고정한다 — 저장 계약(`onSave`)에 파일이 끼어들면 여기서 깨진다.
-   * 다만 "저장되지 않는다"를 화면에 적지는 않는다: 디자인에 없는 문구다 (ADR-0014 결과 9).
+   * 저장된 것으로 오해하지 않도록 화면에도 비저장 안내를 둔다 (ADR-0014 결과 9).
    */
   it("첨부 전에는 무엇을 붙이는 자리인지 안내만 보여 준다", () => {
     const html = render(base);
@@ -152,7 +152,7 @@ describe("CallResultSheet", () => {
     expect(text).toContain(CALL_RECORDING_LABELS.SECTION);
     expect(text).toContain(CALL_RECORDING_LABELS.EMPTY);
     expect(text).toContain(CALL_RECORDING_LABELS.GUIDE);
-    expect(text).not.toContain("저장되지 않습니다");
+    expect(text).toContain(CALL_RECORDING_LABELS.NOT_SAVED);
     expect(html).toContain('accept="audio/*"');
     expect(text).not.toContain(CALL_RECORDING_LABELS.REMOVE);
   });
