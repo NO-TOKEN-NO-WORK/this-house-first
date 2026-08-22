@@ -399,15 +399,28 @@ export const VISIT_RECORD_RESULTS: readonly VisitResult[] = [
 ];
 
 /**
+ * 한 줄을 굵은 앞부분(`emphasis`)과 이어지는 설명(`rest`)으로 나눈다.
+ *
+ * Figma(167:10191)는 각 줄에서 **확인해야 할 대상**만 Label/16으로 굵게 쓴다.
+ * 굵기를 화면에서 정하면 줄마다 달라지므로 어디를 굵게 읽을지도 문구와 함께 여기서 정한다.
+ */
+export interface VisitChecklistItem {
+  /** 굵게 읽는 앞부분 — 확인해야 할 대상 */
+  emphasis: string;
+  /** 이어지는 설명. `emphasis`에 그대로 붙여 한 문장이 된다 */
+  rest: string;
+}
+
+/**
  * 방문 전에 담당자가 현장에서 확인할 항목 — 방문 화면이 그대로 표시한다 (Figma 25:347).
  *
  * 결과값과 달리 체크리스트는 저장하지 않는다. 담당자가 방문 중 놓치기 쉬운 폭염 위험을
  * 같은 순서로 읽게 하는 안내다. 한파 모드를 넣을 때는 경보 종류별 상수로 분리해야 한다.
  */
-export const VISIT_CHECKLIST: readonly string[] = [
-  "집 안이 더운지 확인해 주세요",
-  "얼굴 홍조나 어눌한 말이 보이면 119를 불러요",
-  "선풍기나 에어컨이 작동하는지 확인해 주세요",
+export const VISIT_CHECKLIST: readonly VisitChecklistItem[] = [
+  { emphasis: "집 안이 더운지", rest: " 확인해 주세요" },
+  { emphasis: "얼굴 홍조나 어눌한 말", rest: "이 보이면 119를 불러요" },
+  { emphasis: "선풍기나 에어컨이 작동", rest: "하는지 확인해 주세요" },
 ];
 
 /** 맥락 브리핑 인수인계 3줄의 고정 분류 — 모델은 이 값 밖의 분류를 만들 수 없다 (ADR-0024). */
@@ -454,10 +467,16 @@ export const CONVERSATION_SUMMARY_MAX = 3;
 /** 대화 요약 하나에 붙는 `진행 중인 사항` 상한. */
 export const CONVERSATION_ONGOING_MAX = 3;
 
-/** 대상자 정보 화면의 새 탭·상세 문구 — Figma 용어를 제품 용어(ADR-0024)로 맞춘다. */
+/**
+ * 대상자 정보 화면의 탭·상세 문구.
+ *
+ * 화면에 보이는 이름은 Figma(167:10129)를 따르고, 그 밖의 값은 제품 용어(ADR-0024)에 맞춘다.
+ * `AI 요약`이 그 예외다 — 문서·코드·PR에서 이 기능의 이름은 여전히 `맥락 브리핑`이다.
+ */
 export const SUBJECT_INFORMATION_LABELS = {
   HISTORY_TAB: "방문 히스토리",
-  BRIEFING_TAB: "맥락 브리핑",
+  /* Figma 167:10322는 이 탭을 `AI 요약`이라 부른다. 문서·코드의 개념 이름은 맥락 브리핑 그대로다 */
+  BRIEFING_TAB: "AI 요약",
   OVERVIEW: "한눈에 보기",
   CONVERSATION_SUMMARY: "대화 요약",
   CONVERSATION_SUGGESTIONS: "AI 대화 추천",

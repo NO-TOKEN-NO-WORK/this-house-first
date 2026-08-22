@@ -22,16 +22,17 @@ function ReasonRow({ reason }: { reason: LabeledReason }) {
   return (
     <li className="flex items-center gap-2.5 text-body-16 text-text-primary">
       {Icon && (
+        /* 색은 Figma 167:10164 그대로 — 개인·건물은 action-primary, 기상만 위험색이다 */
         <Icon
           className={`size-5 shrink-0 ${
             reason.category === ReasonCategory.WEATHER
               ? "text-status-critical"
-              : "text-icon-default"
+              : "text-action-primary"
           }`}
         />
       )}
       {reason.category && (
-        <span className="shrink-0 font-bold">
+        <span className="shrink-0 text-label-16">
           {REASON_CATEGORY_LABEL[reason.category]}
         </span>
       )}
