@@ -90,6 +90,8 @@ const SUBJECT_AVATARS = [
   "/admin/elder-female-3.png",
 ] as const;
 
+const ADMIN_FILTER_FORM_ID = "admin-filter-form";
+
 const LAST_UPDATED_FORMAT = new Intl.DateTimeFormat("ko-KR", {
   hour: "2-digit",
   minute: "2-digit",
@@ -430,51 +432,44 @@ function WorkerPanel({ dashboard }: { dashboard: AdminAlertedDashboard }) {
 }
 
 function StatusLegend({
-  date,
-  workerId,
   subjectQuery,
   selectedStatuses,
 }: {
-  date: string;
-  workerId: string | null;
   subjectQuery?: string;
   selectedStatuses?: readonly HouseholdStatus[];
 }) {
   return (
     <section className={styles.statusFilters} aria-labelledby="status-filter-title">
       <h2 id="status-filter-title" className={styles.sidebarTitle}>상태</h2>
-      <form action="/admin" method="get">
-        <input name="date" type="hidden" value={date} />
-        {workerId ? <input name="workerId" type="hidden" value={workerId} /> : null}
-        {subjectQuery ? <input name="subjectQuery" type="hidden" value={subjectQuery} /> : null}
-        <input name="status" type="hidden" value="__none" />
-        <ul>
-          {STATUS_LEGEND.map((entry) => (
-            <li key={`${entry.category}-${entry.statuses.join("-")}`}>
-              <input
-                aria-label={`${entry.statuses.map((status) => HOUSEHOLD_STATUS_LABEL[status]).join(" · ")} 표시`}
-                defaultChecked={
-                  selectedStatuses === undefined ||
-                  entry.statuses.some((status) => selectedStatuses.includes(status))
-                }
-                name="status"
-                type="checkbox"
-                value={entry.statuses[0]}
-              />
-              <Image
-                alt=""
-                aria-hidden="true"
-                className={styles.statusIcon}
-                height={20}
-                src={entry.icon}
-                width={20}
-              />
-              {entry.statuses.map((status) => HOUSEHOLD_STATUS_LABEL[status]).join(" · ")}
-            </li>
-          ))}
-        </ul>
-        <button className={styles.statusSubmit} type="submit">상태 적용</button>
-      </form>
+      {subjectQuery ? <input form={ADMIN_FILTER_FORM_ID} name="subjectQuery" type="hidden" value={subjectQuery} /> : null}
+      <input form={ADMIN_FILTER_FORM_ID} name="status" type="hidden" value="__none" />
+      <ul>
+        {STATUS_LEGEND.map((entry) => (
+          <li key={`${entry.category}-${entry.statuses.join("-")}`}>
+            <input
+              aria-label={`${entry.statuses.map((status) => HOUSEHOLD_STATUS_LABEL[status]).join(" · ")} 표시`}
+              defaultChecked={
+                selectedStatuses === undefined ||
+                entry.statuses.some((status) => selectedStatuses.includes(status))
+              }
+              form={ADMIN_FILTER_FORM_ID}
+              name="status"
+              type="checkbox"
+              value={entry.statuses[0]}
+            />
+            <Image
+              alt=""
+              aria-hidden="true"
+              className={styles.statusIcon}
+              height={20}
+              src={entry.icon}
+              width={20}
+            />
+            {entry.statuses.map((status) => HOUSEHOLD_STATUS_LABEL[status]).join(" · ")}
+          </li>
+        ))}
+      </ul>
+      <button className={styles.statusSubmit} form={ADMIN_FILTER_FORM_ID} type="submit">상태 적용</button>
     </section>
   );
 }
@@ -501,7 +496,7 @@ function FilterForm({
     worker.name.includes(workerQuery.trim()),
   );
   return (
-    <form action="/admin" method="get" className={styles.filterForm}>
+    <form action="/admin" method="get" className={styles.filterForm} id={ADMIN_FILTER_FORM_ID}>
       <label className={styles.filterField}>
         <span className={styles.sidebarTitle}>날짜</span>
         <span className={styles.dateControl}>
@@ -628,10 +623,8 @@ export function AdminDashboardView({
         <aside className={styles.sidebar} aria-label="관제 필터와 대상자 상세">
           <FilterForm dashboard={dashboard} workerQuery={filters.workerQuery} />
           <StatusLegend
-            date={dashboard.date}
             selectedStatuses={filters.selectedStatuses}
             subjectQuery={filters.subjectQuery}
-            workerId={dashboard.selectedWorkerId}
           />
         </aside>
         <section className={styles.dashboardContent} aria-label="관리자 관제 현황">
