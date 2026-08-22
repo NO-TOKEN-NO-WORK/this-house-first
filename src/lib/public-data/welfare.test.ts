@@ -90,4 +90,16 @@ describe("중앙부처 복지서비스 동기화", () => {
       message: "등록되지 않은 서비스키",
     });
   });
+
+  it("구조화되지 않은 HTTP 오류는 일반 오류로 반환한다", async () => {
+    const fetcher: PublicDataFetch = async () =>
+      new Response("upstream failed", { status: 503 });
+
+    await expect(
+      refreshWelfarePrograms({ serviceKey: "test-key", fetcher }),
+    ).rejects.toMatchObject({
+      code: "UPSTREAM_HTTP_ERROR",
+      message: "복지서비스 API가 HTTP 503로 응답했습니다.",
+    });
+  });
 });

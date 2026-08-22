@@ -181,6 +181,21 @@ describe("POST /api/welfare-scan", () => {
     });
   });
 
+  it("공공데이터포털 인증 오류 코드를 안전한 원인으로 안내한다", async () => {
+    mocks.refreshWelfarePrograms.mockRejectedValue(
+      Object.assign(new Error("등록되지 않은 서비스키"), { code: "30" }),
+    );
+
+    const response = await POST();
+    const payload = await response.json();
+
+    expect(payload.data.connections.publicData).toEqual({
+      ok: false,
+      message: "공공데이터 인증 오류",
+      reason: "등록되지 않은 공공데이터 서비스키입니다.",
+    });
+  });
+
   it("알 수 없는 외부 오류 메시지는 상세 원인에서 숨긴다", async () => {
     mocks.refreshWelfarePrograms.mockRejectedValue(
       Object.assign(new Error("token=server-secret"), {
