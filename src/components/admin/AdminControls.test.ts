@@ -16,8 +16,8 @@ describe("requestDemoTrigger", () => {
     );
 
     expect(html).toContain('aria-label="주의 단계 발령"');
-    expect(html).toContain('aria-label="경보 단계 발령"');
-    expect(html).toContain('aria-label="비상 단계 발령"');
+    expect(html).toContain('aria-label="경계 단계 발령"');
+    expect(html).toContain('aria-label="심각 단계 발령"');
     expect(html).not.toContain("<select");
   });
 

@@ -139,7 +139,7 @@ describe("관리자 관제 화면", () => {
           workers: [{ id: "worker-1", name: "이담당" }],
           generatedAt: "2026-08-22T05:32:00.000Z",
           level: AlertLevel.EMERGENCY,
-          levelLabel: "비상",
+          levelLabel: "심각",
           feelsLikeMax: 38.4,
           summary: {
             total: 1,
@@ -163,7 +163,7 @@ describe("관리자 관제 화면", () => {
               lng: 128.56,
               grade: 1,
               score: 31.5,
-              reasons: ["1938년생 (88세)·독거", "오늘 비상 단계"],
+              reasons: ["1938년생 (88세)·독거", "오늘 심각 단계"],
               status: HouseholdStatus.VISIT_QUEUED,
               statusLabel:
                 HOUSEHOLD_STATUS_LABEL[HouseholdStatus.VISIT_QUEUED],
@@ -218,7 +218,7 @@ describe("관리자 관제 화면", () => {
           workers: [],
           generatedAt: "2026-08-22T08:00:00.000Z",
           level: AlertLevel.WARNING,
-          levelLabel: "경보",
+          levelLabel: "경계",
           feelsLikeMax: 35,
           summary: {
             total: 1,

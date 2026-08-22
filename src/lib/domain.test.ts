@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   AlertLevel,
+  ALERT_LEVEL_LABEL,
   CallResult,
   CheckKind,
   HouseholdStatus,
@@ -23,6 +24,12 @@ describe("도메인 상태값 검증", () => {
     expect(isRiskGrade(RiskGrade.CRITICAL)).toBe(true);
     expect(isRiskGrade(4)).toBe(false);
     expect(isRiskGrade("1")).toBe(false);
+  });
+
+  it("경보 단계 화면 문구는 주의·경계·심각이다", () => {
+    expect(ALERT_LEVEL_LABEL[AlertLevel.ADVISORY]).toBe("주의");
+    expect(ALERT_LEVEL_LABEL[AlertLevel.WARNING]).toBe("경계");
+    expect(ALERT_LEVEL_LABEL[AlertLevel.EMERGENCY]).toBe("심각");
   });
 
   it("Object 프로토타입의 속성은 상태값으로 허용하지 않는다", () => {

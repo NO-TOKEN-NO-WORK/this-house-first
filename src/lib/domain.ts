@@ -10,17 +10,17 @@
 export const AlertLevel = {
   /** 주의: 폭염특보 수준 */
   ADVISORY: "ADVISORY",
-  /** 경보: 체감 35도+ */
+  /** 경계: 체감 35도+ */
   WARNING: "WARNING",
-  /** 비상: 중대경보, 체감 38도+ */
+  /** 심각: 중대경보, 체감 38도+ */
   EMERGENCY: "EMERGENCY",
 } as const;
 export type AlertLevel = (typeof AlertLevel)[keyof typeof AlertLevel];
 
 export const ALERT_LEVEL_LABEL: Record<AlertLevel, string> = {
   ADVISORY: "주의",
-  WARNING: "경보",
-  EMERGENCY: "비상",
+  WARNING: "경계",
+  EMERGENCY: "심각",
 };
 
 /** 외부 입력(HTTP 본문·DB 문자열)이 유효한 경보 단계인지 검사 — SQLite에 enum이 없어 타입만으로는 못 막는다 */
