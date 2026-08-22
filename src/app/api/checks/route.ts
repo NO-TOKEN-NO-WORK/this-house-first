@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import {
   type CallResult,
+  CALL_RESULT_LABEL,
   CheckKind,
   HOUSEHOLD_STATUS_LABEL,
   isCallResult,
@@ -8,6 +9,7 @@ import {
   isVisitResult,
   parseHouseholdStatus,
   type VisitResult,
+  VISIT_RESULT_LABEL,
   WorkerRole,
 } from "@/lib/domain";
 import { todayInKst } from "@/lib/board/today";
@@ -51,6 +53,14 @@ type ParsedCheck =
   | { kind: typeof CheckKind.CALL; result: CallResult }
   | { kind: typeof CheckKind.VISIT; result: VisitResult };
 
+/**
+ * 허용 값 목록은 도메인 상수에서 뽑는다 — 손으로 적으면 값이 늘어날 때 메시지만 낡는다
+ * (`CallResult.EMERGENCY_119`를 더했을 때 실제로 그렇게 됐다).
+ */
+function allowedList(labels: Record<string, string>): string {
+  return Object.keys(labels).join(" · ");
+}
+
 function parseCheck(kind: unknown, result: unknown): ParsedCheck {
   if (!isCheckKind(kind)) {
     throw badRequest("kind는 CALL 또는 VISIT이어야 합니다.");
@@ -58,14 +68,14 @@ function parseCheck(kind: unknown, result: unknown): ParsedCheck {
   if (kind === CheckKind.CALL) {
     if (!isCallResult(result)) {
       throw badRequest(
-        "전화 결과는 OK · NO_ANSWER · SYMPTOM · UNREACHABLE 중 하나여야 합니다.",
+        `전화 결과는 ${allowedList(CALL_RESULT_LABEL)} 중 하나여야 합니다.`,
       );
     }
     return { kind, result };
   }
   if (!isVisitResult(result)) {
     throw badRequest(
-      "방문 결과는 OK · ACTED · EMERGENCY_119 · AIRCON_ISSUE 중 하나여야 합니다.",
+      `방문 결과는 ${allowedList(VISIT_RESULT_LABEL)} 중 하나여야 합니다.`,
     );
   }
   return { kind, result };

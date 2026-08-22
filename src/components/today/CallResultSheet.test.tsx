@@ -1,0 +1,132 @@
+import { isValidElement, type ReactElement, type ReactNode } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+/*
+ * 컴포넌트를 렌더 밖에서 함수로 부르므로 훅은 목으로 대신한다 (GradeFilter.test.tsx와 같은 방식).
+ * `useState`는 호출 순서로 구분한다 — 초깃값만 보면 `pending(false)`과 `result(null)`이 섞인다.
+ */
+const hooks = vi.hoisted(() => ({
+  cursor: 0,
+  values: {} as Record<number, unknown>,
+}));
+
+vi.mock("react", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("react")>()),
+  useId: () => "call-result",
+  useState: (initial: unknown) => {
+    const index = hooks.cursor++;
+    return [index in hooks.values ? hooks.values[index] : initial, vi.fn()];
+  },
+}));
+
+/** CallResultSheet의 useState 호출 순서 */
+const RESULT = 0;
+const PENDING = 2;
+const ERROR = 3;
+
+import { CallResultSheet } from "./CallResultSheet";
+import { CallResult, CALL_RESULT_LABEL, RiskGrade } from "@/lib/domain";
+
+function contentOf(element: ReactNode): string {
+  if (!isValidElement<{ children?: ReactNode }>(element)) {
+    throw new Error("Dialog 엘리먼트가 아니다");
+  }
+  return renderToStaticMarkup(element.props.children);
+}
+
+const base = {
+  open: true,
+  onClose: () => {},
+  onSave: () => {},
+  name: "김순자",
+  age: 88,
+  livesAlone: true,
+  grade: RiskGrade.CRITICAL,
+  phone: "010-2345-1938",
+  address: "대구광역시 서구 비산동 1",
+};
+
+describe("CallResultSheet", () => {
+  beforeEach(() => {
+    hooks.cursor = 0;
+    hooks.values = {};
+  });
+
+  /** 훅 목은 렌더마다 커서를 처음으로 되돌려야 한다 */
+  function render(props: Parameters<typeof CallResultSheet>[0]) {
+    hooks.cursor = 0;
+    return contentOf(CallResultSheet(props) as ReactElement);
+  }
+
+  it("결과 버튼 문구는 도메인 상수를 그대로 쓴다", () => {
+    const html = render(base);
+
+    for (const value of [
+      CallResult.OK,
+      CallResult.SYMPTOM,
+      CallResult.NO_ANSWER,
+      CallResult.EMERGENCY_119,
+    ]) {
+      expect(html).toContain(CALL_RESULT_LABEL[value]);
+    }
+    // 연락두절은 Figma 시트에 없다 — 상세 화면에서만 고른다
+    expect(html).not.toContain(CALL_RESULT_LABEL[CallResult.UNREACHABLE]);
+  });
+
+  it("바텀 시트로 연다", () => {
+    hooks.cursor = 0;
+    const sheet = CallResultSheet(base) as ReactElement<{
+      placement?: string;
+    }>;
+
+    expect(sheet.props.placement).toBe("bottom");
+  });
+
+  it("대상자 머리글과 메모 입력을 함께 보여 준다", () => {
+    const html = render(base);
+
+    expect(html).toContain("김순자");
+    expect(html).toContain("대구광역시 서구 비산동 1");
+    expect(html).toContain("통화 어땠나요?");
+    expect(html).toContain("메모 (선택)");
+  });
+
+  it("결과를 고르기 전에는 저장할 수 없다 — 빈 기록을 막는다", () => {
+    const html = render(base);
+
+    expect(html).toMatch(/<button[^>]*disabled[^>]*>\s*저장하기/);
+  });
+
+  it("결과를 고르면 저장 버튼이 열린다", () => {
+    hooks.values[RESULT] = CallResult.OK;
+    const html = render(base);
+
+    expect(html).not.toMatch(/<button[^>]*disabled[^>]*>\s*저장하기/);
+    // 고른 칸만 선택 표시가 붙는다
+    expect(html).toContain('aria-pressed="true"');
+  });
+
+  it("저장 중에는 다시 누를 수 없다", () => {
+    hooks.values[RESULT] = CallResult.OK;
+    hooks.values[PENDING] = true;
+    const html = render(base);
+
+    expect(html).toContain("저장 중…");
+    expect(html).toMatch(/<button[^>]*disabled[^>]*>\s*저장 중/);
+    // 결과 칸도 잠근다 — 저장 도중에 값이 바뀌면 안 된다
+    expect(html).toMatch(/aria-pressed="[^"]*"[^>]*disabled/);
+  });
+
+  it("저장이 실패하면 이유를 그대로 보여 주고 시트를 닫지 않는다", () => {
+    hooks.values[RESULT] = CallResult.NO_ANSWER;
+    hooks.values[ERROR] =
+      "재전화는 첫 무응답 기록 30분 후 가능합니다. 12분 뒤 다시 시도하세요.";
+    const html = render(base);
+
+    expect(html).toContain('role="alert"');
+    expect(html).toContain("12분 뒤 다시 시도하세요.");
+    // 실패해도 고른 값은 남는다 — 다시 누르면 되게
+    expect(html).toContain('aria-pressed="true"');
+  });
+});

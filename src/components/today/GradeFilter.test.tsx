@@ -28,6 +28,7 @@ type ElementProps = {
   children?: ReactNode;
   onClick?: () => void;
   returnGrade?: RiskGradeValue;
+  retryNote?: string;
 };
 
 function childrenOf(element: ReactElement<ElementProps>) {
@@ -57,6 +58,7 @@ function subject(name: string, grade: RiskGradeValue): BoardSubject {
     nextCheckKind:
       grade === RiskGrade.CRITICAL ? CheckKind.VISIT : CheckKind.CALL,
     lastResult: null,
+    lastCheckAtLabel: null,
     roadAddress: null,
     lat: 35.8,
     lng: 128.5,
@@ -138,6 +140,50 @@ describe("GradeFilter", () => {
     const [, list] = childrenOf(GradeFilter(props));
 
     expect(childrenOf(list).map((section) => section.key)).toEqual(expected);
+  });
+
+  function firstCardOf(props: Parameters<typeof GradeFilter>[0]) {
+    const [, list] = childrenOf(GradeFilter(props));
+    const [section] = childrenOf(list);
+    const [, subjects] = childrenOf(section!);
+    return childrenOf(subjects!)[0]!;
+  }
+
+  it("무응답 1회로 멈춘 가구는 진행 한 줄을 카드에 넘긴다", () => {
+    const waiting = {
+      ...subject("최덕례", RiskGrade.HIGH),
+      status: HouseholdStatus.NO_ANSWER_1,
+      statusLabel: "무응답 1회",
+      callAttempts: 1,
+      lastCheckAtLabel: "9시 10분",
+    };
+    const grouped = [{ ...groups[1]!, subjects: [waiting] }];
+    state.useState.mockReturnValue([RiskGrade.HIGH, state.setSelectedGrade]);
+
+    expect(firstCardOf({ ...props, groups: grouped }).props.retryNote).toBe(
+      "무응답 1회 · 9시 10분",
+    );
+  });
+
+  it("기록 시각을 모르면 상태 이름만 넘긴다", () => {
+    const waiting = {
+      ...subject("최덕례", RiskGrade.HIGH),
+      status: HouseholdStatus.NO_ANSWER_1,
+      statusLabel: "무응답 1회",
+      lastCheckAtLabel: null,
+    };
+    const grouped = [{ ...groups[1]!, subjects: [waiting] }];
+    state.useState.mockReturnValue([RiskGrade.HIGH, state.setSelectedGrade]);
+
+    expect(firstCardOf({ ...props, groups: grouped }).props.retryNote).toBe(
+      "무응답 1회",
+    );
+  });
+
+  it("아직 손대지 않은 가구에는 진행 한 줄을 붙이지 않는다", () => {
+    state.useState.mockReturnValue([RiskGrade.HIGH, state.setSelectedGrade]);
+
+    expect(firstCardOf(props).props.retryNote).toBeUndefined();
   });
 
   it("현재 위험 단계를 대상자 상세 링크에 넘긴다", () => {
