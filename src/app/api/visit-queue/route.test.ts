@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { SilentBoard } from "@/lib/board/today";
 
-const { getBoard, withKakaoWalkingRoute } = vi.hoisted(() => ({
+const { getBoard, withKakaoDrivingRoute } = vi.hoisted(() => ({
   getBoard: vi.fn(),
-  withKakaoWalkingRoute: vi.fn(),
+  withKakaoDrivingRoute: vi.fn(),
 }));
 
 vi.mock("@/lib/board/today", () => ({ getBoard }));
-vi.mock("@/lib/kakao/walking-route", () => ({ withKakaoWalkingRoute }));
+vi.mock("@/lib/kakao/driving-route", () => ({ withKakaoDrivingRoute }));
 
 import { GET } from "./route";
 
@@ -35,7 +35,7 @@ describe("GET /api/visit-queue", () => {
 
     expect(response.status).toBe(200);
     expect(getBoard).toHaveBeenCalledWith({ date: "2026-08-22", workerId: "worker-1" });
-    expect(withKakaoWalkingRoute).not.toHaveBeenCalled();
+    expect(withKakaoDrivingRoute).not.toHaveBeenCalled();
     await expect(response.json()).resolves.toEqual({
       data: {
         stops: [],

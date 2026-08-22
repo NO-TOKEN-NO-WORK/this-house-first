@@ -56,7 +56,7 @@ printf '%s' "$DIRECT_URL"   | vercel env add DIRECT_URL preview --sensitive
 | `DATABASE_URL` | Prisma Postgres 풀러 연결 문자열 | 서버 전용 |
 | `DIRECT_URL` | Prisma Postgres direct 연결 문자열(마이그레이션) | 서버 전용 |
 | `PUBLIC_DATA_SERVICE_KEY` | 공공데이터포털 서비스키 | 서버 전용 |
-| `KAKAO_REST_KEY` | 카카오 REST API 키 | 서버 전용 |
+| `KAKAO_REST_KEY` | 카카오 REST API 키(지오코딩·자동차 최단 경로) | 서버 전용 |
 | `NEXT_PUBLIC_KAKAO_MAP_KEY` | 카카오맵 JS 앱 키 | 클라이언트 노출 |
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | Web Push VAPID 공개키 | 클라이언트 노출 |
 | `VAPID_PRIVATE_KEY` | Web Push VAPID 비밀키 | 서버 전용 |

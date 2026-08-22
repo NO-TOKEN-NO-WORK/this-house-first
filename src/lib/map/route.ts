@@ -13,9 +13,9 @@ export interface VisitRouteStop {
   grade: RiskGrade;
   score: number;
   reasons: string[];
-  /** 바로 전 방문지에서 이 가구까지의 예상 도보 시간. 첫 가구는 0이다. */
+  /** 바로 전 방문지에서 이 가구까지의 예상 차량 이동시간. 첫 가구는 0이다. */
   minutesFromPrevious: number;
-  /** 바로 전 방문지에서 이 가구까지의 예상 도보 거리(m). 첫 가구는 0이다. */
+  /** 바로 전 방문지에서 이 가구까지의 예상 차량 이동거리(m). 첫 가구는 0이다. */
   metersFromPrevious: number;
 }
 
@@ -30,13 +30,20 @@ export interface VisitRoute {
   totalMeters: number;
   /** 지도에 순서대로 그릴 경로. 카카오 응답 전에는 가구 좌표를 직선으로 잇는다. */
   path: RouteCoordinate[];
-  source: "estimate" | "kakao";
+  source: "estimate" | "kakao-driving";
 }
 
 const EARTH_RADIUS_METERS = 6_371_000;
-/** 잠정 — 실제 도보 경로 API 연동 전, 직선거리의 1.25배를 분당 75m로 걷는다고 본다. */
-const WALKING_METERS_PER_MINUTE = 75;
-const STREET_DISTANCE_FACTOR = 1.25;
+/**
+ * 카카오 응답 전·실패 시 쓰는 차량 예상치. 도보 기준이던 75m/분·1.25배를 차량 실측값으로 대체했다 (ADR-0018).
+ *
+ * 출처 — 2026-08-22 대구 서구 비산동·평리동 좌표로 카카오모빌리티 길찾기(`priority: DISTANCE`) 실호출:
+ * 도로거리 / 직선거리 = 1.43~1.70(15개 구간 합계 1.59, 별도 15가구 표본 1.61) → 1.6,
+ * 평균 속도 14.3~21.3km/h(합계 19.1km/h) → 319m/분.
+ * 도보값을 그대로 두면 예상 이동시간이 실제보다 약 28% 짧게 나온다.
+ */
+const DRIVING_METERS_PER_MINUTE = 319;
+const STREET_DISTANCE_FACTOR = 1.6;
 
 function radians(degrees: number): number {
   return (degrees * Math.PI) / 180;
@@ -57,14 +64,14 @@ export function distanceMeters(
   return 2 * EARTH_RADIUS_METERS * Math.asin(Math.sqrt(haversine));
 }
 
-function walkingMinutes(from: BoardSubject, to: BoardSubject): number {
-  return Math.round(
-    (distanceMeters(from, to) * STREET_DISTANCE_FACTOR) /
-      WALKING_METERS_PER_MINUTE,
-  );
+function estimatedDrivingMinutes(from: BoardSubject, to: BoardSubject): number {
+  const meters = distanceMeters(from, to) * STREET_DISTANCE_FACTOR;
+  return meters === 0
+    ? 0
+    : Math.max(1, Math.round(meters / DRIVING_METERS_PER_MINUTE));
 }
 
-function walkingMeters(from: BoardSubject, to: BoardSubject): number {
+function estimatedDrivingMeters(from: BoardSubject, to: BoardSubject): number {
   return Math.round(distanceMeters(from, to) * STREET_DISTANCE_FACTOR);
 }
 
@@ -129,8 +136,12 @@ export function toVisitRoute(board: Board): VisitRoute {
   const ordered = orderVisitSubjects(board);
   const stops = ordered.map((subject, index): VisitRouteStop => {
     const previous = ordered[index - 1];
-    const minutesFromPrevious = previous ? walkingMinutes(previous, subject) : 0;
-    const metersFromPrevious = previous ? walkingMeters(previous, subject) : 0;
+    const minutesFromPrevious = previous
+      ? estimatedDrivingMinutes(previous, subject)
+      : 0;
+    const metersFromPrevious = previous
+      ? estimatedDrivingMeters(previous, subject)
+      : 0;
     totalMinutes += minutesFromPrevious;
     totalMeters += metersFromPrevious;
 

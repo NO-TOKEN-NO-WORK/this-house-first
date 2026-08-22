@@ -1,6 +1,6 @@
 # ADR-0007: 지도는 카카오맵 JS SDK를 쓴다
 
-- **상태**: 승인됨 (2026-08-22 근거·대안·결과 개정 — 결정은 유지)
+- **상태**: 부분 대체됨([ADR-0018](0018-kakao-driving-shortest-route.md))
 - **날짜**: 2026-08-22
 - **결정자**: 팀 전원
 
@@ -10,7 +10,7 @@
 
 ## 결정 (Decision)
 
-**카카오맵 JavaScript SDK**로 지도·마커·오버레이를 구현한다. 주소→좌표 변환과 법정동코드 해석은 카카오 로컬 API(주소 검색), 출동 경로(FR-7) v0는 Kakao Developers의 **도보 경로 API**(또는 거리 기반 정렬)로 한다. 카카오모빌리티 자동차 길찾기는 제휴 승인이 나면 스트레치로 붙인다. SDK 앱 키는 `NEXT_PUBLIC_KAKAO_MAP_KEY`, REST 키(`KAKAO_REST_KEY`)는 서버 전용 env로 관리한다.
+**카카오맵 JavaScript SDK**로 지도·마커·오버레이를 구현한다. 주소→좌표 변환과 법정동코드 해석은 카카오 로컬 API(주소 검색), 출동 경로(FR-7) v0는 Kakao Developers의 **도보 경로 API**(또는 거리 기반 정렬)로 한다. 카카오모빌리티 자동차 길찾기는 제휴 승인이 나면 스트레치로 붙인다. SDK 앱 키는 `NEXT_PUBLIC_KAKAO_MAP_KEY`, REST 키(`KAKAO_REST_KEY`)는 서버 전용 env로 관리한다. 출동 경로 결정은 [ADR-0018](0018-kakao-driving-shortest-route.md)이 이 단락을 대체한다.
 
 ## 근거 (Rationale)
 
