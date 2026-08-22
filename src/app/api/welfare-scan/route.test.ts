@@ -71,6 +71,23 @@ describe("POST /api/welfare-scan", () => {
     });
   });
 
+  it("새로 불러온 복지사업 목록을 반환한다", async () => {
+    const response = await GET();
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload.data.count).toBe(1);
+    expect(payload.data.programs).toEqual([
+      expect.objectContaining({
+        id: "energy-1",
+        name: "저소득층 에너지효율개선사업",
+        ministry: "기후에너지환경부",
+        target: "저소득 노인가구",
+        link: "https://www.bokjiro.go.kr/energy",
+      }),
+    ]);
+  });
+
   it("대상자 메모와 공공 복지사업을 결합해 검토 가능한 제안을 반환한다", async () => {
     const response = await POST();
     const payload = await response.json();

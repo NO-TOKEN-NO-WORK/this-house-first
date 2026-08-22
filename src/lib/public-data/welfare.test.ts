@@ -91,6 +91,39 @@ describe("중앙부처 복지서비스 동기화", () => {
     });
   });
 
+  it("복지로 웹 주소가 아닌 상세 링크는 복지로 기본 주소로 대체한다", async () => {
+    const fetcher: PublicDataFetch = async (url) => {
+      if (url.pathname.endsWith("NationalWelfarelistV001")) {
+        return new Response(`
+          <wantedList>
+            <resultCode>0</resultCode>
+            <servList>
+              <servId>WLF-SAFETY</servId>
+              <servNm>노인 안전 지원</servNm>
+              <jurMnofNm>보건복지부</jurMnofNm>
+              <servDgst>노인 안전 장비 지원</servDgst>
+              <servDtlLink>javascript:alert(1)</servDtlLink>
+              <lifeArray>노년</lifeArray>
+            </servList>
+          </wantedList>
+        `);
+      }
+      return new Response(`
+        <wantedDtl>
+          <resultCode>0</resultCode>
+          <servNm>노인 안전 지원</servNm>
+          <jurMnofNm>보건복지부</jurMnofNm>
+          <wlfareInfoOutlCn>노인 안전 장비를 지원합니다.</wlfareInfoOutlCn>
+          <tgtrDtlCn>취약 노인</tgtrDtlCn>
+        </wantedDtl>
+      `);
+    };
+
+    const programs = await refreshWelfarePrograms({ serviceKey: "test-key", fetcher });
+
+    expect(programs[0]?.link).toBe("https://www.bokjiro.go.kr/");
+  });
+
   it("구조화되지 않은 HTTP 오류는 일반 오류로 반환한다", async () => {
     const fetcher: PublicDataFetch = async () =>
       new Response("upstream failed", { status: 503 });

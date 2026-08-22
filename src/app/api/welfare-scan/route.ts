@@ -167,7 +167,7 @@ export async function GET(): Promise<Response> {
   try {
     const programs = await refreshWelfarePrograms();
     return Response.json({
-      data: { count: programs.length, syncedAt: new Date().toISOString() },
+      data: { programs, count: programs.length, syncedAt: new Date().toISOString() },
     });
   } catch (error) {
     const code = error && typeof error === "object" && "code" in error

@@ -7,6 +7,7 @@ import {
 
 const WELFARE_API_BASE =
   "https://apis.data.go.kr/B554287/NationalWelfareInformationsV001";
+const WELFARE_HOME = "https://www.bokjiro.go.kr/";
 const RELEVANT_TERMS = [
   "노인",
   "노년",
@@ -52,6 +53,18 @@ function xmlBlocks(xml: string, tag: string): string[] {
     xml.matchAll(new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`, "gi")),
     (match) => match[1],
   );
+}
+
+function welfareLink(value: string): string {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" &&
+      (url.hostname === "bokjiro.go.kr" || url.hostname.endsWith(".bokjiro.go.kr"))
+      ? url.toString()
+      : WELFARE_HOME;
+  } catch {
+    return WELFARE_HOME;
+  }
 }
 
 function assertSuccessfulXml(xml: string): void {
@@ -102,7 +115,7 @@ function parseSummaries(xml: string): WelfareProgramSummary[] {
     target: [xmlValue(block, "lifeArray"), xmlValue(block, "trgterIndvdlArray")]
       .filter(Boolean)
       .join(" · "),
-    link: xmlValue(block, "servDtlLink") || "https://www.bokjiro.go.kr/",
+    link: welfareLink(xmlValue(block, "servDtlLink")),
   }));
 }
 
