@@ -255,6 +255,12 @@ export const CHECK_KIND_LABEL: Record<CheckKind, string> = {
   VISIT: "방문",
 };
 
+/** 확인 기록 상세 모달의 종류 표기 — Figma 167:10374. */
+export const CHECK_KIND_DETAIL_LABEL: Record<CheckKind, string> = {
+  CALL: "전화 상담",
+  VISIT: "방문 확인",
+};
+
 /** 전화 결과 원터치 기록 (PRD F4) */
 export const CallResult = {
   OK: "OK",
@@ -394,6 +400,45 @@ export const VISIT_CHECKLIST: readonly string[] = [
   "얼굴 홍조나 어눌한 말이 보이면 119를 불러요",
   "선풍기나 에어컨이 작동하는지 확인해 주세요",
 ];
+
+/** 맥락 브리핑 인수인계 3줄의 고정 분류 — 모델은 이 값 밖의 분류를 만들 수 없다 (ADR-0024). */
+export const BriefingCategory = {
+  LIFE_RHYTHM: "LIFE_RHYTHM",
+  REPEATED_SIGNAL: "REPEATED_SIGNAL",
+  CAUTION: "CAUTION",
+} as const;
+export type BriefingCategory =
+  (typeof BriefingCategory)[keyof typeof BriefingCategory];
+
+export const BRIEFING_CATEGORY_LABEL: Record<BriefingCategory, string> = {
+  LIFE_RHYTHM: "생활 리듬",
+  REPEATED_SIGNAL: "반복 신호",
+  CAUTION: "조심할 것",
+};
+
+export function isBriefingCategory(value: unknown): value is BriefingCategory {
+  return (
+    typeof value === "string" &&
+    Object.prototype.hasOwnProperty.call(BRIEFING_CATEGORY_LABEL, value)
+  );
+}
+
+/** 전화 안내에 붙는 대상자별 대화 추천 상한 — PRD F6·ADR-0024. */
+export const CONVERSATION_SUGGESTION_MAX = 2;
+
+/** 대상자 정보 화면의 새 탭·상세 문구 — Figma 용어를 제품 용어(ADR-0024)로 맞춘다. */
+export const SUBJECT_INFORMATION_LABELS = {
+  HISTORY_TAB: "방문 히스토리",
+  BRIEFING_TAB: "맥락 브리핑",
+  OVERVIEW: "한눈에 보기",
+  CONVERSATION_SUMMARY: "대화 요약",
+  CONVERSATION_SUGGESTIONS: "AI 대화 추천",
+  IN_PROGRESS: "진행 중인 사항",
+  RECORD_MEMO: "기록 메모",
+  EVIDENCE: "근거",
+  LOADING: "맥락을 불러오는 중이에요.",
+  EMPTY: "아직 근거가 충분한 맥락이 없습니다.",
+} as const;
 
 export function isVisitResult(value: unknown): value is VisitResult {
   return (

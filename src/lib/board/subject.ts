@@ -111,6 +111,40 @@ function parseReasons(raw: string): string[] {
   return ["위험 사유를 불러오지 못했습니다"];
 }
 
+function toHistoryItem(row: {
+  id: string;
+  kind: string;
+  result: string;
+  memo: string | null;
+  alertDay: { date: string };
+}): SubjectHistoryItem | null {
+  if (!isCheckKind(row.kind)) return null;
+  if (row.kind === CheckKind.CALL) {
+    if (!isCallResult(row.result)) return null;
+    return {
+      id: row.id,
+      date: row.alertDay.date,
+      dateLabel: formatHistoryDate(row.alertDay.date),
+      kind: row.kind,
+      kindLabel: CHECK_KIND_LABEL[row.kind],
+      result: row.result,
+      resultLabel: CALL_RESULT_LABEL[row.result],
+      memo: row.memo,
+    };
+  }
+  if (!isVisitResult(row.result)) return null;
+  return {
+    id: row.id,
+    date: row.alertDay.date,
+    dateLabel: formatHistoryDate(row.alertDay.date),
+    kind: row.kind,
+    kindLabel: CHECK_KIND_LABEL[row.kind],
+    result: row.result,
+    resultLabel: VISIT_RESULT_LABEL[row.result],
+    memo: row.memo,
+  };
+}
+
 /** 대상자를 찾지 못하면 null — 호출부(페이지)가 404로 바꾼다 */
 export async function getSubjectDetail(options: {
   subjectId: string;
@@ -140,8 +174,23 @@ export async function getSubjectDetail(options: {
     dateLabel: formatBoardDate(date),
   };
 
-  const alertDay = await findActiveAlertDay(prisma, date);
+  const [alertDay, recentChecks] = await Promise.all([
+    findActiveAlertDay(prisma, date),
+    prisma.checkEvent.findMany({
+      // 과거 날짜를 열었을 때 미래의 확인 기록을 보여 주지 않는다.
+      where: {
+        subjectId: subject.id,
+        alertDay: { date: { lte: date } },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 3,
+      include: { alertDay: { select: { date: true } } },
+    }),
+  ]);
   if (!alertDay) {
+    const recentHistory = recentChecks
+      .map(toHistoryItem)
+      .filter((item): item is SubjectHistoryItem => item !== null);
     return {
       ...base,
       alerted: false,
@@ -154,7 +203,7 @@ export async function getSubjectDetail(options: {
       open: false,
       nextCheckKind: null,
       lastResult: null,
-      recentHistory: [],
+      recentHistory,
       gradeChange: null,
     };
   }
@@ -162,7 +211,7 @@ export async function getSubjectDetail(options: {
   const key = {
     alertDayId_subjectId: { alertDayId: alertDay.id, subjectId: subject.id },
   };
-  const [assessmentRow, statusRow, lastCheck, recentChecks, previousAssessment] =
+  const [assessmentRow, statusRow, lastCheck, previousAssessment] =
     await Promise.all([
       prisma.riskAssessment.findUnique({ where: key }),
       prisma.householdDayStatus.findUnique({ where: key }),
@@ -172,16 +221,6 @@ export async function getSubjectDetail(options: {
         where: { alertDayId: alertDay.id, subjectId: subject.id },
         orderBy: { createdAt: "desc" },
         select: { result: true },
-      }),
-      prisma.checkEvent.findMany({
-        // 과거 날짜를 열었을 때 미래의 확인 기록을 보여 주지 않는다.
-        where: {
-          subjectId: subject.id,
-          alertDay: { date: { lte: date } },
-        },
-        orderBy: { createdAt: "desc" },
-        take: 3,
-        include: { alertDay: { select: { date: true } } },
       }),
       prisma.riskAssessment.findFirst({
         where: {
@@ -200,35 +239,9 @@ export async function getSubjectDetail(options: {
       ? assessmentRow.grade
       : null;
 
-  const recentHistory: SubjectHistoryItem[] = [];
-  for (const row of recentChecks) {
-    if (!isCheckKind(row.kind)) continue;
-    if (row.kind === CheckKind.CALL) {
-      if (!isCallResult(row.result)) continue;
-      recentHistory.push({
-        id: row.id,
-        date: row.alertDay.date,
-        dateLabel: formatHistoryDate(row.alertDay.date),
-        kind: row.kind,
-        kindLabel: CHECK_KIND_LABEL[row.kind],
-        result: row.result,
-        resultLabel: CALL_RESULT_LABEL[row.result],
-        memo: row.memo,
-      });
-      continue;
-    }
-    if (!isVisitResult(row.result)) continue;
-    recentHistory.push({
-      id: row.id,
-      date: row.alertDay.date,
-      dateLabel: formatHistoryDate(row.alertDay.date),
-      kind: row.kind,
-      kindLabel: CHECK_KIND_LABEL[row.kind],
-      result: row.result,
-      resultLabel: VISIT_RESULT_LABEL[row.result],
-      memo: row.memo,
-    });
-  }
+  const recentHistory = recentChecks
+    .map(toHistoryItem)
+    .filter((item): item is SubjectHistoryItem => item !== null);
 
   const previousGrade =
     previousAssessment && isRiskGrade(previousAssessment.grade)

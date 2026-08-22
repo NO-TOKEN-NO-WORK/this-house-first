@@ -4,6 +4,7 @@ import type { SubjectDetail } from "@/lib/board/subject";
 import {
   AlertLevel,
   ALERT_LEVEL_LABEL,
+  BriefingCategory,
   CALL_RESULT_LABEL,
   CallResult,
   CHECK_KIND_LABEL,
@@ -19,6 +20,7 @@ import {
 } from "@/lib/domain";
 import { ReasonCategory } from "@/lib/scoring/reasons";
 import { SubjectInfoView } from "./SubjectInfoView";
+import { BriefingPanel } from "./SubjectInformationTabs";
 
 const detail: SubjectDetail = {
   subjectId: "subject-info",
@@ -114,5 +116,38 @@ describe("SubjectInfoView", () => {
     }
     expect(html).toContain(VISIT_RESULT_LABEL[VisitResult.AIRCON_ISSUE]);
     expect(html).toContain(CALL_RESULT_LABEL[CallResult.OK]);
+  });
+
+  it("검증된 맥락 문장에 서버가 만든 근거를 함께 표시한다", () => {
+    const html = renderToStaticMarkup(
+      <BriefingPanel
+        loading={false}
+        briefing={{
+          generatedAt: "2026-08-23T00:00:00.000Z",
+          handover: [{
+            category: BriefingCategory.CAUTION,
+            categoryLabel: "조심할 것",
+            text: "최근 무릎 불편으로 외출이 줄었다고 했어요.",
+            source: {
+              checkEventId: "call-1",
+              date: "2026-08-19",
+              dateLabel: "8/19 (수)",
+              kind: CheckKind.CALL,
+              kindLabel: "전화",
+              result: CallResult.OK,
+              resultLabel: "괜찮았어요",
+              label: "8/19 (수) 전화 · 괜찮았어요",
+            },
+          }],
+          conversationSuggestions: [],
+          conversationSummaries: [],
+        }}
+      />,
+    );
+
+    expect(html).toContain("한눈에 보기");
+    expect(html).toContain("조심할 것");
+    expect(html).toContain("최근 무릎 불편");
+    expect(html).toContain("근거 · 8/19 (수) 전화 · 괜찮았어요");
   });
 });

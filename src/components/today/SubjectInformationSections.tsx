@@ -73,10 +73,27 @@ function historyMarker(item: SubjectHistoryItem, isLast: boolean): string {
 }
 
 /** 최근 전화·방문 기록 3건을 Figma 타임라인 형태로 표시한다. */
-export function VisitHistory({ items }: { items: SubjectHistoryItem[] }) {
+export function VisitHistory({
+  items,
+  embedded = false,
+  onSelect,
+}: {
+  items: SubjectHistoryItem[];
+  /** 대상자 정보의 탭 안에서는 바깥 카드·중복 제목을 생략한다. */
+  embedded?: boolean;
+  onSelect?: (item: SubjectHistoryItem) => void;
+}) {
   return (
-    <section className="flex flex-col gap-4 overflow-hidden rounded-[14px] border border-border-default bg-surface-default p-6">
-      <h2 className="text-label-15 text-text-secondary">방문 히스토리</h2>
+    <section
+      className={
+        embedded
+          ? "flex flex-col gap-4 overflow-hidden bg-surface-default pt-1"
+          : "flex flex-col gap-4 overflow-hidden rounded-[14px] border border-border-default bg-surface-default p-6"
+      }
+    >
+      {!embedded && (
+        <h2 className="text-label-15 text-text-secondary">방문 히스토리</h2>
+      )}
       {items.length === 0 ? (
         <p className="text-body-15 text-text-secondary">
           최근 확인 기록이 없습니다.
@@ -94,12 +111,25 @@ export function VisitHistory({ items }: { items: SubjectHistoryItem[] }) {
                   height={isLast ? 46 : 58}
                   className="h-full min-h-[46px] w-[18px] shrink-0 self-stretch"
                 />
-                <div className="min-w-0 flex-1 pb-3 text-body-14 text-text-primary">
+                <button
+                  type="button"
+                  disabled={!onSelect}
+                  onClick={() => onSelect?.(item)}
+                  className="min-w-0 flex-1 pb-3 text-left text-body-14 text-text-primary disabled:cursor-default"
+                >
                   <p className="flex items-center gap-2">
                     <strong className="text-label-16">{item.dateLabel}</strong>
                     <span className="text-body-15 text-text-secondary">
                       {item.kindLabel}
                     </span>
+                    {onSelect && (
+                      <Image
+                        src="/figma/chevron-right.svg"
+                        alt=""
+                        width={20}
+                        height={20}
+                      />
+                    )}
                   </p>
                   <p className="mt-1 break-words text-body-16">{item.resultLabel}</p>
                   {item.memo && (
@@ -107,7 +137,7 @@ export function VisitHistory({ items }: { items: SubjectHistoryItem[] }) {
                       {item.memo}
                     </p>
                   )}
-                </div>
+                </button>
               </li>
             );
           })}

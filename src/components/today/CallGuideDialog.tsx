@@ -2,8 +2,10 @@
 
 import { useId } from "react";
 import { Dialog } from "@/components/Dialog";
+import { ConversationSuggestions } from "@/components/today/ConversationSuggestions";
 import { PhoneIcon } from "@/components/today/icons";
 import { SubjectSummary } from "@/components/today/SubjectSummary";
+import { useSubjectBriefing } from "@/components/today/useSubjectBriefing";
 import {
   CALL_GUIDE_QUESTIONS,
   CALL_GUIDE_QUESTION_EMPHASIS,
@@ -22,6 +24,7 @@ import {
 interface Props {
   open: boolean;
   onClose: () => void;
+  subjectId: string;
   name: string;
   age: number;
   livesAlone: boolean;
@@ -38,6 +41,7 @@ interface Props {
 export function CallGuideDialog({
   open,
   onClose,
+  subjectId,
   name,
   age,
   livesAlone,
@@ -48,6 +52,10 @@ export function CallGuideDialog({
   onCallPlaced,
 }: Props) {
   const nameId = useId();
+  const { briefing } = useSubjectBriefing(subjectId, open);
+  const suggestions = questions === CALL_GUIDE_QUESTIONS
+    ? briefing?.conversationSuggestions ?? []
+    : [];
 
   const cta =
     "mt-6 flex h-14 w-full items-center justify-center gap-[9px] rounded-lg text-heading-19";
@@ -83,6 +91,7 @@ export function CallGuideDialog({
               </li>
             ))}
           </ul>
+          <ConversationSuggestions suggestions={suggestions} />
         </div>
 
         {phone ? (

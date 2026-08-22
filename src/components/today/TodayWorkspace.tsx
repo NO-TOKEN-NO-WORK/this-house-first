@@ -242,6 +242,7 @@ export function TodayWorkspace({
             open={callPhase === "guide"}
             onClose={closeCall}
             onCallPlaced={() => setCallPhase("result")}
+            subjectId={callSubject.subjectId}
             name={callSubject.name}
             age={callSubject.age}
             livesAlone={callSubject.livesAlone}

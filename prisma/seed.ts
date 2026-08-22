@@ -2,7 +2,16 @@ import "dotenv/config";
 import { fetchBuildingTitles } from "../src/lib/bldg-hub/client";
 import { toBuildingFacts, type BuildingFacts } from "../src/lib/bldg-hub/mapping";
 import { prisma } from "../src/lib/db";
-import { AlertLevel, ALERT_LEVEL_LABEL, GRADE_LABEL, RiskGrade } from "../src/lib/domain";
+import {
+  AlertLevel,
+  ALERT_LEVEL_LABEL,
+  CallResult,
+  CheckKind,
+  GRADE_LABEL,
+  RiskGrade,
+  VisitResult,
+  WorkerRole,
+} from "../src/lib/domain";
 import { geocodeAddress, resolveRegionCodes } from "../src/lib/kakao/local";
 import { simulateWeightedExposure } from "../src/lib/scoring/exposure";
 import { assessRisk } from "../src/lib/scoring/score";
@@ -162,7 +171,7 @@ async function main(): Promise<void> {
   ]);
 
   const workers = await Promise.all(WORKERS.map((w) => prisma.worker.create({ data: w })));
-  const careWorker = workers.find((w) => w.role === "WORKER") ?? workers[0]!;
+  const careWorker = workers.find((w) => w.role === WorkerRole.WORKER) ?? workers[0]!;
 
   const buildingIds = new Map<number, string>();
   for (const b of chosen) {
@@ -186,12 +195,78 @@ async function main(): Promise<void> {
     buildingIds.set(b.slot, row.id);
   }
 
+  const seededSubjects = [];
   for (const s of SUBJECTS) {
     const { buildingSlot, ...data } = s;
-    await prisma.subject.create({
+    const subject = await prisma.subject.create({
       data: { ...data, buildingId: buildingIds.get(buildingSlot)!, workerId: careWorker.id },
     });
+    seededSubjects.push(subject);
   }
+
+  /*
+   * FR-12 데모 입력 — 사람·메모는 전부 합성이다.
+   * 건물대장 실주소와 분리해 생활 맥락만 만들며, 이름·전화·주소·기관 고유명은 메모에 넣지 않는다.
+   */
+  const historyDays = await Promise.all([
+    prisma.alertDay.create({
+      data: { date: "2026-08-17", level: AlertLevel.ADVISORY, feelsLikeMax: 33 },
+    }),
+    prisma.alertDay.create({
+      data: { date: "2026-08-19", level: AlertLevel.WARNING, feelsLikeMax: 35 },
+    }),
+    prisma.alertDay.create({
+      data: { date: "2026-08-20", level: AlertLevel.EMERGENCY, feelsLikeMax: 38 },
+    }),
+  ]);
+  const contextMemos = [
+    "평소 아침 일찍 산책하고 오후에는 집에서 쉬는 편이라고 했다.",
+    "경로당에서 이웃들과 꽃과 텃밭 이야기를 나누는 시간이 중요하다고 했다.",
+    "가까운 거리는 걸어서 다니지만 먼 병원은 버스로 이동한다고 했다.",
+    "최근 무릎이 불편해 외출이 줄었고 다음 진료 때 이동 방법이 걱정된다고 했다.",
+    "복지 프로그램에 관심은 있지만 전화 신청 절차가 복잡하게 느껴진다고 했다.",
+  ] as const;
+  const ongoingMemos = [
+    "지난 통화에서 말한 냉방기 리모컨 문제가 해결됐는지 다음 방문에 확인하기로 했다.",
+    "요즘 식사 시간이 불규칙해져 점심을 챙겨 드시는지 다시 묻기로 했다.",
+    "가족과 주말에 통화하기로 했는데 연락이 이어졌는지 확인이 필요하다.",
+    "최근 외출이 줄어 이웃과 만나는 시간도 줄었는지 살펴보기로 했다.",
+    "다음 주 진료에 갈 교통편을 아직 정하지 못해 함께 확인하기로 했다.",
+  ] as const;
+
+  await prisma.checkEvent.createMany({
+    data: seededSubjects.flatMap((subject, index) => [
+      {
+        alertDayId: historyDays[0]!.id,
+        subjectId: subject.id,
+        workerId: careWorker.id,
+        kind: CheckKind.CALL,
+        result: CallResult.OK,
+        memo: contextMemos[index % contextMemos.length],
+        createdAt: new Date("2026-08-17T01:00:00.000Z"),
+      },
+      {
+        alertDayId: historyDays[1]!.id,
+        subjectId: subject.id,
+        workerId: careWorker.id,
+        kind: CheckKind.CALL,
+        result: CallResult.OK,
+        memo: ongoingMemos[index % ongoingMemos.length],
+        createdAt: new Date("2026-08-19T01:00:00.000Z"),
+      },
+      {
+        alertDayId: historyDays[2]!.id,
+        subjectId: subject.id,
+        workerId: careWorker.id,
+        kind: CheckKind.VISIT,
+        result: index % 4 === 0 ? VisitResult.AIRCON_ISSUE : VisitResult.OK,
+        memo: index % 4 === 0
+          ? "냉방기가 제대로 작동하지 않아 점검이 필요했고 다음 방문에 상태를 다시 보기로 했다."
+          : "집 안 온도와 냉방기 작동을 확인했고 물을 자주 마시고 있었다.",
+        createdAt: new Date("2026-08-20T01:00:00.000Z"),
+      },
+    ]),
+  });
 
   // 5. 점수 분포 — 컷오프 캘리브레이션용 (순수 함수라 DB 재조회 없이 계산)
   console.log("\n▶ 위험점수 분포 (컷오프 캘리브레이션용, weights.ts GRADE_CUTOFF 참고)");
@@ -218,7 +293,7 @@ async function main(): Promise<void> {
     }
   }
 
-  console.log(`\n✔ 시드 완료: 담당자 ${workers.length}명 · 건물 ${chosen.length}동(실 건축물대장) · 대상자 ${SUBJECTS.length}명(합성)`);
+  console.log(`\n✔ 시드 완료: 담당자 ${workers.length}명 · 건물 ${chosen.length}동(실 건축물대장) · 대상자 ${SUBJECTS.length}명(합성) · 합성 확인 기록 ${seededSubjects.length * 3}건`);
 }
 
 main()
