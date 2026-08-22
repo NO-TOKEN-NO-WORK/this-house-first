@@ -1,0 +1,22 @@
+:root {
+  --admin-canvas: oklch(98.5% 0.004 250);
+  --admin-surface: oklch(100% 0 0);
+  --admin-ink: oklch(24% 0.02 258);
+  --admin-ink-soft: oklch(43% 0.018 257);
+  --admin-rule: oklch(87% 0.008 252);
+  --admin-rule-strong: oklch(72% 0.016 252);
+  --admin-accent: oklch(55% 0.18 256);
+  --admin-accent-ink: oklch(100% 0 0);
+  --admin-focus: var(--admin-ink);
+  --admin-grade-critical: var(--color-danger);
+  --admin-grade-high: var(--color-warn);
+  --admin-grade-moderate: var(--color-calm);
+  --admin-space-1: 0.5rem;
+  --admin-space-2: 0.75rem;
+  --admin-space-3: 1rem;
+  --admin-space-4: 1.5rem;
+  --admin-space-5: 2rem;
+  --admin-radius-control: 0.375rem;
+  --admin-font-display: "Noto Serif KR", "AppleMyungjo", Georgia, serif;
+  --admin-font-meta: var(--font-sans);
+}
