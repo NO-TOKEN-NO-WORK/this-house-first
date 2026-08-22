@@ -101,7 +101,7 @@ erDiagram
     Building { int builtYear "건축물대장 (진짜)" }
     Subject { int birthYear "합성 인물 (가짜)" }
     AlertDay { string level "ADVISORY | WARNING | EMERGENCY" }
-    RiskAssessment { int grade "1 | 2 | 3" }
+    RiskAssessment { int grade "내부값 1 | 2 | 3" }
     HouseholdDayStatus { string status "상태머신 §4" }
     CheckEvent { string result "CALL·VISIT 결과 코드" }
     Notification { string type "ALERT_DAY_SUMMARY | VISIT_PROMOTED" }
@@ -117,9 +117,9 @@ erDiagram
 ```mermaid
 stateDiagram-v2
     [*] --> UNCHECKED : 경보일 아침 생성
-    UNCHECKED --> CALL_OK : 전화 - 정상 (2·3등급)
+    UNCHECKED --> CALL_OK : 전화 - 정상 (경계·주의 위험 단계)
     UNCHECKED --> NO_ANSWER_1 : 전화 - 무응답 1회
-    UNCHECKED --> VISIT_QUEUED : 1등급은 전화 생략, 즉시 방문 대상 (F3)
+    UNCHECKED --> VISIT_QUEUED : 심각 위험 단계는 전화 생략, 즉시 방문 대상 (F3)
     NO_ANSWER_1 --> CALL_OK : 재전화(30분 후) - 정상
     NO_ANSWER_1 --> VISIT_QUEUED : 무응답 2회 → 자동 승격 + 관리자 알림
     UNCHECKED --> VISIT_QUEUED : 이상 징후 → 즉시 승격
@@ -139,7 +139,7 @@ stateDiagram-v2
 `위험점수 = W_개인 × W_건물 × W_기상` (PRD §7, [ADR-0005](adr/0005-rule-based-risk-model.md))
 
 - 가중치·컷오프: `src/lib/scoring/weights.ts` — **모든 값에 출처 주석 필수**
-- 엔진: `src/lib/scoring/score.ts` — 순수 함수, 점수 + 등급 + **위험 사유(reasons)** 반환
+- 엔진: `src/lib/scoring/score.ts` — 순수 함수, 점수 + 위험 단계 + **위험 사유(reasons)** 반환
 - UI의 위험 사유 카드(F3)는 엔진이 반환한 reasons만 표시한다 (설명 가능성 보장)
 
 ## 6. 외부 연동
@@ -160,7 +160,7 @@ stateDiagram-v2
 | 경로 | 역할 | 상태 |
 |---|---|---|
 | `/` | 진입점 안내 | ✅ 초기화됨 |
-| `/today` | 담당자 대응 보드 — 경보일 등급별 목록 / 비경보일 담당 가구 명단 (FR-4) | ✅ 구현됨 |
+| `/today` | 담당자 대응 보드 — 경보일 위험 단계별 목록 / 비경보일 담당 가구 명단 (FR-4) | ✅ 구현됨 |
 | `/today/[subjectId]` | 대상자 상세 + 원터치 전화·방문 결과 기록 (FR-4·FR-5) | ✅ 구현됨 |
 | `/today/log` | 담당자 확인 기록 목록 — 선택한 담당자의 CheckEvent (읽기 전용) | ✅ 구현됨 |
 | `/map` | 담당자 담당 가구 지도 | ✅ 구현됨 |
@@ -179,7 +179,7 @@ stateDiagram-v2
 ## 8. 비기능 구현 방침
 
 - **접근성(담당자 앱)**: 기본 글자 크기 상향, 터치 타깃 최소 48px, 화면당 결정 1개, 기록 완료까지 탭 2회 이내 (PRD §9) — 공용 컴포넌트로 강제. 보드 카드 버튼(탭 1) → 상세의 결과 버튼(탭 2)이 기록 경로다
-- **담당자 화면 디자인**: Figma `junction` ①(`8:1803`)·①-b(`14:2926`)·②(`3:505`)를 따른다. 담당자·공용 Tailwind 화면의 색·글자는 `src/app/globals.css`의 2층 디자인 토큰(Primitive → Semantic, Figma `02 · Foundations` `16:25`)을 쓰고 Semantic 층만 만진다 ([ADR-0015](adr/0015-design-system-tokens.md)). 관리자 CSS Module은 기존 `tokens.css`의 `--admin-*` 체계를 유지하고 위험 등급 색만 전역 Semantic 토큰을 공유한다. 아이콘은 인라인 SVG(`src/components/today/icons.tsx`). **문구는 `src/lib/domain.ts` 상수를 쓰며 디자인과 의도적으로 다른 지점이 있다** — 근거와 목록은 [ADR-0014](adr/0014-figma-design-with-domain-terms.md)
+- **담당자 화면 디자인**: Figma `junction` ①(`8:1803`)·①-b(`14:2926`)·②(`3:505`)를 따른다. 담당자·공용 Tailwind 화면의 색·글자는 `src/app/globals.css`의 2층 디자인 토큰(Primitive → Semantic, Figma `02 · Foundations` `16:25`)을 쓰고 Semantic 층만 만진다 ([ADR-0015](adr/0015-design-system-tokens.md)). 관리자 CSS Module은 기존 `tokens.css`의 `--admin-*` 체계를 유지하고 위험 단계 색만 전역 Semantic 토큰을 공유한다. 아이콘은 인라인 SVG(`src/components/today/icons.tsx`). **문구는 `src/lib/domain.ts` 상수를 쓰며 디자인과 의도적으로 다른 지점이 있다** — 근거와 목록은 [ADR-0014](adr/0014-figma-design-with-domain-terms.md)
 - **하단 탭(오늘·지도·기록)**: 오늘(`/today`)·지도(`/map`)·기록(`/today/log`)은 모두 활성. 탭 왕복은 `date`·`workerId` 검색 문맥을 유지한다. 기록은 PWA scope(`/today`) 안에 둔다
 - **알림 침묵 원칙**: 비경보일 알림 0건. 경보일은 담당자별 아침 요약 1건과 방문 승격만 `Notification`에 저장하고 인앱 피드·Web Push가 함께 쓴다([ADR-0017](adr/0017-notification-events-web-push.md))
 - **PWA**: manifest + 수제 SW([ADR-0006](adr/0006-pwa-manual-service-worker.md), [ADR-0017](adr/0017-notification-events-web-push.md)). 알림을 위해 SW scope는 `/`, 페이지 이동 캐시는 `/today`로 제한하고 공용 정적 자원만 함께 캐시한다. 오프라인 기록 큐잉은 데모에서 언급만

@@ -57,7 +57,7 @@ function board(row: BoardSubject = subject()): AlertedBoard {
     groups: [
       {
         grade: row.grade,
-        gradeLabel: "2등급",
+        gradeLabel: "경계",
         plan: GRADE_PLAN[row.grade],
         subjects: [row],
       },
@@ -100,7 +100,7 @@ describe("detailFromBoard", () => {
     ]);
   });
 
-  it("1등급·방문 대기 가구는 전화가 아니라 방문 기록을 받는다", () => {
+  it("심각·방문 대기 가구는 전화가 아니라 방문 기록을 받는다", () => {
     const row = subject({
       grade: RiskGrade.CRITICAL,
       status: HouseholdStatus.VISIT_QUEUED,
@@ -126,7 +126,7 @@ describe("detailFromBoard", () => {
 });
 
 describe("findBoardSubject", () => {
-  it("등급 그룹을 가로질러 대상자를 찾는다", () => {
+  it("위험 단계 그룹을 가로질러 대상자를 찾는다", () => {
     const row = subject({ subjectId: "s-critical", grade: RiskGrade.CRITICAL });
     const found = findBoardSubject(board(row), "s-critical");
     expect(found?.name).toBe("김○○");

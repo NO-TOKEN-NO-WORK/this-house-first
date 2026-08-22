@@ -31,10 +31,10 @@ describe("알림 생성 정책", () => {
       "ALERT_DAY_SUMMARY:alert-1:worker-1",
       "ALERT_DAY_SUMMARY:alert-1:worker-2",
     ]);
-    expect(drafts[0]?.body).toContain("1등급 1명은 오전 방문");
+    expect(drafts[0]?.body).toContain("심각 1명은 오전 방문");
   });
 
-  it("초기 1등급은 승격 Push를 만들지 않고 재발령 승격만 담당자·관리자에게 보낸다", () => {
+  it("초기 심각 대상자는 승격 Push를 만들지 않고 재발령 승격만 담당자·관리자에게 보낸다", () => {
     expect(
       reclassificationRecipientIds({
         current: null,

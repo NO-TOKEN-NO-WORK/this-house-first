@@ -325,7 +325,7 @@ export async function getAdminDashboard(
   ]);
   const assessments: AdminAssessmentRow[] = assessmentRows.map((row) => {
     if (!isRiskGrade(row.grade)) {
-      throw new Error(`알 수 없는 위험 등급입니다: ${row.grade}`);
+      throw new Error(`알 수 없는 위험 단계입니다: ${row.grade}`);
     }
     return { ...row, grade: row.grade };
   });

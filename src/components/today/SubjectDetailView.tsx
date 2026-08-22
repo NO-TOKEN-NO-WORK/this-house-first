@@ -150,7 +150,7 @@ export function SubjectDetailView({
   onRecorded?: (outcome: CheckOutcome) => void;
 }) {
   /*
-   * 방문 대상 가구에는 전화 걸기를 큰 버튼으로 내밀지 않는다 — 1등급은 전화로 '괜찮다'를
+   * 방문 대상 가구에는 전화 걸기를 큰 버튼으로 내밀지 않는다 — 심각 단계는 전화로 '괜찮다'를
    * 확인하지 않는 것이 설계다 (PRD F3). 번호 자체는 위 연락처 줄에서 그대로 누를 수 있다.
    */
   const showCallCta =

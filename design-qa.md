@@ -12,7 +12,7 @@
   - 상세: `/Users/byunghak/.codex/visualizations/2026/08/22/01a0289b-3e02-7a93-b5b1-58f764c2fc98/detail-comparison-final.png`
   - 수정: `/Users/byunghak/.codex/visualizations/2026/08/22/01a0289b-3e02-7a93-b5b1-58f764c2fc98/edit-comparison-final.png`
   - 문자열 레이아웃 재검증: `/Users/byunghak/.codex/visualizations/2026/08/22/01a0289b-3e02-7a93-b5b1-58f764c2fc98/edit-overflow-comparison.png`
-- State: 비상 경보일, 1등급·방문 대기 대상자의 상세 및 수정 화면.
+- State: 심각 경보일, 위험 단계가 심각하고 방문 대기인 대상자의 상세 및 수정 화면.
 - Source pixels: 상세·수정 모두 `1672 × 941`.
 - Implementation pixels / viewport: Arc 전체 화면 `1224 × 768`, DPR 1 캡처. 브라우저 상단 크롬을 포함한다.
 - Normalization: 두 화면을 한 비교 보드에서 동일 열 너비로 비율 유지 축소했다. 원본과 현재 Arc 창의 물리 폭이 달라 픽셀 단위 판정은 하지 않고, 데스크톱 반응형 구조·비율·위계·상태를 비교했다.
@@ -26,7 +26,7 @@
 
 - Fonts and typography: 기존 프로젝트의 관리자 글꼴·굵기 체계를 재사용했고, 제목/라벨/본문 위계와 작은 표 글자의 가독성을 유지했다. 잘림이나 겹침 없음.
 - Spacing and layout rhythm: 상세 화면의 상단 프로필, 3개 정보 카드, 점검 이력, 우측 빠른 실행/담당자/지도 레일을 시안 순서와 비율로 재현했다. 수정 화면도 ① 기본 정보, ② 위험/관제, ③ 설비 점검, 우측 요약 레일을 유지했다.
-- Colors and tokens: 기존 `--admin-*` 토큰과 전역 위험 등급 Semantic 토큰만 사용했다. 보라색 주요 동작, 빨간 위험 상태, 주황 점검 상태가 시안과 같은 역할을 한다.
+- Colors and tokens: 기존 `--admin-*` 토큰과 전역 위험 단계 Semantic 토큰만 사용했다. 보라색 주요 동작, 빨간 위험 상태, 주황 점검 상태가 시안과 같은 역할을 한다.
 - Image quality and assets: 기존 관리자 브랜드, 합성 프로필, 지도, 상태 아이콘 원본 자산을 사용했다. CSS/문자/인라인 SVG 대체 없음. 이미지 비율 경고도 제거했다.
 - Copy and content: 위험 사유는 스코어링 결과를 그대로 표시한다. 없는 DB 값은 생성하지 않는다.
 - Accessibility and behavior: 의미 있는 링크·버튼·레이블·대체 텍스트를 유지했다. 검색, 상태 필터, 마커 선택, 상세/수정 이동을 Arc에서 확인했다.

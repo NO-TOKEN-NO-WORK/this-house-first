@@ -3,6 +3,7 @@ import { prisma } from "../db";
 import {
   AlertLevel,
   ALERT_LEVEL_LABEL,
+  GRADE_LABEL,
   HouseholdStatus,
   NotificationCause,
   parseHouseholdStatus,
@@ -87,7 +88,7 @@ export interface AlertedOutcome extends OutcomeBase {
   level: AlertLevel;
   feelsLikeMax: number;
   subjectCount: number;
-  /** 등급별 인원 — 1등급 수가 그날 방문해야 할 가구 수다 */
+  /** 위험 단계별 인원 — 심각 수가 그날 방문해야 할 가구 수다 */
   gradeCounts: Record<RiskGrade, number>;
   /** 방문 큐에 새로 올라간 가구 수 */
   visitQueued: number;
@@ -259,8 +260,8 @@ async function declareAlertDay(
           data: { status: next, promotedAt: now },
         });
 
-        // 새 경보일의 초기 1등급은 아침 요약에만 포함한다. 이미 있던 미확인 가구가
-        // 재발령으로 1등급이 된 경우만 새로운 승격 사건이다 (ADR-0017).
+        // 새 경보일의 초기 심각 대상자는 아침 요약에만 포함한다. 이미 있던 미확인 가구가
+        // 재발령으로 심각 단계가 된 경우만 새로운 승격 사건이다 (ADR-0017).
         const recipientIds = reclassificationRecipientIds({
           current,
           next,
@@ -323,7 +324,7 @@ async function declareAlertDay(
 
     console.log(
       `[trigger] ${date} ${ALERT_LEVEL_LABEL[level]} 발령(${source}) — 대상자 ${subjects.length}명, ` +
-        `1등급 ${gradeCounts[1]} · 2등급 ${gradeCounts[2]} · 3등급 ${gradeCounts[3]}, 방문 큐 ${visitQueued}`,
+        `${GRADE_LABEL[RiskGrade.CRITICAL]} ${gradeCounts[1]} · ${GRADE_LABEL[RiskGrade.HIGH]} ${gradeCounts[2]} · ${GRADE_LABEL[RiskGrade.MODERATE]} ${gradeCounts[3]}, 방문 큐 ${visitQueued}`,
     );
 
     return {

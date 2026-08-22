@@ -46,12 +46,12 @@ POST /api/trigger  {"level":"EMERGENCY","targetDate":"20260821"}   # 수동 발�
 POST /api/trigger  {"feelsLikeMax":36}                          # 체감온도만 주면 판정 로직을 태운다
 ```
 
-발령되면 `AlertDay` 1건 + 대상자 전원의 `RiskAssessment`(점수·등급·사유) +
-`HouseholdDayStatus`(1등급은 `VISIT_QUEUED`, 나머지 `UNCHECKED`)를 만든다.
+발령되면 `AlertDay` 1건 + 대상자 전원의 `RiskAssessment`(점수·위험 단계·사유) +
+`HouseholdDayStatus`(위험 단계가 심각하면 `VISIT_QUEUED`, 나머지 `UNCHECKED`)를 만든다.
 
 - **임계값 미달이면 아무것도 만들지 않는다** — `{"alerted": false, "reason": ...}`만 돌아온다.
   비경보일에 `AlertDay` 행이 없어야 알림 0건이 보장된다(PRD §9)
-- **같은 날 재발령해도 진행 중인 확인 기록을 덮어쓰지 않는다.** 미확인 가구가 1등급이 되면
+- **같은 날 재발령해도 진행 중인 확인 기록을 덮어쓰지 않는다.** 미확인 가구가 심각 위험 단계가 되면
   방문 큐로 승격하고, 전화 완료·방문 중·119 연계는 그대로 둔다
   (`src/lib/escalation/initial.ts`)
 

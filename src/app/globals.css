@@ -65,7 +65,7 @@
 @theme static {
   /*
    * Tailwind 기본 팔레트(zinc·red·white…)를 지운다.
-   * 디자인 시스템 밖의 색이 화면에 섞이면 등급 색이 화면마다 달라 보인다.
+   * 디자인 시스템 밖의 색이 화면에 섞이면 위험 단계 색이 화면마다 달라 보인다.
    * 색은 아래 이름으로만 존재한다.
    */
   --color-*: initial;
@@ -112,7 +112,7 @@
   --color-action-disabled: var(--neutral-300);
   --color-action-disabled-strong: var(--neutral-400);
 
-  /* Status (Figma 16:99) — 1등급/이상 징후 빨강, 2등급/에어컨 주황, 정상 초록 */
+  /* Status (Figma 16:99) — 심각/이상 징후 빨강, 경계/에어컨 주황, 정상 초록 */
   --color-status-critical: var(--red-500);
   --color-status-critical-strong: var(--red-700);
   --color-status-critical-subtle: var(--red-50);
@@ -135,7 +135,7 @@
   --color-action-secondary-strong: var(--neutral-800); /* 보조 행동 버튼 눌림 배경 */
   --color-status-success-strong: var(--green-700); /* 안전 결과 글자 */
   --color-status-success-subtle: var(--green-50); /* 안전 결과 배경 */
-  --color-status-neutral: var(--neutral-400); /* 3등급 칩 배경·지도 마커 */
+  --color-status-neutral: var(--neutral-400); /* 주의 칩 배경·지도 마커 */
 
   /*
    * Typography (Figma 16:31) — 역할/크기 이름을 그대로 쓴다.

@@ -43,7 +43,7 @@ describe("알림 문구", () => {
     expect(draft.eventKey).toBe("ALERT_DAY_SUMMARY:alert-1:worker-1");
     expect(draft.type).toBe(NotificationType.ALERT_DAY_SUMMARY);
     expect(draft.title).toBe("오늘은 폭염 심각 단계입니다");
-    expect(draft.body).toContain("1등급 2명은 오전 방문");
+    expect(draft.body).toContain("심각 2명은 오전 방문");
     expect(draft.href).toBe("/today?date=2026-08-22&workerId=worker-1");
     expect(draft.expiresAt.toISOString()).toBe("2026-08-22T14:59:59.999Z");
   });

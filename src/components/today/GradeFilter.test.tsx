@@ -66,21 +66,21 @@ function subject(name: string, grade: RiskGradeValue): BoardSubject {
 const groups: BoardGroup[] = [
   {
     grade: RiskGrade.CRITICAL,
-    gradeLabel: "1등급",
+    gradeLabel: "심각",
     plan: "전화 생략 · 오전 방문",
-    subjects: [subject("1등급 대상자", RiskGrade.CRITICAL)],
+    subjects: [subject("심각 대상자", RiskGrade.CRITICAL)],
   },
   {
     grade: RiskGrade.HIGH,
-    gradeLabel: "2등급",
+    gradeLabel: "경계",
     plan: "오전 중 전화",
-    subjects: [subject("2등급 대상자", RiskGrade.HIGH)],
+    subjects: [subject("경계 대상자", RiskGrade.HIGH)],
   },
   {
     grade: RiskGrade.MODERATE,
-    gradeLabel: "3등급",
+    gradeLabel: "주의",
     plan: "15시 이전 전화",
-    subjects: [subject("3등급 대상자", RiskGrade.MODERATE)],
+    subjects: [subject("주의 대상자", RiskGrade.MODERATE)],
   },
 ];
 
@@ -105,7 +105,7 @@ describe("GradeFilter", () => {
     [0, null, "/today?date=2026-08-21&workerId=worker-1"],
     [2, RiskGrade.HIGH, "/today?date=2026-08-21&workerId=worker-1&grade=2"],
   ] as const)(
-    "등급 버튼 %i 클릭은 로컬 상태와 URL만 바꾼다",
+    "위험 단계 버튼 %i 클릭은 로컬 상태와 URL만 바꾼다",
     (buttonIndex, grade, expectedUrl) => {
       const replaceState = vi.fn();
       const fetch = vi.fn();
@@ -132,7 +132,7 @@ describe("GradeFilter", () => {
     [RiskGrade.CRITICAL, ["1"]],
     [RiskGrade.HIGH, ["2"]],
     [RiskGrade.MODERATE, ["3"]],
-  ] as const)("선택 등급 %s에 맞는 목록만 표시한다", (grade, expected) => {
+  ] as const)("선택 위험 단계 %s에 맞는 목록만 표시한다", (grade, expected) => {
     state.useState.mockReturnValue([grade, state.setSelectedGrade]);
 
     const [, list] = childrenOf(GradeFilter(props));
@@ -140,7 +140,7 @@ describe("GradeFilter", () => {
     expect(childrenOf(list).map((section) => section.key)).toEqual(expected);
   });
 
-  it("현재 등급을 대상자 상세 링크에 넘긴다", () => {
+  it("현재 위험 단계를 대상자 상세 링크에 넘긴다", () => {
     state.useState.mockReturnValue([
       RiskGrade.HIGH,
       state.setSelectedGrade,

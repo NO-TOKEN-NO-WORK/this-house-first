@@ -54,7 +54,7 @@ export interface BoardSubject extends RosterSubject {
   callAttempts: number;
   /** 아직 담당자 손이 필요한가 */
   open: boolean;
-  /** 이번 기록에서 받아야 할 기록 종류 — 1등급·승격 가구는 방문, 끝난 가구는 null */
+  /** 이번 기록에서 받아야 할 기록 종류 — 심각·승격 가구는 방문, 끝난 가구는 null */
   nextCheckKind: CheckKind | null;
   /** 오늘 마지막 확인 결과 — 상세 기록 버튼의 "선택됨"에 쓴다 */
   lastResult: string | null;
@@ -63,7 +63,7 @@ export interface BoardSubject extends RosterSubject {
 export interface BoardGroup {
   grade: RiskGrade;
   gradeLabel: string;
-  /** 등급별 대응 지시 (PRD F3) */
+  /** 위험 단계별 대응 지시 (PRD F3) */
   plan: string;
   subjects: BoardSubject[];
 }
@@ -89,7 +89,7 @@ export interface SilentBoard extends BoardBase {
   alerted: false;
   /**
    * 비경보일 명단 (Figma ①-b 14:2926).
-   * 경보가 없으면 등급·상태가 없다 — 순서를 정해 주지 않고 담당 가구만 보여준다.
+   * 경보가 없으면 위험 단계·상태가 없다 — 순서를 정해 주지 않고 담당 가구만 보여준다.
    * 알림은 여전히 0건이다 (PRD §9 침묵 원칙은 알림에 대한 것이고, 명단 조회는 담당자가 연 화면이다).
    */
   subjects: RosterSubject[];
@@ -105,10 +105,10 @@ export interface AlertedBoard extends BoardBase {
     total: number;
     /** 아직 처리되지 않은 가구 수 — 이 수가 0이 되는 게 그날의 목표 */
     open: number;
-    /** 미확인 1등급 — 관리자 대시보드의 핵심 위젯(F5)과 같은 정의 */
+    /** 미확인 심각 — 관리자 대시보드의 핵심 위젯(F5)과 같은 정의 */
     openCritical: number;
     visitQueued: number;
-    /** 등급별 미처리 가구 수 — 요약 카드의 등급 칸 (Figma ① 8:1833) */
+    /** 위험 단계별 미처리 가구 수 — 요약 카드의 위험 단계 칸 (Figma ① 8:1833) */
     openByGrade: Record<RiskGrade, number>;
   };
 }
@@ -167,7 +167,7 @@ export async function getBoard(
 
   const alertDay = await prisma.alertDay.findUnique({ where: { date } });
 
-  // 비경보일에는 AlertDay 행이 없다 — 등급도 상태도 없이 담당 가구만 보여준다 (Figma ①-b)
+  // 비경보일에는 AlertDay 행이 없다 — 위험 단계도 상태도 없이 담당 가구만 보여준다 (Figma ①-b)
   if (!alertDay) {
     const rows = await prisma.subject.findMany({
       where: workerId ? { workerId } : { id: { in: [] } },

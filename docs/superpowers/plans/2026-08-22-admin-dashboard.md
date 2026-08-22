@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 경보일의 미확인 1등급·가구 상태를 지도와 우선순위 목록으로 보여주는 `/admin` 관리자 관제 대시보드를 구현한다.
+**Goal:** 경보일의 미확인 심각 가구·가구 상태를 지도와 우선순위 목록으로 보여주는 `/admin` 관리자 관제 대시보드를 구현한다.
 
 **Architecture:** `src/lib/admin/dashboard.ts`가 Prisma 행을 관리자 화면 전용 읽기 모델로 한 번 정규화하고, `/admin` Server Component가 이를 직접 소비한다. 카카오 지도·10초 새로고침·데모 발령만 Client Component로 격리하며 별도 관리자 API와 새 의존성은 만들지 않는다.
 
@@ -53,7 +53,7 @@ const assessments: AdminAssessmentRow[] = [
     subjectId: "subject-critical",
     score: 31.5,
     grade: 1,
-    reasons: JSON.stringify(["1938년생 (88세)·독거", "오늘 비상 단계"]),
+    reasons: JSON.stringify(["1938년생 (88세)·독거", "오늘 심각 단계"]),
     subject: {
       id: "subject-critical",
       name: "김○○",
@@ -72,7 +72,7 @@ const assessments: AdminAssessmentRow[] = [
     subjectId: "subject-visit",
     score: 12,
     grade: 2,
-    reasons: JSON.stringify(["1948년생 (78세)", "오늘 비상 단계"]),
+    reasons: JSON.stringify(["1948년생 (78세)", "오늘 심각 단계"]),
     subject: {
       id: "subject-visit",
       name: "박○○",
@@ -114,7 +114,7 @@ const statuses: AdminStatusRow[] = [
 ];
 
 describe("buildAdminSnapshot", () => {
-  it("미확인 1등급·방문 대기·건물 최고 위험도를 같은 행 집합에서 계산한다", () => {
+  it("미확인 심각·방문 대기·건물 최고 위험도를 같은 행 집합에서 계산한다", () => {
     const result = buildAdminSnapshot({ assessments, statuses });
 
     expect(result.summary).toEqual({
@@ -352,7 +352,7 @@ describe("관리자 관제 화면", () => {
       </>,
     );
 
-    expect(html).toContain("미확인 1등급");
+    expect(html).toContain("미확인 심각");
     expect(html).toContain("김○○");
     expect(html).toContain("이담당");
     expect(html).toContain("미확인");
@@ -377,7 +377,7 @@ describe("관리자 관제 화면", () => {
     );
 
     expect(html).toContain("오늘은 경보가 없습니다");
-    expect(html).not.toContain("1등급 0명");
+    expect(html).not.toContain("심각 0명");
   });
 });
 ```
@@ -392,7 +392,7 @@ Expected: FAIL because `src/app/admin/page.tsx`가 존재하지 않는다.
 
 - [ ] **Step 4: 토큰과 CSS Module 작성**
 
-`tokens.css`는 `:root` 안에 관리자 전용 색·간격·타이포·모션 토큰을 OKLCH로 정의한다. 위험등급 토큰은 기존 의미에 맞춰 `--color-danger`, `--color-warn`, `--color-calm`을 참조한다.
+`tokens.css`는 `:root` 안에 관리자 전용 색·간격·타이포·모션 토큰을 OKLCH로 정의한다. 위험 단계 토큰은 기존 의미에 맞춰 `--color-danger`, `--color-warn`, `--color-calm`을 참조한다.
 
 `src/app/admin/admin.module.css`의 첫 줄은 다음 Hallmark 스탬프로 시작한다.
 
@@ -412,7 +412,7 @@ body {
 }
 ```
 
-`.hallmark/preflight.json`에는 Next 16.3.2, Tailwind 4, 한국어 시스템 폰트, 기존 위험등급 팔레트, motion-cut을 기록한다. `.hallmark/log.json`에는 2026-08-22의 `Map / Diagram`, `Cobalt`, `map`, 관리자 관제 대시보드 항목 하나를 기록한다.
+`.hallmark/preflight.json`에는 Next 16.3.2, Tailwind 4, 한국어 시스템 폰트, 기존 위험 단계 팔레트, motion-cut을 기록한다. `.hallmark/log.json`에는 2026-08-22의 `Map / Diagram`, `Cobalt`, `map`, 관리자 관제 대시보드 항목 하나를 기록한다.
 
 - [ ] **Step 5: Server Component와 순수 표시 컴포넌트 구현**
 
@@ -438,7 +438,7 @@ export default async function AdminPage(props: PageProps<"/admin">) {
 }
 ```
 
-`SummaryCards`는 네 개의 `<dl>` 항목을 렌더링한다. `PriorityList`는 `<ol>`과 대상자 상세 링크를 렌더링하고, 등급 옆에 `subject.reasons`를 문장 수정 없이 `<ul>`로 표시한다. 상세 링크는 `date`와 `workerId` 검색 파라미터를 유지한다. `AdminDashboardView`는 비경보일과 경보일을 분기하고 필터는 네이티브 GET `<form>`으로 만든다. 아직 없는 `AdminMap`과 `AdminControls`는 다음 작업 전까지 같은 파일의 접근 가능한 임시 영역으로 두지 말고, Task 3·4 완료 시 한 번에 import해 연결한다.
+`SummaryCards`는 네 개의 `<dl>` 항목을 렌더링한다. `PriorityList`는 `<ol>`과 대상자 상세 링크를 렌더링하고, 위험 단계 옆에 `subject.reasons`를 문장 수정 없이 `<ul>`로 표시한다. 상세 링크는 `date`와 `workerId` 검색 파라미터를 유지한다. `AdminDashboardView`는 비경보일과 경보일을 분기하고 필터는 네이티브 GET `<form>`으로 만든다. 아직 없는 `AdminMap`과 `AdminControls`는 다음 작업 전까지 같은 파일의 접근 가능한 임시 영역으로 두지 말고, Task 3·4 완료 시 한 번에 import해 연결한다.
 
 - [ ] **Step 6: 집중 테스트와 lint 확인**
 
@@ -534,11 +534,11 @@ button.className = `${styles.mapMarker} ${styles[`grade${building.grade}`]} ${st
 button.textContent = String(building.openCount);
 button.setAttribute(
   "aria-label",
-  `${building.address}, ${building.grade}등급, 미처리 ${building.openCount}명`,
+  `${building.address}, 위험 단계 ${GRADE_LABEL[building.grade]}, 미처리 ${building.openCount}명`,
 );
 ```
 
-클릭 시 컴포넌트 state의 `selectedBuildingId`를 갱신하고 지도 아래 `<section aria-live="polite">`에 주소와 대상자별 이름·등급·`statusLabel`·`reasons`를 표시한다. `reasons` 문장은 재작성하지 않는다. effect cleanup은 생성한 overlays의 `setMap(null)`을 호출하고 지도 container를 비운다. SDK/초기화 실패는 `mapError` 한국어 메시지만 갱신한다.
+클릭 시 컴포넌트 state의 `selectedBuildingId`를 갱신하고 지도 아래 `<section aria-live="polite">`에 주소와 대상자별 이름·위험 단계·`statusLabel`·`reasons`를 표시한다. `reasons` 문장은 재작성하지 않는다. effect cleanup은 생성한 overlays의 `setMap(null)`을 호출하고 지도 container를 비운다. SDK/초기화 실패는 `mapError` 한국어 메시지만 갱신한다.
 
 - [ ] **Step 4: 페이지에 지도 연결**
 

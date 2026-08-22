@@ -78,7 +78,7 @@ const statuses: AdminStatusRow[] = [
 ];
 
 describe("buildAdminSnapshot", () => {
-  it("미확인 1등급·방문 대기·건물 최고 위험도를 같은 행 집합에서 계산한다", () => {
+  it("미확인 심각·방문 대기·건물 최고 위험도를 같은 행 집합에서 계산한다", () => {
     const result = buildAdminSnapshot({ assessments, statuses });
 
     expect(result.summary).toEqual({

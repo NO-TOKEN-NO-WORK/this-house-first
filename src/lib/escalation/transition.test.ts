@@ -96,7 +96,7 @@ describe("전화 기록 전이", () => {
     expect(r.promoted).toBe(false);
   });
 
-  it("방문 대상(1등급·승격) 가구에는 전화 기록을 남길 수 없다 — 허위 안심 차단 (PRD F3)", () => {
+  it("방문 대상(심각·승격) 가구에는 전화 기록을 남길 수 없다 — 허위 안심 차단 (PRD F3)", () => {
     expect(() => call(HouseholdStatus.VISIT_QUEUED, CallResult.OK)).toThrow(
       TransitionError,
     );
