@@ -14,6 +14,8 @@ import {
 } from "../../lib/admin/dashboard";
 import { isIsoDate } from "../../lib/board/format";
 import {
+  AlertLevel,
+  ALERT_LEVEL_LABEL,
   GRADE_LABEL,
   HouseholdStatus,
   HOUSEHOLD_STATUS_LABEL,
@@ -22,6 +24,7 @@ import {
 } from "../../lib/domain";
 import { AdminMap } from "../../components/admin/AdminMap";
 import { AdminControls } from "../../components/admin/AdminControls";
+import { AdminShell, AdminTopBar } from "../../components/admin/AdminShell";
 import {
   getManagerNotificationFeed,
   type ManagerNotificationFeed,
@@ -92,6 +95,51 @@ const SUBJECT_AVATARS = [
 ] as const;
 
 const ADMIN_FILTER_FORM_ID = "admin-filter-form";
+
+const PREVIEW_SUBJECT: AdminDashboardSubject = {
+  subjectId: "preview-subject-1",
+  name: "김○○",
+  phone: null,
+  birthYear: 1938,
+  workerId: "preview-worker-1",
+  workerName: "이미경",
+  workerPhone: "010-0000-1001",
+  buildingId: "preview-building-1",
+  address: "경상북도 포항시 북구 합성로 1",
+  lat: 36.06,
+  lng: 129.38,
+  grade: RiskGrade.CRITICAL,
+  score: 31.5,
+  reasons: ["1938년생 (88세)·독거", "냉방기기 고장"],
+  status: HouseholdStatus.VISIT_QUEUED,
+  statusLabel: HOUSEHOLD_STATUS_LABEL[HouseholdStatus.VISIT_QUEUED],
+  open: true,
+};
+
+const PREVIEW_DASHBOARD: AdminAlertedDashboard = {
+  alerted: true,
+  date: "2026-08-22",
+  dateLabel: "8월 22일(토)",
+  selectedWorkerId: null,
+  workers: [{ id: "preview-worker-1", name: "이미경", phone: "010-0000-1001", subjectCount: 1 }],
+  generatedAt: "2026-08-22T01:30:00.000Z",
+  level: AlertLevel.EMERGENCY,
+  levelLabel: ALERT_LEVEL_LABEL[AlertLevel.EMERGENCY],
+  feelsLikeMax: 38.4,
+  summary: { total: 1, open: 1, openCritical: 1, visitQueued: 1, completed: 0 },
+  subjects: [PREVIEW_SUBJECT],
+  buildings: [{
+    buildingId: PREVIEW_SUBJECT.buildingId,
+    address: PREVIEW_SUBJECT.address,
+    lat: PREVIEW_SUBJECT.lat,
+    lng: PREVIEW_SUBJECT.lng,
+    grade: PREVIEW_SUBJECT.grade,
+    score: PREVIEW_SUBJECT.score,
+    statusCategory: "visit",
+    openCount: 1,
+    subjects: [PREVIEW_SUBJECT],
+  }],
+};
 
 const LAST_UPDATED_FORMAT = new Intl.DateTimeFormat("ko-KR", {
   hour: "2-digit",
@@ -165,7 +213,7 @@ export function SummaryCards({
   ];
 
   return (
-    <section aria-label="오늘의 관제 요약" className={styles.summaryGrid}>
+    <section aria-label="오늘의 관제 요약" className={styles.summaryGrid} id="reports">
       {metrics.map((metric) => (
         <dl key={metric.label} className={`${styles.metric} ${metric.tone}`}>
           <Image
@@ -241,15 +289,17 @@ export function PriorityList({
   workerId,
   subjectQuery = "",
   selectedStatus,
+  previewMode = false,
 }: {
   subjects: AdminDashboardSubject[];
   date?: string;
   workerId?: string | null;
   subjectQuery?: string;
   selectedStatus?: HouseholdStatus;
+  previewMode?: boolean;
 }) {
   return (
-    <section className={styles.priorityPanel} aria-labelledby="priority-title">
+    <section className={styles.priorityPanel} aria-labelledby="priority-title" id="subjects">
       <header className={styles.panelHeader}>
         <span className={styles.panelTitleGroup}>
           <h2 id="priority-title" className={styles.panelTitle}>
@@ -258,6 +308,7 @@ export function PriorityList({
           <span className={styles.panelHint}>대상자 관리</span>
         </span>
         <form action="/admin" className={styles.panelHeaderControls} method="get">
+          {previewMode ? <input name="preview" type="hidden" value="1" /> : null}
           {date ? <input name="date" type="hidden" value={date} /> : null}
           {workerId ? <input name="workerId" type="hidden" value={workerId} /> : null}
           <label>
@@ -328,11 +379,15 @@ export function PriorityList({
                   <td className={styles.addressCell}>{compactAddress(subject.address)}</td>
                   <td className={styles.reasonCell}>{subject.reasons.join(" / ")}</td>
                   <td>
-                    <span className={styles.rowActions}>
-                      <Link href={subjectHref(subject.subjectId, date, workerId)}>상세</Link>
-                      <Link href={`/admin/subjects/${subject.subjectId}/edit`}>수정</Link>
-                      <Link className={styles.dangerLink} href={`${subjectHref(subject.subjectId, date, workerId)}#delete`}>삭제</Link>
-                    </span>
+                    {previewMode ? (
+                      <span className={styles.statusBadge} aria-disabled="true">미리보기</span>
+                    ) : (
+                      <span className={styles.rowActions}>
+                        <Link href={subjectHref(subject.subjectId, date, workerId)}>상세</Link>
+                        <Link href={`/admin/subjects/${subject.subjectId}/edit`}>수정</Link>
+                        <Link className={styles.dangerLink} href={`${subjectHref(subject.subjectId, date, workerId)}#delete`}>삭제</Link>
+                      </span>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -379,15 +434,25 @@ function BuildingStatusPanel({ buildings }: { buildings: AdminDashboardBuilding[
   );
 }
 
-function WorkerPanel({ dashboard }: { dashboard: AdminAlertedDashboard }) {
+function WorkerPanel({
+  dashboard,
+  previewMode = false,
+}: {
+  dashboard: AdminAlertedDashboard;
+  previewMode?: boolean;
+}) {
   return (
-    <section className={styles.workerPanel} aria-labelledby="worker-title">
+    <section className={styles.workerPanel} aria-labelledby="worker-title" id="workers">
       <header className={styles.panelHeader}>
         <h2 id="worker-title" className={styles.panelTitle}>생활지원사 관리</h2>
-        <Link className={styles.outlineAction} href="/admin/workers/new">
-          <Image alt="" aria-hidden="true" height={16} src="/admin/add.png" width={16} />
-          생활지원사 등록
-        </Link>
+        {previewMode ? (
+          <span className={styles.outlineAction} aria-disabled="true">생활지원사 등록</span>
+        ) : (
+          <Link className={styles.outlineAction} href="/admin/workers/new">
+            <Image alt="" aria-hidden="true" height={16} src="/admin/add.png" width={16} />
+            생활지원사 등록
+          </Link>
+        )}
       </header>
       <div className={styles.tableScroller}>
         <table className={styles.workerTable}>
@@ -416,11 +481,15 @@ function WorkerPanel({ dashboard }: { dashboard: AdminAlertedDashboard }) {
                     </span>
                   </td>
                   <td>
-                    <span className={styles.rowActions}>
-                      <Link href={`/admin/workers/${worker.id}?date=${dashboard.date}`}>상세</Link>
-                      <Link href={`/admin/workers/${worker.id}/edit`}>수정</Link>
-                      <Link className={styles.dangerLink} href={`/admin/workers/${worker.id}/edit#delete`}>삭제</Link>
-                    </span>
+                    {previewMode ? (
+                      <span className={styles.statusBadge} aria-disabled="true">미리보기</span>
+                    ) : (
+                      <span className={styles.rowActions}>
+                        <Link href={`/admin/workers/${worker.id}?date=${dashboard.date}`}>상세</Link>
+                        <Link href={`/admin/workers/${worker.id}/edit`}>수정</Link>
+                        <Link className={styles.dangerLink} href={`/admin/workers/${worker.id}/edit#delete`}>삭제</Link>
+                      </span>
+                    )}
                   </td>
                 </tr>
               );
@@ -489,15 +558,18 @@ function DataSources() {
 function FilterForm({
   dashboard,
   workerQuery = "",
+  previewMode = false,
 }: {
   dashboard: AdminDashboard;
   workerQuery?: string;
+  previewMode?: boolean;
 }) {
   const visibleWorkers = dashboard.workers.filter((worker) =>
     worker.name.includes(workerQuery.trim()),
   );
   return (
     <form action="/admin" method="get" className={styles.filterForm} id={ADMIN_FILTER_FORM_ID}>
+      {previewMode ? <input name="preview" type="hidden" value="1" /> : null}
       <label className={styles.filterField}>
         <span className={styles.sidebarTitle}>날짜</span>
         <span className={styles.dateControl}>
@@ -536,62 +608,30 @@ function FilterForm({
   );
 }
 
-function TopBar({
-  dashboard,
-  controls,
-}: {
-  dashboard: AdminDashboard;
-  controls?: ReactNode;
-}) {
+function RegistrationActions({ previewMode = false }: { previewMode?: boolean }) {
   return (
-    <header className={styles.topBar}>
-      <Link href="/" className={styles.brand}>
-        <Image alt="" aria-hidden="true" height={32} src="/admin/brand-mark.png" width={32} />
-        <span>이 집 먼저</span>
+    <div className={styles.registrationActions} aria-label="관리 등록 기능" id="settings">
+      <Link className={styles.outlineAction} href={previewMode ? "/admin/welfare-scan?preview=1" : "/admin/welfare-scan"}>
+        <Image alt="" aria-hidden="true" height={16} src="/admin/search.png" width={16} />
+        복지 스캔
       </Link>
-      <h1 className={styles.title}>관리자 관제</h1>
-      <div className={styles.topMeta}>
-        <dl className={styles.metaItem}>
-          <Image alt="" aria-hidden="true" className={styles.metaIcon} height={20} src="/admin/calendar.png" width={20} />
-          <dt>날짜</dt><dd>{dashboard.date.replaceAll("-", ".")}</dd>
-        </dl>
-        <dl className={styles.metaItem}>
-          <Image alt="" aria-hidden="true" className={styles.metaIcon} height={20} src="/admin/location.png" width={20} />
-          <dt>담당 지역</dt><dd>{compactRegion(dashboard)}</dd>
-        </dl>
-        {dashboard.alerted ? (
-          <dl className={`${styles.metaItem} ${styles.temperature}`}>
-            <Image alt="" aria-hidden="true" className={styles.metaIcon} height={20} src="/admin/thermometer.png" width={20} />
-            <dt>최고 체감온도</dt><dd>{dashboard.feelsLikeMax}°C</dd>
-          </dl>
-        ) : null}
-        <dl className={styles.metaItem}>
-          <Image alt="" aria-hidden="true" className={styles.metaIcon} height={20} src="/admin/clock.png" width={20} />
-          <dt>마지막 갱신</dt>
-          <dd><time dateTime={dashboard.generatedAt}>{LAST_UPDATED_FORMAT.format(new Date(dashboard.generatedAt))}</time></dd>
-        </dl>
-        <dl className={styles.metaItem}>
-          <Image alt="" aria-hidden="true" className={styles.metaIcon} height={20} src="/admin/refresh.png" width={20} />
-          <dt>자동 갱신</dt><dd>켜짐 <Image alt="작동 중" className={styles.liveDot} height={8} src="/admin/status-resolved.png" width={8} /></dd>
-        </dl>
-        <CurrentWeatherSummary variant="admin" />
-      </div>
-      {controls}
-    </header>
-  );
-}
-
-function RegistrationActions() {
-  return (
-    <div className={styles.registrationActions} aria-label="관리 등록 기능">
-      <Link className={styles.outlineAction} href="/admin/subjects/new">
-        <Image alt="" aria-hidden="true" height={16} src="/admin/add.png" width={16} />
-        대상자 등록
-      </Link>
-      <Link className={styles.outlineAction} href="/admin/workers/new">
-        <Image alt="" aria-hidden="true" height={16} src="/admin/add.png" width={16} />
-        생활지원사 등록
-      </Link>
+      {previewMode ? (
+        <>
+          <span className={styles.outlineAction} aria-disabled="true">대상자 등록</span>
+          <span className={styles.outlineAction} aria-disabled="true">생활지원사 등록</span>
+        </>
+      ) : (
+        <>
+          <Link className={styles.outlineAction} href="/admin/subjects/new">
+            <Image alt="" aria-hidden="true" height={16} src="/admin/add.png" width={16} />
+            대상자 등록
+          </Link>
+          <Link className={styles.outlineAction} href="/admin/workers/new">
+            <Image alt="" aria-hidden="true" height={16} src="/admin/add.png" width={16} />
+            생활지원사 등록
+          </Link>
+        </>
+      )}
     </div>
   );
 }
@@ -609,6 +649,7 @@ export function AdminDashboardView({
   filters = {},
   notificationFeed,
   pushPublicKey = "",
+  previewMode = false,
 }: {
   dashboard: AdminDashboard;
   mapKey: string;
@@ -616,20 +657,36 @@ export function AdminDashboardView({
   filters?: AdminViewFilters;
   notificationFeed?: ManagerNotificationFeed;
   pushPublicKey?: string;
+  previewMode?: boolean;
 }) {
   return (
-    <div className={styles.page}>
-      <TopBar dashboard={dashboard} controls={controls} />
-      <RegistrationActions />
+    <AdminShell
+      activePage="dashboard"
+      header={<AdminTopBar
+        controls={controls}
+        items={[
+          { icon: "/admin/calendar.png", label: "날짜", value: dashboard.date.replaceAll("-", ".") },
+          { icon: "/admin/location.png", label: "담당 지역", value: compactRegion(dashboard) },
+          ...(dashboard.alerted ? [{ icon: "/admin/thermometer.png", label: "최고 체감온도", tone: "danger" as const, value: `${dashboard.feelsLikeMax}°C` }] : []),
+          { icon: "/admin/clock.png", label: "마지막 갱신", value: <time dateTime={dashboard.generatedAt}>{LAST_UPDATED_FORMAT.format(new Date(dashboard.generatedAt))}</time> },
+          { icon: "/admin/refresh.png", label: "자동 갱신", live: true, value: "켜짐" },
+        ]}
+        metaTail={<CurrentWeatherSummary variant="admin" />}
+        title="관리자 관제"
+      />}
+      pageClassName={styles.page}
+      previewMode={previewMode}
+    >
+      <RegistrationActions previewMode={previewMode} />
       <main className={styles.workspace}>
         <aside className={styles.sidebar} aria-label="관제 필터와 대상자 상세">
-          <FilterForm dashboard={dashboard} workerQuery={filters.workerQuery} />
+          <FilterForm dashboard={dashboard} previewMode={previewMode} workerQuery={filters.workerQuery} />
           <StatusLegend
             selectedStatuses={filters.selectedStatuses}
             subjectQuery={filters.subjectQuery}
           />
         </aside>
-        <section className={styles.dashboardContent} aria-label="관리자 관제 현황">
+        <section className={styles.dashboardContent} aria-label="관리자 관제 현황" id="dashboard">
           {dashboard.alerted && notificationFeed ? (
             <div className={styles.notificationArea}>
               {notificationFeed?.recipientId ? (
@@ -645,7 +702,7 @@ export function AdminDashboardView({
             <>
               <SummaryCards summary={dashboard.summary} />
               <section className={styles.mapGrid} aria-label="지도와 건물별 현황">
-                <AdminMap buildings={dashboard.buildings} date={dashboard.date} mapKey={mapKey} />
+                <AdminMap buildings={dashboard.buildings} date={dashboard.date} mapKey={mapKey} previewMode={previewMode} />
                 <BuildingStatusPanel buildings={dashboard.buildings} />
               </section>
               <section className={styles.managementGrid} aria-label="대상자와 생활지원사 관리">
@@ -659,8 +716,9 @@ export function AdminDashboardView({
                   subjectQuery={filters.subjectQuery}
                   subjects={dashboard.subjects}
                   workerId={dashboard.selectedWorkerId}
+                  previewMode={previewMode}
                 />
-                <WorkerPanel dashboard={dashboard} />
+                <WorkerPanel dashboard={dashboard} previewMode={previewMode} />
               </section>
             </>
           ) : (
@@ -671,7 +729,7 @@ export function AdminDashboardView({
           <DataSources />
         </section>
       </main>
-    </div>
+    </AdminShell>
   );
 }
 
@@ -716,6 +774,19 @@ export function normalizeAdminSearchParams(params: {
 
 export default async function AdminPage(props: PageProps<"/admin">) {
   const params = await props.searchParams;
+  if (Array.isArray(params.preview)) notFound();
+  const previewMode =
+    process.env.NODE_ENV !== "production" && params.preview === "1";
+  if (previewMode) {
+    return (
+      <AdminDashboardView
+        dashboard={PREVIEW_DASHBOARD}
+        mapKey=""
+        notificationFeed={{ recipientId: null, items: [] }}
+        previewMode
+      />
+    );
+  }
   const query = normalizeAdminSearchParams(params);
   if (!query) notFound();
   const { date, workerId, subjectQuery, workerQuery, selectedStatuses } = query;

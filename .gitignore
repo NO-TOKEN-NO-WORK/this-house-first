@@ -30,9 +30,10 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files — .env.example만 커밋한다
+# env files — 비밀값 없는 템플릿만 커밋한다
 .env*
 !.env.example
+!.env.sample
 
 # prisma — 로컬 SQLite DB와 생성 클라이언트는 커밋하지 않는다 (npx prisma db push로 재생성)
 prisma/dev.db

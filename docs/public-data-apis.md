@@ -11,6 +11,7 @@ PRD §8의 공공데이터 3종을 서버 Route Handler로 연동한다. 서비�
 | 기상청 기상특보 조회서비스 | <https://www.data.go.kr/data/15000415/openapi.do> | `PUBLIC_DATA_SERVICE_KEY` |
 | 국토교통부 건축HUB 건축물대장정보 서비스 | <https://www.data.go.kr/data/15134735/openapi.do> | `PUBLIC_DATA_SERVICE_KEY` |
 | 행정안전부 행정동별 성·연령별 주민등록 인구수 | <https://www.data.go.kr/data/15108072/openapi.do> | `PUBLIC_DATA_SERVICE_KEY` |
+| 한국사회보장정보원 중앙부처 복지서비스 | <https://www.data.go.kr/data/15090532/openapi.do> | `PUBLIC_DATA_SERVICE_KEY` |
 
 공공데이터포털에서 같은 일반 인증키를 사용하더라도 각 API별 활용신청은 필요하다.
 발급 화면의 인코딩/디코딩 키 어느 쪽을 넣어도 클라이언트가 한 번만 URL 인코딩한다.
@@ -101,3 +102,17 @@ GET /api/public-data/population?administrationCode=1111054000&fromYearMonth=2026
 
 원 API는 10세 단위 연령구간이므로 정확한 65세 이상 수를 만들 수 없다. 응답은
 60대 구간을 별도 보존하고, 오해가 없도록 `age70Plus`와 `age70PlusShare`를 제공한다.
+
+### 복지 스캔
+
+```text
+GET  /api/welfare-scan   # 관련 중앙부처 복지사업 연결 확인
+POST /api/welfare-scan   # 대상자 기록 분석 + 자격 규칙 비교
+```
+
+목록·상세 API에서 냉방, 에너지, 이동, 안전 설비, 주거 수선 관련 사업만 정규화한다.
+OpenAI에는 자유 메모나 영구 대상자 ID를 보내지 않고 스캔용 임시 ID, 구조화된 설비
+사실, 서버 허용 목록으로 추린 복지 관련 용어만 보낸다. 자격 판정과 화면 근거는 서버의
+결정론적 규칙 엔진이 수행한다. 두 외부 연동 중 하나가 실패하면 성공한 결과만 반환하고
+관리자 화면에 부분 실패를 표시한다. 스캔 결과 저장, 원문 의미 전체를 쓰는 자유 메모
+분석, 예약 실행은 MVP 이후로 미룬다.
