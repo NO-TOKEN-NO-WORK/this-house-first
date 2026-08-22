@@ -22,6 +22,15 @@ const { getBoard } = vi.hoisted(() => ({ getBoard: vi.fn() }));
 
 vi.mock("@/lib/board/today", () => ({ getBoard }));
 
+/*
+ * `TodayWorkspace`가 저장 후 보드를 다시 받으려고 `useRouter`를 쓴다.
+ * 테스트에는 앱 라우터가 없으므로 그 훅만 대신하고 `notFound` 등은 실제 것을 쓴다.
+ */
+vi.mock("next/navigation", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("next/navigation")>()),
+  useRouter: () => ({ refresh: vi.fn() }),
+}));
+
 import TodayPage from "./page";
 
 function subject(name: string, grade: 1 | 2 | 3): BoardSubject {
@@ -43,6 +52,7 @@ function subject(name: string, grade: 1 | 2 | 3): BoardSubject {
     open: true,
     nextCheckKind: grade === RiskGrade.CRITICAL ? CheckKind.VISIT : CheckKind.CALL,
     lastResult: null,
+    lastCheckAtLabel: null,
     roadAddress: null,
     lat: 35.8,
     lng: 128.5,

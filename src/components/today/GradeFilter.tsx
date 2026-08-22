@@ -1,19 +1,36 @@
 "use client";
 
 import { useState } from "react";
-import type { BoardGroup } from "@/lib/board/today";
+import type { BoardGroup, BoardSubject } from "@/lib/board/today";
 import {
   GRADE_LABEL,
+  HouseholdStatus,
   RiskGrade,
   type RiskGrade as RiskGradeValue,
 } from "@/lib/domain";
+import { GRADE_CHIP } from "./gradeStyles";
 import { SubjectCard } from "./SubjectCard";
 
-const GRADE_CHIP: Record<RiskGradeValue, string> = {
-  [RiskGrade.CRITICAL]: "bg-status-critical text-text-inverse",
-  [RiskGrade.HIGH]: "bg-status-warning text-text-primary",
-  [RiskGrade.MODERATE]: "bg-status-neutral text-text-primary",
+/** 등급별 대응 지시 글자색 (Figma ① 25:60 · 25:104 · 25:127) */
+const GRADE_PLAN_TEXT: Record<RiskGradeValue, string> = {
+  [RiskGrade.CRITICAL]: "text-status-critical-strong",
+  [RiskGrade.HIGH]: "text-status-warning-strong",
+  [RiskGrade.MODERATE]: "text-text-tertiary",
 };
+
+/**
+ * 무응답 1회로 멈춰 있는 가구의 진행 한 줄 — `"무응답 1회 · 9시 10분"` (Figma ⑥ 38:3534).
+ *
+ * 문구는 `HOUSEHOLD_STATUS_LABEL`이 만든 `statusLabel`을 그대로 쓴다 (도메인 규칙 2).
+ * 이 상태에서만 배너를 붙인다 — 다른 상태는 카드가 이미 칩이나 버튼으로 말하고 있다.
+ */
+function retryNoteOf(subject: BoardSubject): string | undefined {
+  if (!subject.open) return undefined;
+  if (subject.status !== HouseholdStatus.NO_ANSWER_1) return undefined;
+  return subject.lastCheckAtLabel
+    ? `${subject.statusLabel} · ${subject.lastCheckAtLabel}`
+    : subject.statusLabel;
+}
 
 export function GradeFilter({
   groups,
@@ -60,10 +77,10 @@ export function GradeFilter({
               type="button"
               aria-pressed={active}
               onClick={() => selectGrade(tab.grade)}
-              className={`flex min-h-12 flex-1 items-center justify-center px-3 py-2 text-body-16 ${
+              className={`flex min-h-12 flex-1 items-center justify-center px-3 py-2 text-body-16 text-text-primary ${
                 active
-                  ? "border-b-2 border-action-primary-strong font-bold text-text-primary"
-                  : "border-b border-border-default text-text-primary"
+                  ? "border-b-2 border-action-primary-strong"
+                  : "border-b border-border-subtle"
               }`}
             >
               {tab.label}
@@ -87,10 +104,11 @@ export function GradeFilter({
                   {group.gradeLabel}
                 </span>
                 {/*
-                  위험 단계 색은 칩이 전달한다. 설명까지 단계색으로 쓰면 새 background/subtle에서
-                  경계 4.45:1, 주의 4.23:1로 WCAG AA(일반 텍스트 4.5:1)에 못 미친다.
+                  화면 배경이 흰색(Figma 25:4)이 되면서 단계색을 그대로 쓴다 —
+                  심각 6.59:1 · 경계 5.09:1 · 주의 4.83:1로 모두 WCAG AA를 넘는다.
+                  (배경이 background/subtle이던 판에서는 경계 4.45:1, 주의 4.23:1로 미달이었다)
                 */}
-                <span className="text-title-17 text-text-primary">
+                <span className={`text-title-17 ${GRADE_PLAN_TEXT[group.grade]}`}>
                   {group.subjects.length}명 | {group.plan}
                 </span>
               </h2>
@@ -101,6 +119,7 @@ export function GradeFilter({
                     subject={subject}
                     grade={subject.grade}
                     statusLabel={subject.open ? undefined : subject.statusLabel}
+                    retryNote={retryNoteOf(subject)}
                     nextCheckKind={subject.open ? subject.nextCheckKind : null}
                     date={date}
                     workerId={workerId}

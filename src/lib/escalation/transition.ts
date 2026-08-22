@@ -145,6 +145,16 @@ function callTransition(input: CallTransitionInput): TransitionOutcome {
         airconIssue: false,
       };
 
+    case CallResult.EMERGENCY_119:
+      // 통화 중 119를 불렀으면 방문의 119(VisitResult.EMERGENCY_119)와 같은 자리로 간다.
+      // 승격이 아니라 종결이다 — 이미 응급 체계로 넘어갔으므로 방문 큐에 다시 올리지 않는다.
+      return {
+        status: HouseholdStatus.EMERGENCY_119,
+        callAttempts: callAttempts + 1,
+        promoted: false,
+        airconIssue: false,
+      };
+
     case CallResult.UNREACHABLE:
       return {
         status: HouseholdStatus.UNREACHABLE,

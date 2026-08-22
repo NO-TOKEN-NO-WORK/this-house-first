@@ -20,7 +20,7 @@ import {
 
 /**
  * 담당자(생활지원사) 오늘의 대응 보드 — FR-4, PRD F3
- * 화면 설계: Figma ① 8:1803(경보일) · ①-b 14:2926(비경보일)
+ * 화면 설계: Figma ① 25:4(경보일) · ①-b 14:2926(비경보일)
  *
  * 60대 사용자 기준 제약(PRD §9)을 화면 구조로 강제한다:
  *  - 큰 글자 (이름 24px, 본문 15px 이상)
@@ -38,11 +38,17 @@ const LEVEL_BANNER: Record<AlertLevel, string> = {
   [AlertLevel.EMERGENCY]: "bg-status-critical",
 };
 
-/** 위험 단계 요약 글자색 (Figma ① 8:1833) */
+/**
+ * 위험 단계 요약 글자색 (Figma ① 25:36~25:44).
+ *
+ * 경계만 Figma와 다르다 — 디자인의 `status/warning`(#f29900)은 흰 배경에서 대비 2.25:1로
+ * 20px 굵은 글자 기준(3:1)에도 못 미친다. 한 단계 진한 `-strong`(#9a6200, 5.09:1)을 쓴다.
+ * 60대 사용자 기준 접근성(PRD §9) — ADR-0014의 칩 글자색 예외와 같은 이유다.
+ */
 const GRADE_TEXT: Record<RiskGrade, string> = {
-  [RiskGrade.CRITICAL]: "text-status-critical-strong",
+  [RiskGrade.CRITICAL]: "text-status-critical",
   [RiskGrade.HIGH]: "text-status-warning-strong",
-  [RiskGrade.MODERATE]: "text-text-tertiary",
+  [RiskGrade.MODERATE]: "text-text-supporting",
 };
 
 const GRADE_ORDER: readonly RiskGrade[] = [
@@ -74,46 +80,36 @@ function Greeting({
 }
 
 function AlertBanner({ board }: { board: AlertedBoard }) {
-  const criticalTotal =
-    board.groups.find((g) => g.grade === RiskGrade.CRITICAL)?.subjects.length ??
-    0;
-
   return (
     <p
-      className={`flex w-full items-center gap-2.5 rounded-full px-4.5 py-3 text-text-inverse ${LEVEL_BANNER[board.level]}`}
+      className={`flex w-full items-center gap-2.5 rounded-full px-4.5 py-3 text-label-18 text-text-inverse ${LEVEL_BANNER[board.level]}`}
     >
       <AlertCircleIcon className="size-6 shrink-0" />
-      <span className="flex flex-col">
-        <span className="text-heading-18">
-          오늘은 폭염 {board.levelLabel} 단계입니다
-        </span>
-        <span className="text-body-15 opacity-90">
-          체감 {board.feelsLikeMax}℃ · {GRADE_LABEL[RiskGrade.CRITICAL]}{" "}
-          {criticalTotal}명
-        </span>
+      <span>
+        오늘 폭염 {board.levelLabel} 단계예요 · 체감 {board.feelsLikeMax}°C
       </span>
     </p>
   );
 }
 
-/** 요약 카드 — 왼쪽은 "오늘 남은 일", 오른쪽은 위험 단계별 미처리 수 (Figma ① 8:1833) */
+/** 요약 카드 — 왼쪽은 "오늘 끝낸 일", 오른쪽은 위험 단계별 미처리 수 (Figma ① 25:30) */
 function SummaryCard({ board }: { board: AlertedBoard }) {
   return (
     <div className="flex w-full items-center rounded-[10px] border border-border-default bg-surface-default px-8 py-4.5">
       <div className="flex flex-1 items-center justify-between">
-        <div className="flex flex-col items-center gap-1 text-text-primary">
-          <span className="text-label-15">연락 필요</span>
+        <div className="flex h-11.5 flex-col items-center justify-between text-text-primary">
+          <span className="text-body-15">확인 완료</span>
           <span className="text-heading-20">
-            {board.summary.open} / {board.summary.total}
+            {board.summary.total - board.summary.open} / {board.summary.total}
           </span>
         </div>
         <div aria-hidden className="h-6 w-px bg-border-default" />
         {GRADE_ORDER.map((grade) => (
           <div
             key={grade}
-            className={`flex flex-col items-center gap-1 ${GRADE_TEXT[grade]}`}
+            className={`flex h-11.5 flex-col items-center justify-between ${GRADE_TEXT[grade]}`}
           >
-            <span className="text-label-15">{GRADE_LABEL[grade]}</span>
+            <span className="text-body-15">{GRADE_LABEL[grade]}</span>
             <span className="text-heading-20">
               {board.summary.openByGrade[grade]}명
             </span>
@@ -179,7 +175,7 @@ export default async function TodayPage(props: PageProps<"/today">) {
       workerId={workerId}
       returnGrade={selectedGrade}
     >
-      <main className="mx-auto flex w-full max-w-[520px] flex-1 flex-col gap-8 bg-background-subtle px-5 pt-11 pb-[100px]">
+      <main className="mx-auto flex w-full max-w-[520px] flex-1 flex-col gap-8 bg-surface-default px-5 pt-11 pb-[100px]">
         <div className="flex flex-col gap-5">
           <Greeting
             workerName={board.worker?.name ?? null}

@@ -1,11 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  ageOf,
-  dongOf,
-  formatBoardDate,
-  isIsoDate,
-  yearOfIsoDate,
-} from "./format";
+import { ageOf, dongOf, formatBoardDate, formatClockTime, isIsoDate, yearOfIsoDate } from "./format";
 
 describe("formatBoardDate", () => {
   it("경보일 날짜를 화면 표기로 바꾼다", () => {
@@ -63,5 +57,21 @@ describe("dongOf", () => {
   it("찾지 못하면 null — 화면에서 구역 표기를 통째로 생략한다", () => {
     expect(dongOf("")).toBeNull();
     expect(dongOf("주소 미상")).toBeNull();
+  });
+});
+
+describe("formatClockTime", () => {
+  it("UTC 기록 시각을 KST로 옮겨 읽는다", () => {
+    // 2026-08-21 00:10Z = KST 09:10
+    expect(formatClockTime(new Date("2026-08-21T00:10:00Z"))).toBe("9시 10분");
+  });
+
+  it("자정을 넘겨도 KST 시각으로 맞춘다", () => {
+    // 2026-08-20 16:00Z = KST 익일 01:00
+    expect(formatClockTime(new Date("2026-08-20T16:00:00Z"))).toBe("1시 0분");
+  });
+
+  it("오후는 24시간제로 적는다 — 오전/오후 표기가 디자인에 없다", () => {
+    expect(formatClockTime(new Date("2026-08-21T05:30:00Z"))).toBe("14시 30분");
   });
 });

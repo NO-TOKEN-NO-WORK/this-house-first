@@ -4,21 +4,21 @@ import Link from "next/link";
 import { CheckKind, RiskGrade } from "@/lib/domain";
 import type { RosterSubject } from "@/lib/board/today";
 import { useTodayWorkspace } from "./TodayWorkspace";
-import { MapPinIcon, PhoneIcon } from "./icons";
+import { AlertTriangleIcon, MapPinIcon, PhoneIcon } from "./icons";
 
 /**
- * 대상자 카드 (Figma ① 8:1866 / 처리 완료본 14:2583 / 비경보일 ①-b).
+ * 대상자 카드 (Figma ① 25:62 / 처리 완료본 25:80 / 비경보일 ①-b).
  *
  * 카드가 담는 결정은 하나다 — "이 가구를 지금 어떻게 할 것인가" (PRD §9 화면당 결정 1개).
  * 경보일의 두 버튼은 보드가 가진 데이터로 상세를 연다(서버 왕복 없음).
  * 거기서 한 번 더 누르면 기록이 끝난다(탭 2회 이내).
  */
 
-/** 위험 단계별 테두리 — 색 의미는 요약 카드·위험 단계 칩과 같아야 한다 (Figma ① 8:1861 계열) */
+/** 위험 단계별 테두리 — 색 의미는 요약 카드·위험 단계 칩과 같아야 한다 (Figma ① 25:62 · 25:106 · 25:129) */
 const GRADE_BORDER: Record<RiskGrade, string> = {
   [RiskGrade.CRITICAL]: "border-status-critical",
   [RiskGrade.HIGH]: "border-status-warning",
-  [RiskGrade.MODERATE]: "border-border-soft",
+  [RiskGrade.MODERATE]: "border-border-strong",
 };
 
 interface Props {
@@ -43,6 +43,11 @@ interface Props {
   workerId?: string;
   /** 위험 단계 필터를 적용한 채 상세에 들어갔다면 뒤로 갈 때 같은 필터로 돌아간다. */
   returnGrade?: RiskGrade;
+  /**
+   * 아직 끝나지 않은 진행 상태 한 줄 — `"무응답 1회 · 9시 10분"` (Figma ⑥ 38:3534).
+   * 이게 있으면 카드에 배너가 붙고 전화 버튼이 `다시 전화하기`(주 행동)로 바뀐다.
+   */
+  retryNote?: string;
 }
 
 export function SubjectCard({
@@ -54,6 +59,7 @@ export function SubjectCard({
   date,
   workerId,
   returnGrade,
+  retryNote,
 }: Props) {
   const workspace = useTodayWorkspace();
   const query = new URLSearchParams({ date });
@@ -62,6 +68,14 @@ export function SubjectCard({
   const href = `/today/${subject.subjectId}?${query.toString()}`;
   const openDetail = workspace
     ? () => workspace.openDetail(subject.subjectId)
+    : undefined;
+  /*
+    경보일의 `전화하기`는 상세 대신 전화 안내(④)를 연다 — 걸기 전에 무엇을 물을지 보여 주고,
+    통화가 끝나면 결과 시트(⑤)로 이어진다 (FR-5).
+    비경보일(`callOnly`)은 남길 기록이 없으므로 지금처럼 바로 `tel:`이다 (ADR-0014).
+  */
+  const openCallGuide = workspace
+    ? () => workspace.openCallGuide(subject.subjectId)
     : undefined;
   const closed = nextCheckKind === null;
   const border = closed || !grade ? "border-border-soft" : GRADE_BORDER[grade];
@@ -78,11 +92,19 @@ export function SubjectCard({
           </span>
         </p>
         {statusLabel && (
-          <span className="shrink-0 rounded-full border border-border-strong px-3.5 py-1.5 text-label-15 text-text-tertiary">
+          <span className="shrink-0 rounded-full border border-action-secondary px-3.5 py-1.5 text-body-15 text-text-tertiary">
             {statusLabel}
           </span>
         )}
       </div>
+
+      {retryNote && (
+        // 왜 아직 안 끝났는지를 카드 안에서 말해 준다 — 담당자가 상세를 열지 않아도 알 수 있다
+        <p className="flex w-full items-center justify-center gap-2.5 rounded-[20px] bg-status-warning-subtle px-4 py-2.5 text-label-15 text-text-secondary">
+          <AlertTriangleIcon className="size-6 shrink-0 text-status-warning" />
+          {retryNote}
+        </p>
+      )}
 
       <div className="flex w-full gap-3">
         <CardAction
@@ -94,13 +116,14 @@ export function SubjectCard({
         />
         <CardAction
           href={callOnly && subject.phone ? `tel:${subject.phone}` : href}
-          onOpen={callOnly ? undefined : openDetail}
+          onOpen={callOnly ? undefined : openCallGuide}
           enabled={
             callOnly ? subject.phone !== null : nextCheckKind === CheckKind.CALL
           }
           external={callOnly}
-          label="전화하기"
-          icon={<PhoneIcon className="size-[18px]" />}
+          primary={retryNote !== undefined}
+          label={retryNote ? "다시 전화하기" : "전화하기"}
+          icon={<PhoneIcon className="size-[21px]" />}
         />
       </div>
     </li>
@@ -112,6 +135,7 @@ function CardAction({
   onOpen,
   enabled,
   external = false,
+  primary = false,
   label,
   icon,
 }: {
@@ -121,6 +145,8 @@ function CardAction({
   enabled: boolean;
   /** tel: 처럼 앱 밖으로 나가는 링크 — 라우터를 태우지 않는다 */
   external?: boolean;
+  /** 지금 이 카드에서 해야 할 일 — 남색으로 눈에 띄게 한다 (Figma ⑥ 38:3539) */
+  primary?: boolean;
   label: string;
   icon: React.ReactNode;
 }) {
@@ -140,7 +166,9 @@ function CardAction({
     );
   }
 
-  const tone = `${shape} bg-action-secondary text-text-inverse active:bg-action-secondary-strong`;
+  const tone = primary
+    ? `${shape} bg-action-primary text-text-inverse active:bg-action-primary-strong`
+    : `${shape} bg-action-secondary text-text-inverse active:bg-action-secondary-strong`;
 
   if (external) {
     return (

@@ -15,7 +15,13 @@ import {
 } from "../domain";
 import { formatKstDate } from "../public-data/kma";
 import { toIsoDate } from "../trigger/alert-date";
-import { ageOf, dongOf, formatBoardDate, yearOfIsoDate } from "./format";
+import {
+  ageOf,
+  dongOf,
+  formatBoardDate,
+  formatClockTime,
+  yearOfIsoDate,
+} from "./format";
 
 /**
  * 담당자 대응 보드 데이터 (FR-4, PRD F3).
@@ -58,6 +64,8 @@ export interface BoardSubject extends RosterSubject {
   nextCheckKind: CheckKind | null;
   /** 오늘 마지막 확인 결과 — 상세 기록 버튼의 "선택됨"에 쓴다 */
   lastResult: string | null;
+  /** 오늘 마지막 확인 시각 `"9시 10분"` — 무응답 진행 배너에 쓴다 (Figma ⑥ 38:3534) */
+  lastCheckAtLabel: string | null;
 }
 
 export interface BoardGroup {
@@ -211,7 +219,7 @@ export async function getBoard(
             where: { alertDayId: alertDay.id },
             orderBy: { createdAt: "desc" },
             take: 1,
-            select: { result: true },
+            select: { result: true, createdAt: true },
           },
         },
       },
@@ -275,6 +283,9 @@ export async function getBoard(
       open: isOpen,
       nextCheckKind: nextCheckKindOf(status),
       lastResult: row.subject.checkEvents[0]?.result ?? null,
+      lastCheckAtLabel: row.subject.checkEvents[0]
+        ? formatClockTime(row.subject.checkEvents[0].createdAt)
+        : null,
     });
   }
 
