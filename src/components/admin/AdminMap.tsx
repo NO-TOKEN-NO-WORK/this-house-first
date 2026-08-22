@@ -41,23 +41,46 @@ declare global {
   }
 }
 
-function loadKakaoSdk(mapKey: string): Promise<KakaoMaps> {
+export function cleanupKakaoMap(
+  overlays: Array<{ setMap(map: null): void }>,
+  container: { replaceChildren(): void },
+) {
+  overlays.splice(0).forEach((overlay) => overlay.setMap(null));
+  container.replaceChildren();
+}
+
+export function loadKakaoSdk(mapKey: string): Promise<KakaoMaps> {
   if (window.kakao?.maps) return Promise.resolve(window.kakao.maps);
 
   return new Promise((resolve, reject) => {
-    const onLoad = () => {
-      const maps = window.kakao?.maps;
-      if (maps) resolve(maps);
-      else reject(new Error("카카오 지도 SDK를 초기화할 수 없습니다."));
+    const subscribe = (script: HTMLScriptElement) => {
+      script.addEventListener(
+        "load",
+        () => {
+          const maps = window.kakao?.maps;
+          if (maps) resolve(maps);
+          else {
+            script.remove();
+            reject(new Error("카카오 지도 SDK를 초기화할 수 없습니다."));
+          }
+        },
+        { once: true },
+      );
+      script.addEventListener(
+        "error",
+        () => {
+          script.remove();
+          reject(new Error("카카오 지도 SDK를 불러올 수 없습니다."));
+        },
+        { once: true },
+      );
     };
-    const onError = () => reject(new Error("카카오 지도 SDK를 불러올 수 없습니다."));
     const existing = document.querySelector<HTMLScriptElement>(
       "script[data-admin-kakao-map]",
     );
 
     if (existing) {
-      existing.addEventListener("load", onLoad, { once: true });
-      existing.addEventListener("error", onError, { once: true });
+      subscribe(existing);
       return;
     }
 
@@ -65,8 +88,7 @@ function loadKakaoSdk(mapKey: string): Promise<KakaoMaps> {
     script.dataset.adminKakaoMap = "true";
     script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${encodeURIComponent(mapKey)}&autoload=false`;
     script.async = true;
-    script.addEventListener("load", onLoad, { once: true });
-    script.addEventListener("error", onError, { once: true });
+    subscribe(script);
     document.head.appendChild(script);
   });
 }
@@ -103,9 +125,10 @@ export function AdminMap({
 
     let cancelled = false;
     const overlays: KakaoOverlay[] = [];
+    const cleanupMap = () => cleanupKakaoMap(overlays, container);
 
     if (mappedBuildings.length === 0) {
-      return () => container.replaceChildren();
+      return cleanupMap;
     }
 
     void loadKakaoSdk(mapKey)
@@ -159,26 +182,28 @@ export function AdminMap({
               setMapError(null);
             } catch {
               if (!cancelled) {
+                cleanupMap();
                 setMapError("카카오 지도를 초기화하지 못했습니다. 잠시 후 다시 시도해 주세요.");
               }
             }
           });
         } catch {
           if (!cancelled) {
+            cleanupMap();
             setMapError("카카오 지도를 초기화하지 못했습니다. 잠시 후 다시 시도해 주세요.");
           }
         }
       })
       .catch(() => {
         if (!cancelled) {
+          cleanupMap();
           setMapError("카카오 지도를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.");
         }
       });
 
     return () => {
       cancelled = true;
-      overlays.forEach((overlay) => overlay.setMap(null));
-      container.replaceChildren();
+      cleanupMap();
     };
   }, [mapKey, mappedBuildings]);
 
