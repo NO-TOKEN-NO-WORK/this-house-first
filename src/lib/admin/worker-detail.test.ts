@@ -99,6 +99,7 @@ describe("관리자 생활지원사 상세", () => {
     expect(detail?.region).toBe("봉화군 춘양면");
     expect(detail?.organization).toBe("춘양면 행정복지센터");
     expect(detail?.feelsLikeMax).toBe(38.4);
+    expect(detail).not.toHaveProperty("workStatus");
     expect(detail?.summary).toEqual({
       openCritical: 1,
       visitQueued: 1,

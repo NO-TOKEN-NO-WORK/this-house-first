@@ -95,7 +95,6 @@ export function AdminWorkerDetailView({
             <div className={styles.profileCopy}>
               <div className={styles.identityLine}>
                 <h1>{detail.name}</h1><strong>생활지원사</strong>
-                <span className={styles.workerActiveBadge}>{detail.workStatus}</span>
               </div>
               <dl className={`${styles.profileFacts} ${styles.workerProfileFacts}`}>
                 <div><dt>연락처</dt><dd>{maskedPhone(detail.phone)}</dd></div>
@@ -118,7 +117,6 @@ export function AdminWorkerDetailView({
                 <div><dt>소속</dt><dd>{detail.organization}</dd></div>
                 <div><dt>연락처</dt><dd>{maskedPhone(detail.phone)}</dd></div>
                 <div><dt>비상 연락처</dt><dd>미등록</dd></div>
-                <div><dt>근무 상태</dt><dd><span className={styles.workerActiveBadge}>{detail.workStatus}</span></dd></div>
                 <div><dt>메모</dt><dd>미등록</dd></div>
               </dl>
             </section>

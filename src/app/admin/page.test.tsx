@@ -268,6 +268,8 @@ describe("관리자 관제 화면", () => {
     expect(html).toContain("refresh.png");
     expect(html).toContain("person.png");
     expect(html).toContain("phone.png");
+    expect(html).not.toContain("근무 중");
+    expect(html).not.toContain("휴식 중");
   });
 
   it("상태 범례와 데이터 출처를 텍스트로 함께 제공한다", () => {
