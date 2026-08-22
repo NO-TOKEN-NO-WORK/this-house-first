@@ -95,5 +95,5 @@ Figma가 명시한 사용 규칙이 있다 — *"컴포넌트에는 아래 값�
   - `action/secondary-strong` `#374151` (보조 행동 버튼 눌림 배경)
   - `status/success-strong` `#136a42`, `status/success-subtle` `#e6f4ec` (안전 결과 버튼) — `green/50`·`green/700` 원시 색도 없다
   - `status/neutral` `#9ca3af` (주의 칩 배경) — 값은 `border/strong`과 같지만 역할이 다르다
-- **CSS 변수를 쓸 수 없는 PWA 정적 메타데이터·SVG는 해석값을 복제한다.** `src/app/layout.tsx`, `public/today.webmanifest`, `public/icons/icon.svg`의 위험색은 `status/critical`과 같은 `#d93025`, manifest 배경은 `neutral/0`과 같은 `#ffffff`로 맞춘다. 디자인 토큰 변경 리뷰에서 함께 확인해야 하는 의도적 중복이다
+- **CSS 변수를 쓸 수 없는 PWA 정적 메타데이터는 해석값을 복제한다.** `src/app/layout.tsx`와 `public/today.webmanifest`의 위험색은 `status/critical`과 같은 `#d93025`, manifest 배경은 `neutral/0`과 같은 `#ffffff`로 맞춘다. 앱 아이콘 파일은 Figma의 `app icon` 원본을 그대로 사용하므로 화면용 Semantic 토큰 동기화 대상에서 제외한다
 - 되돌리기: 토큰은 `globals.css` 한 파일, 화면 변경은 클래스 이름 치환뿐이라 파일 단위로 되돌릴 수 있다. ADR-0014의 결정(문구는 `domain.ts`, 색은 Figma)은 그대로 유효하며 이 ADR은 그중 "색" 쪽을 구체화한 것이다
