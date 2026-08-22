@@ -64,7 +64,13 @@ function alertedBoard(subjects: BoardSubject[]): AlertedBoard {
 describe("toVisitRoute", () => {
   it("방문 대기·방문 중 가구만 위험도 우선, 같은 등급은 가까운 순서로 잇는다", () => {
     const first = subject("first", { score: 40, lat: 35.8, lng: 128.5 });
-    const near = subject("near", { score: 20, lat: 35.8005, lng: 128.5 });
+    const near = subject("near", {
+      score: 20,
+      lat: 35.8005,
+      lng: 128.5,
+      status: HouseholdStatus.VISITING,
+      statusLabel: "방문 중",
+    });
     const far = subject("far", { score: 30, lat: 35.82, lng: 128.5 });
     const callOnly = subject("call", {
       grade: RiskGrade.HIGH,
@@ -84,6 +90,26 @@ describe("toVisitRoute", () => {
     expect(route.totalMinutes).toBe(
       route.stops.reduce((sum, stop) => sum + stop.minutesFromPrevious, 0),
     );
+  });
+
+  it("이동거리가 짧아도 더 위험한 단계를 먼저 방문한다", () => {
+    const critical = subject("critical", {
+      grade: RiskGrade.CRITICAL,
+      score: 30,
+      lat: 35.82,
+    });
+    const high = subject("high", {
+      grade: RiskGrade.HIGH,
+      score: 100,
+      lat: 35.8001,
+    });
+
+    const route = toVisitRoute(alertedBoard([high, critical]));
+
+    expect(route.stops.map((stop) => stop.subjectId)).toEqual([
+      "critical",
+      "high",
+    ]);
   });
 
   it("도로명 주소와 스코어링 사유 원문을 보존한다", () => {

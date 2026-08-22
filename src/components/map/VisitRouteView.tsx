@@ -52,7 +52,7 @@ function RouteSegment({
 }) {
   const deltaX = ((to.x - from.x) / 100) * ROUTE_MAP_WIDTH;
   const deltaY = ((to.y - from.y) / 100) * ROUTE_MAP_HEIGHT;
-  const length = Math.hypot(deltaX, deltaY);
+  const lengthPercent = (Math.hypot(deltaX, deltaY) / ROUTE_MAP_WIDTH) * 100;
   const angle = Math.atan2(deltaY, deltaX) * (180 / Math.PI);
 
   return (
@@ -63,7 +63,7 @@ function RouteSegment({
         style={{
           left: `${from.x}%`,
           top: `${from.y}%`,
-          width: `${length}px`,
+          width: `${lengthPercent}%`,
           transform: `rotate(${angle}deg)`,
           transformOrigin: "left center",
         }}
@@ -84,7 +84,7 @@ function RouteOverview({ route }: { route: VisitRoute }) {
       aria-label="방문 동선 요약"
       className="overflow-hidden rounded-[10px] border border-border-default bg-surface-default"
     >
-      <div className="relative h-[294px] bg-surface-soft">
+      <div className="relative aspect-[60/49] w-full bg-surface-soft">
         {route.stops.slice(1).map((stop, index) => (
           <RouteSegment
             key={`${route.stops[index].subjectId}-${stop.subjectId}`}

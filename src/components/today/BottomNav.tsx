@@ -15,12 +15,14 @@ const ITEMS = [
     label: "오늘",
     href: "/today",
     icon: "/figma/today-home.svg",
+    maskSize: "26px 26px",
   },
   {
     key: "map",
     label: "방문 동선",
     href: "/map",
     icon: "/figma/visit-route-pin.svg",
+    maskSize: "21.2334px 24.3256px",
   },
 ] as const;
 
@@ -46,7 +48,7 @@ export function BottomNav({
       aria-label="담당자 메뉴"
       className="fixed inset-x-0 bottom-0 z-40 mx-auto flex h-[79px] w-full max-w-[520px] border-t border-border-default bg-surface-default"
     >
-      {ITEMS.map(({ key, label, href, icon }) => {
+      {ITEMS.map(({ key, label, href, icon, maskSize }) => {
         const active = key === current;
         /*
          * 비활성 탭 글자색은 Figma의 `action/disabled`(#c6cfda) 대신 `text-secondary`다.
@@ -70,11 +72,11 @@ export function BottomNav({
                 WebkitMaskImage: `url('${icon}')`,
                 WebkitMaskPosition: "center",
                 WebkitMaskRepeat: "no-repeat",
-                WebkitMaskSize: "26px 26px",
+                WebkitMaskSize: maskSize,
                 maskImage: `url('${icon}')`,
                 maskPosition: "center",
                 maskRepeat: "no-repeat",
-                maskSize: "26px 26px",
+                maskSize,
               }}
             />
             <span className="text-label-13">{label}</span>
