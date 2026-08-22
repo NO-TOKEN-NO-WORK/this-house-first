@@ -255,6 +255,7 @@ describe("관리자 관제 화면", () => {
     expect(html).toContain("생활지원사 등록");
     expect(html).toContain('href="/admin/subjects/new"');
     expect(html).toContain('href="/admin/workers/new"');
+    expect(html).toContain('href="/admin/workers/worker-1?date=2026-08-22"');
     expect(html).not.toContain("010-0000-0101");
     expect(html).toContain("010-****-0001");
     expect(html).toContain('aria-label="대상자 검색"');

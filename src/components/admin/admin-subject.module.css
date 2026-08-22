@@ -34,6 +34,8 @@
 .breadcrumb { display: flex; align-items: center; gap: 0.75rem; font-size: 0.9375rem; }
 .breadcrumb a { color: var(--admin-ink-soft); text-decoration: none; }
 .breadcrumb strong { font-weight: 800; }
+.managementTitle { margin: 0; font-size: 1.5rem; letter-spacing: -0.035em; }
+.breadcrumbBar { display: flex; min-block-size: 2.25rem; align-items: center; padding-inline: 2.25rem; }
 
 .headerMeta { display: flex; align-self: stretch; }
 .headerMeta dl {
@@ -264,6 +266,141 @@
 .summaryIdentity strong { inline-size: 100%; font-size: 1.5rem; }
 .formRail .railCard > p { color: var(--admin-ink-soft); font-size: 0.75rem; line-height: 1.5; overflow-wrap: anywhere; }
 
+.workerDetailShell { grid-template-columns: minmax(0, 2.45fr) minmax(23rem, 1fr); padding-block-start: 0; }
+.workerProfileCard { min-block-size: 13.25rem; }
+.workerProfileCard .profileAvatar { background: var(--admin-surface-muted); }
+.workerProfileCard .identityLine > strong { font-size: 1.25rem; }
+.workerActiveBadge {
+  display: inline-grid;
+  min-block-size: 1.65rem;
+  place-items: center;
+  padding-inline: 0.75rem;
+  border: 1px solid color-mix(in oklch, var(--admin-success) 35%, transparent);
+  border-radius: 0.35rem;
+  background: var(--admin-success-soft);
+  color: var(--admin-success);
+  font-size: 0.75rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.workerProfileFacts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.workerProfileFacts div { min-inline-size: 0; }
+.workerInfoGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.875rem; }
+.workerInfoGrid .infoCard { min-block-size: 12rem; }
+.workerInfoGrid .infoCard dl > div { min-block-size: 1.55rem; padding-block: 0.15rem; }
+.workerDetailShell .railCard { padding: 0.75rem; }
+.workerDetailShell .quickActions :is(a, span) { min-block-size: 2.5rem; }
+.disabledButton { cursor: not-allowed; border-color: var(--admin-rule) !important; background: var(--admin-surface-muted); color: var(--admin-ink-soft) !important; }
+.criticalCount,
+.visitCount,
+.completeCount,
+.coolingIssue,
+.coolingNormal {
+  display: inline-grid;
+  min-block-size: 1.55rem;
+  place-items: center;
+  padding-inline: 0.45rem;
+  border-radius: 0.3rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.criticalCount { background: var(--admin-danger-faint); color: var(--admin-danger); }
+.visitCount { background: var(--admin-accent-faint); color: var(--admin-accent); }
+.completeCount,
+.coolingNormal { background: var(--admin-success-soft); color: var(--admin-success); }
+.coolingIssue { background: var(--admin-warning-soft); color: var(--admin-warning); }
+
+.workerSubjectsCard {
+  min-inline-size: 0;
+  overflow: hidden;
+  border: 1px solid var(--admin-rule);
+  border-radius: var(--admin-radius-panel);
+  background: var(--admin-surface);
+  box-shadow: var(--admin-shadow-panel);
+}
+.workerCardHeader { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
+.workerCardHeader h2 { margin: 0; font-size: 1rem; }
+.workerCardHeader > strong { font-size: 0.75rem; }
+.workerCardHeader > a { color: var(--admin-accent); font-size: 0.75rem; font-weight: 750; text-decoration: none; }
+.workerSubjectsCard > .workerCardHeader { min-block-size: 3.25rem; padding-inline: 1rem; border-bottom: 1px solid var(--admin-rule); }
+.workerCardHeader form { display: flex; align-items: center; gap: 0.5rem; }
+.workerCardHeader form label {
+  display: flex;
+  min-inline-size: 12rem;
+  min-block-size: 2rem;
+  align-items: center;
+  gap: 0.45rem;
+  padding-inline: 0.65rem;
+  border: 1px solid var(--admin-rule);
+  border-radius: 0.4rem;
+}
+.workerCardHeader form input { inline-size: 100%; min-inline-size: 0; border: 0; outline: 0; font: inherit; }
+.workerCardHeader form select,
+.workerCardHeader form button {
+  min-block-size: 2rem;
+  padding-inline: 0.65rem;
+  border: 1px solid var(--admin-rule);
+  border-radius: 0.4rem;
+  background: var(--admin-surface);
+  color: var(--admin-ink);
+  font: inherit;
+}
+.workerCardHeader form button { border-color: var(--admin-accent); color: var(--admin-accent); font-weight: 750; }
+.workerTableScroller { overflow: auto; }
+.workerSubjectsTable { inline-size: 100%; border-collapse: collapse; font-size: 0.75rem; white-space: nowrap; }
+.workerSubjectsTable th,
+.workerSubjectsTable td { block-size: 3.25rem; padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--admin-rule); text-align: start; }
+.workerSubjectsTable th { block-size: 2.25rem; background: var(--admin-surface-muted); color: var(--admin-ink-soft); font-size: 0.6875rem; }
+.subjectIdentity { display: flex; align-items: center; gap: 0.5rem; }
+.subjectIdentity img { border-radius: 50%; object-fit: cover; }
+.workerReason { max-inline-size: 21rem; overflow: hidden; text-overflow: ellipsis; }
+.workerRowActions { display: flex; gap: 0.5rem; }
+.workerRowActions a {
+  min-block-size: 1.85rem;
+  padding-inline: 0.6rem;
+  border: 1px solid var(--admin-rule);
+  border-radius: 0.35rem;
+  color: var(--admin-ink);
+  line-height: 1.75rem;
+  text-decoration: none;
+}
+.workerTableFooter { padding: 0.75rem 1rem; color: var(--admin-ink-soft); font-size: 0.75rem; }
+.workerEmpty { margin: 0; padding: 1rem; color: var(--admin-ink-soft); font-size: 0.75rem; }
+
+.workerMetricGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem; }
+.workerMetric {
+  display: grid;
+  grid-template-columns: 2.5rem minmax(0, 1fr);
+  align-items: center;
+  min-block-size: 3.5rem;
+  gap: 0.65rem;
+  margin: 0;
+  padding: 0.35rem 0.65rem;
+  border: 1px solid var(--admin-rule);
+  border-radius: 0.6rem;
+}
+.workerMetric dt { color: var(--admin-ink-soft); font-size: 0.6875rem; }
+.workerMetric dd { margin: 0.15rem 0 0; font-size: 1.5rem; font-weight: 850; }
+.workerMetric dd span { margin-inline-start: 0.2rem; font-size: 0.6875rem; }
+.workerMetricCritical dd { color: var(--admin-danger); }
+.workerMetricVisit dd { color: var(--admin-accent); }
+.workerMetricComplete dd { color: var(--admin-info); }
+.workerMetricCooling dd { color: var(--admin-warning); }
+
+.workerRegionMap { position: relative; block-size: 10rem; margin-block-start: 0.75rem; overflow: hidden; border-radius: 0.55rem; }
+.workerRegionMap > img:first-child { object-fit: cover; }
+.workerMapPin { position: absolute; z-index: 1; object-fit: contain; }
+.workerMapPin1 { inset: 20% auto auto 24%; }
+.workerMapPin2 { inset: 38% auto auto 52%; }
+.workerMapPin3 { inset: 58% auto auto 16%; }
+.workerMapPin4 { inset: 22% auto auto 82%; }
+.workerMapPin5 { inset: 66% auto auto 70%; }
+.activityList { display: grid; gap: 0.55rem; margin: 0.75rem 0 0; padding: 0; list-style: none; }
+.activityList li { display: grid; grid-template-columns: 0.75rem minmax(0, 1fr) auto; align-items: center; gap: 0.5rem; font-size: 0.75rem; }
+.activityList span { min-inline-size: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.activityList time { color: var(--admin-ink-soft); }
+
 .page :is(a, button, input, select, textarea):focus-visible { outline: 2px solid var(--admin-focus); outline-offset: 2px; }
 .page :is(button, input, select, textarea):disabled { cursor: not-allowed; background: var(--admin-surface-muted); color: var(--admin-ink-soft); }
 
@@ -282,7 +419,7 @@
 }
 
 @media (max-width: 68rem) {
-  .detailShell, .formShell { grid-template-columns: 1fr; }
+  .detailShell, .formShell, .workerDetailShell { grid-template-columns: 1fr; }
   .detailRail, .formRail { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .topBar { grid-template-columns: 1fr auto; }
   .headerMeta { grid-column: 1 / -1; }
@@ -295,6 +432,8 @@
   .headerMeta dl { min-inline-size: 8rem; }
   .alertSteps { inline-size: 100%; grid-template-columns: repeat(3, 1fr); }
   .detailShell, .formShell { padding-inline: 0.75rem; }
+  .breadcrumbBar { padding-inline: 0.75rem; }
+  .workerDetailShell { padding-block-start: 0; }
   .profileCard { grid-template-columns: 5.5rem minmax(0, 1fr); min-block-size: auto; padding: 0.85rem; }
   .profileAvatar { inline-size: 5.5rem; block-size: 5.5rem; }
   .identityLine h1 { font-size: 1.5rem; }
@@ -302,7 +441,11 @@
   .profileFacts div { padding: 0; border: 0; }
   .riskStrip { grid-column: 1 / -1; }
   .riskStrip span { white-space: normal; }
-  .infoGrid, .detailRail, .formRail, .fieldGrid, .facilityFormGrid { grid-template-columns: 1fr; }
+  .infoGrid, .detailRail, .formRail, .fieldGrid, .facilityFormGrid, .workerInfoGrid, .workerProfileFacts { grid-template-columns: 1fr; }
+  .workerCardHeader { align-items: stretch; flex-direction: column; padding-block: 0.75rem; }
+  .workerCardHeader form { align-items: stretch; flex-direction: column; }
+  .workerCardHeader form label { min-inline-size: 0; }
+  .workerMetricGrid { grid-template-columns: 1fr; }
   .infoCard:last-child, .wideField, .facilityFormGrid .wideField { grid-column: auto; }
   .formActions { gap: 0.5rem; padding-inline: 0.75rem; overflow: auto; }
   .formActions > a, .formActions button { min-inline-size: 5.5rem; }
