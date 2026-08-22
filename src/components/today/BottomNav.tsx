@@ -33,15 +33,15 @@ export function BottomNav({
   return (
     <nav
       aria-label="담당자 메뉴"
-      className="fixed inset-x-0 bottom-0 z-40 mx-auto flex h-[79px] w-full max-w-[520px] border-t border-line bg-white"
+      className="fixed inset-x-0 bottom-0 z-40 mx-auto flex h-[79px] w-full max-w-[520px] border-t border-border-default bg-surface-default"
     >
       {ITEMS.map(({ key, label, href, Icon }) => {
         const active = key === current;
-        const tone = active ? "text-brand" : "text-ink-soft";
+        const tone = active ? "text-action-primary" : "text-text-secondary";
         const body = (
           <>
             <Icon className="size-[26px]" />
-            <span className="text-[13px] font-bold">{label}</span>
+            <span className="text-label-13">{label}</span>
           </>
         );
 

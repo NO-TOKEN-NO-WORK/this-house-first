@@ -521,7 +521,7 @@
 }
 
 .grade2 {
-  color: var(--color-warn-ink);
+  color: var(--color-status-warning-strong);
 }
 
 .grade3 {

@@ -11,7 +11,8 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#b91c1c",
+  // 메타데이터는 CSS 변수를 받을 수 없어 status/critical의 해석값을 맞춰 둔다 (ADR-0015).
+  themeColor: "#d93025",
   width: "device-width",
   initialScale: 1,
 };

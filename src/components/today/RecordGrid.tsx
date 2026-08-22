@@ -47,26 +47,26 @@ const CALL_OPTIONS: Option[] = [
   {
     value: CallResult.OK,
     label: CALL_RESULT_LABEL[CallResult.OK],
-    tone: "border-safe bg-safe-soft text-safe-ink",
+    tone: "border-status-success bg-status-success-subtle text-status-success-strong",
     icon: <CheckIcon className={ICON} />,
   },
   {
     value: CallResult.NO_ANSWER,
     label: CALL_RESULT_LABEL[CallResult.NO_ANSWER],
-    tone: "border-slate bg-surface text-ink-strong",
+    tone: "border-border-strong bg-background-subtle text-text-supporting",
     icon: <PhoneOffIcon className={ICON} />,
   },
   {
     value: CallResult.SYMPTOM,
     label: CALL_RESULT_LABEL[CallResult.SYMPTOM],
     hint: "바로 방문 큐로",
-    tone: "border-danger bg-danger-soft text-danger-ink",
+    tone: "border-status-critical bg-status-critical-subtle text-status-critical-strong",
     icon: <AlertCircleIcon className={ICON} />,
   },
   {
     value: CallResult.UNREACHABLE,
     label: CALL_RESULT_LABEL[CallResult.UNREACHABLE],
-    tone: "border-dashed border-slate bg-line text-ink-strong",
+    tone: "border-dashed border-border-strong bg-surface-soft text-text-supporting",
     icon: <XIcon className={ICON} />,
   },
 ];
@@ -75,27 +75,27 @@ const VISIT_OPTIONS: Option[] = [
   {
     value: VisitResult.OK,
     label: VISIT_RESULT_LABEL[VisitResult.OK],
-    tone: "border-safe bg-safe-soft text-safe-ink",
+    tone: "border-status-success bg-status-success-subtle text-status-success-strong",
     icon: <CheckIcon className={ICON} />,
   },
   {
     value: VisitResult.ACTED,
     label: VISIT_RESULT_LABEL[VisitResult.ACTED],
     hint: "냉방/수분",
-    tone: "border-brand bg-brand-soft text-brand",
+    tone: "border-action-primary bg-action-primary-subtle text-action-primary",
     icon: <SnowflakeIcon className={ICON} />,
   },
   {
     value: VisitResult.EMERGENCY_119,
     label: VISIT_RESULT_LABEL[VisitResult.EMERGENCY_119],
-    tone: "border-danger bg-danger-soft text-danger-ink",
+    tone: "border-status-critical bg-status-critical-subtle text-status-critical-strong",
     icon: <SirenIcon className={ICON} />,
   },
   {
     value: VisitResult.AIRCON_ISSUE,
     label: VISIT_RESULT_LABEL[VisitResult.AIRCON_ISSUE],
     badge: "지원사업 연계",
-    tone: "border-warn bg-warn-soft text-warn-ink",
+    tone: "border-status-warning bg-status-warning-subtle text-status-warning-strong",
     icon: <AlertCircleIcon className={ICON} />,
   },
 ];
@@ -169,7 +169,7 @@ export function RecordGrid({
 
   return (
     <section className="flex w-full flex-col gap-2">
-      <h2 className="text-[15px] font-bold text-ink-soft">
+      <h2 className="text-label-15 text-text-secondary">
         {isCall ? "전화 결과를 눌러 기록하세요" : "방문 상황을 기록하세요"}
       </h2>
 
@@ -183,10 +183,10 @@ export function RecordGrid({
               disabled={pending !== null || isRefreshing}
               onClick={() => record(option.value)}
               aria-pressed={selected}
-              className={`relative flex min-h-[86px] flex-col items-center justify-center gap-1.5 rounded-lg border text-[17px] font-bold disabled:opacity-60 ${option.tone} ${selected ? "border-2 border-ink-strong" : ""}`}
+              className={`relative flex min-h-[86px] flex-col items-center justify-center gap-1.5 rounded-lg border text-title-17 disabled:opacity-60 ${option.tone} ${selected ? "border-2 border-border-high-contrast" : ""}`}
             >
               {selected && (
-                <span className="absolute top-1.5 right-2 rounded-full bg-ink-strong px-2 py-px text-[11px] font-bold text-white">
+                <span className="absolute top-1.5 right-2 rounded-full bg-action-secondary px-2 py-px text-caption-12 text-text-inverse">
                   선택됨
                 </span>
               )}
@@ -195,10 +195,10 @@ export function RecordGrid({
                 {pending === option.value ? "기록 중…" : option.label}
               </span>
               {option.hint && (
-                <span className="text-[13px] font-normal">{option.hint}</span>
+                <span className="text-body-14">{option.hint}</span>
               )}
               {option.badge && (
-                <span className="rounded-full bg-warn px-2 py-px text-[11px] font-bold text-ink">
+                <span className="rounded-full bg-status-warning px-2 py-px text-caption-12 text-text-primary">
                   {option.badge}
                 </span>
               )}
@@ -214,7 +214,7 @@ export function RecordGrid({
       {error && (
         <p
           role="alert"
-          className="rounded-[10px] border border-danger bg-danger-soft px-4 py-3 text-[15px] leading-6 text-danger-ink"
+          className="rounded-[10px] border border-status-critical bg-status-critical-subtle px-4 py-3 text-body-15-relaxed text-status-critical-strong"
         >
           {error}
         </p>

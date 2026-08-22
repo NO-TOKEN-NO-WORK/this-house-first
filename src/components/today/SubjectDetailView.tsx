@@ -34,9 +34,9 @@ import {
  */
 
 const GRADE_CHIP: Record<RiskGrade, string> = {
-  [RiskGrade.CRITICAL]: "bg-danger text-white",
-  [RiskGrade.HIGH]: "bg-warn text-ink",
-  [RiskGrade.MODERATE]: "bg-calm text-ink",
+  [RiskGrade.CRITICAL]: "bg-status-critical text-text-inverse",
+  [RiskGrade.HIGH]: "bg-status-warning text-text-primary",
+  [RiskGrade.MODERATE]: "bg-status-neutral text-text-primary",
 };
 
 const REASON_ICON: Record<ReasonCategory, typeof UserIcon> = {
@@ -48,13 +48,13 @@ const REASON_ICON: Record<ReasonCategory, typeof UserIcon> = {
 function ReasonRow({ reason }: { reason: LabeledReason }) {
   const Icon = reason.category ? REASON_ICON[reason.category] : null;
   return (
-    <li className="flex items-center gap-2.5 text-base text-ink">
+    <li className="flex items-center gap-2.5 text-body-16 text-text-primary">
       {Icon && (
         <Icon
           className={`size-5 shrink-0 ${
             reason.category === ReasonCategory.WEATHER
-              ? "text-danger"
-              : "text-ink-strong"
+              ? "text-status-critical"
+              : "text-icon-default"
           }`}
         />
       )}
@@ -68,8 +68,8 @@ function ReasonRow({ reason }: { reason: LabeledReason }) {
 
 function Callout({ children }: { children: ReactNode }) {
   return (
-    <p className="flex w-full items-start gap-2.5 rounded-[10px] border border-line-strong bg-info px-4 py-3.5 text-[15px] leading-[22.5px] text-ink">
-      <InfoIcon className="mt-0.5 size-[18px] shrink-0 text-brand" />
+    <p className="flex w-full items-start gap-2.5 rounded-[10px] border border-border-strong bg-background-subtle px-4 py-3.5 text-body-15-relaxed text-text-primary">
+      <InfoIcon className="mt-0.5 size-[18px] shrink-0 text-action-primary" />
       <span>{children}</span>
     </p>
   );
@@ -135,7 +135,7 @@ function RecordArea({
 }
 
 const BACK_BTN =
-  "flex size-11 items-center justify-center text-ink";
+  "flex size-11 items-center justify-center text-icon-primary";
 
 export function SubjectDetailView({
   detail,
@@ -157,8 +157,8 @@ export function SubjectDetailView({
     detail.phone !== null && detail.nextCheckKind !== CheckKind.VISIT;
 
   return (
-    <div className="mx-auto flex w-full max-w-[520px] flex-1 flex-col bg-surface">
-      <header className="sticky top-0 z-30 flex h-[53px] items-center gap-2.5 border-b border-line bg-white px-3.5">
+    <div className="mx-auto flex w-full max-w-[520px] flex-1 flex-col bg-background-subtle">
+      <header className="sticky top-0 z-30 flex h-[53px] items-center gap-2.5 border-b border-border-default bg-surface-default px-3.5">
         {onBack ? (
           <button
             type="button"
@@ -177,7 +177,7 @@ export function SubjectDetailView({
             <ChevronLeftIcon className="size-[22px]" />
           </Link>
         )}
-        <h1 className="text-base font-bold text-ink">대상자 상세</h1>
+        <h1 className="text-label-16-compact text-text-primary">대상자 상세</h1>
       </header>
 
       <main
@@ -187,19 +187,19 @@ export function SubjectDetailView({
           {detail.assessment && (
             <p>
               <span
-                className={`inline-block rounded-full px-3 py-1.5 text-[15px] font-bold ${GRADE_CHIP[detail.assessment.grade]}`}
+                className={`inline-block rounded-full px-3 py-1.5 text-label-15 ${GRADE_CHIP[detail.assessment.grade]}`}
               >
                 {detail.assessment.severityLabel}
               </span>
             </p>
           )}
           <p className="flex items-baseline gap-2.5">
-            <span className="text-[28px] font-bold text-ink">{detail.name}</span>
-            <span className="text-lg text-ink-soft">
+            <span className="text-display-28 text-text-primary">{detail.name}</span>
+            <span className="text-body-18 text-text-secondary">
               {detail.age}세{detail.livesAlone ? " · 독거" : ""}
             </span>
           </p>
-          <div className="flex flex-wrap gap-x-3 gap-y-1.5 text-[15px] font-bold text-ink-strong">
+          <div className="flex flex-wrap gap-x-3 gap-y-1.5 text-label-15 text-text-supporting">
             {detail.phone && (
               <a href={`tel:${detail.phone}`} className="flex items-center gap-2">
                 <PhoneIcon className="size-[21px]" />
@@ -214,14 +214,14 @@ export function SubjectDetailView({
         </section>
 
         {detail.assessment && (
-          <section className="flex w-full flex-col gap-2.5 rounded-[10px] border border-line bg-white p-6">
-            <h2 className="text-[15px] font-bold text-ink-soft">위험 사유</h2>
+          <section className="flex w-full flex-col gap-2.5 rounded-[10px] border border-border-default bg-surface-default p-6">
+            <h2 className="text-label-15 text-text-secondary">위험 사유</h2>
             <ul className="flex flex-col gap-2.5">
               {detail.assessment.reasons.map((reason) => (
                 <ReasonRow key={reason.text} reason={reason} />
               ))}
             </ul>
-            <p className="text-[15px] text-ink-soft">
+            <p className="text-body-15 text-text-secondary">
               대응 지시 · {detail.assessment.plan}
             </p>
           </section>
@@ -231,10 +231,10 @@ export function SubjectDetailView({
       </main>
 
       {showCallCta && (
-        <div className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-[520px] border-t border-line bg-white px-3.5 pt-3 pb-5">
+        <div className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-[520px] border-t border-border-default bg-surface-default px-3.5 pt-3 pb-5">
           <a
             href={`tel:${detail.phone}`}
-            className="flex h-14 w-full items-center justify-center gap-2 rounded-lg bg-brand text-[19px] font-bold text-white active:bg-brand-deep"
+            className="flex h-14 w-full items-center justify-center gap-2 rounded-lg bg-action-primary text-heading-19 text-text-inverse active:bg-action-primary-strong"
           >
             <PhoneIcon className="size-[21px]" />
             전화 걸기

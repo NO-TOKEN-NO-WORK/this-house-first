@@ -8,9 +8,11 @@
   --admin-accent: oklch(55% 0.18 256);
   --admin-accent-ink: oklch(100% 0 0);
   --admin-focus: var(--admin-ink);
-  --admin-grade-critical: var(--color-danger);
-  --admin-grade-high: var(--color-warn);
-  --admin-grade-moderate: var(--color-calm);
+  /* 등급 색만 디자인 시스템(ADR-0015) Semantic 토큰을 그대로 쓴다 —
+     담당자 화면과 관리자 화면에서 같은 등급이 다른 색으로 보이면 안 된다 */
+  --admin-grade-critical: var(--color-status-critical);
+  --admin-grade-high: var(--color-status-warning);
+  --admin-grade-moderate: var(--color-status-neutral);
   --admin-space-1: 0.5rem;
   --admin-space-2: 0.75rem;
   --admin-space-3: 1rem;

@@ -16,9 +16,9 @@ import { MapPinIcon, PhoneIcon } from "./icons";
 
 /** 등급별 테두리 — 색 의미는 요약 카드·등급 칩과 같아야 한다 (Figma ① 8:1861 계열) */
 const GRADE_BORDER: Record<RiskGrade, string> = {
-  [RiskGrade.CRITICAL]: "border-danger",
-  [RiskGrade.HIGH]: "border-warn",
-  [RiskGrade.MODERATE]: "border-line-soft",
+  [RiskGrade.CRITICAL]: "border-status-critical",
+  [RiskGrade.HIGH]: "border-status-warning",
+  [RiskGrade.MODERATE]: "border-border-soft",
 };
 
 interface Props {
@@ -64,21 +64,21 @@ export function SubjectCard({
     ? () => workspace.openDetail(subject.subjectId)
     : undefined;
   const closed = nextCheckKind === null;
-  const border = closed || !grade ? "border-line-soft" : GRADE_BORDER[grade];
+  const border = closed || !grade ? "border-border-soft" : GRADE_BORDER[grade];
 
   return (
     <li
-      className={`flex flex-col gap-4 rounded-[10px] border bg-white px-5 py-6 ${border}`}
+      className={`flex flex-col gap-4 rounded-[10px] border bg-surface-default px-5 py-6 ${border}`}
     >
       <div className="flex w-full items-center gap-4">
         <p className="flex flex-1 items-baseline gap-2.5">
-          <span className="text-2xl font-bold text-ink">{subject.name}</span>
-          <span className="text-base text-ink-soft">
+          <span className="text-heading-24 text-text-primary">{subject.name}</span>
+          <span className="text-body-16 text-text-secondary">
             {subject.age}세{subject.livesAlone ? " · 독거" : ""}
           </span>
         </p>
         {statusLabel && (
-          <span className="shrink-0 rounded-full border border-slate px-3.5 py-1.5 text-[15px] font-bold text-slate">
+          <span className="shrink-0 rounded-full border border-border-strong px-3.5 py-1.5 text-label-15 text-text-tertiary">
             {statusLabel}
           </span>
         )}
@@ -125,14 +125,14 @@ function CardAction({
   icon: React.ReactNode;
 }) {
   const shape =
-    "flex h-12 flex-1 items-center justify-center gap-2 rounded-lg text-[15px] font-bold";
+    "flex h-12 flex-1 items-center justify-center gap-2 rounded-lg text-label-15";
 
   if (!enabled) {
     return (
       // 지금 누를 수 없다는 사실도 정보다 — 1등급은 전화를 건너뛴다(PRD F3)
       <span
         aria-disabled="true"
-        className={`${shape} bg-disabled text-ink-soft`}
+        className={`${shape} bg-surface-soft text-text-secondary`}
       >
         {icon}
         {label}
@@ -140,7 +140,7 @@ function CardAction({
     );
   }
 
-  const tone = `${shape} bg-slate text-white active:bg-ink-strong`;
+  const tone = `${shape} bg-action-secondary text-text-inverse active:bg-action-secondary-strong`;
 
   if (external) {
     return (
