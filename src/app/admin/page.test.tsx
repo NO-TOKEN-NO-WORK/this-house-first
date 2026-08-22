@@ -80,6 +80,18 @@ describe("관리자 관제 화면", () => {
     );
   });
 
+  it("위험도 우선 대상자 행은 읽기 쉬운 간격을 유지한다", () => {
+    expect(adminStyles).toMatch(
+      /\.priorityTable td\s*\{[^}]*block-size:\s*3\.25rem;[^}]*padding-block:\s*0\.5rem;[^}]*padding-inline:\s*0\.75rem;/,
+    );
+    expect(adminStyles).toMatch(
+      /\.priorityTable th\s*\{[^}]*padding-inline:\s*0\.75rem;/,
+    );
+    expect(adminStyles).toMatch(
+      /\.priorityTable \.rowActions\s*\{[^}]*gap:\s*0\.5rem;/,
+    );
+  });
+
   it("반복된 날짜나 담당자 검색값은 조회 전에 404로 막는다", async () => {
     const repeatedSearches = [
       { date: ["2026-08-22", "2026-08-23"] },
