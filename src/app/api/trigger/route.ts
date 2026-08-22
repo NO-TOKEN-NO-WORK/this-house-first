@@ -149,11 +149,12 @@ export async function POST(request: Request): Promise<Response> {
     });
 
     // 수동 데모 요약과 재발령 승격은 즉시, 예보 요약은 availableAt(08:00 KST) 이후에 전달된다.
-    await dispatchDueNotifications().catch((error: unknown) => {
+    const push = await dispatchDueNotifications().catch((error: unknown) => {
       console.error("[notifications] 경보 Push 전달 실패", error);
+      return null;
     });
 
-    return Response.json({ data: outcome });
+    return Response.json({ data: outcome, push });
   } catch (error) {
     if (error instanceof TriggerError) {
       return Response.json(
