@@ -1235,6 +1235,16 @@
   font-weight: 700;
 }
 
+.priorityTable td {
+  block-size: 3.25rem;
+  padding-block: 0.5rem;
+  padding-inline: 0.75rem;
+}
+
+.priorityTable th {
+  padding-inline: 0.75rem;
+}
+
 .openRow:first-child {
   outline: 1px solid var(--admin-danger-soft-line);
   outline-offset: -1px;
@@ -1287,6 +1297,10 @@
 .rowActions {
   display: inline-flex;
   gap: 0.25rem;
+}
+
+.priorityTable .rowActions {
+  gap: 0.5rem;
 }
 
 .rowActions :is(a, button) {
