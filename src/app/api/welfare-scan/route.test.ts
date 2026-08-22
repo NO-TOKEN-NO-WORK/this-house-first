@@ -16,7 +16,7 @@ vi.mock("@/lib/welfare-scan/openai", () => ({
   extractWelfareSignals: mocks.extractWelfareSignals,
 }));
 
-import { POST } from "./route";
+import { GET, POST } from "./route";
 
 describe("POST /api/welfare-scan", () => {
   beforeEach(() => {
@@ -51,6 +51,24 @@ describe("POST /api/welfare-scan", () => {
         evidence: ["에어컨에서 미지근한 바람만 나옴"],
       },
     ]);
+  });
+
+  it("복지사업 새로고침 실패 원인을 안전한 문구로 반환한다", async () => {
+    mocks.refreshWelfarePrograms.mockRejectedValue(
+      Object.assign(new Error("PUBLIC_DATA_SERVICE_KEY 환경변수가 설정되지 않았습니다."), {
+        code: "MISSING_SERVICE_KEY",
+      }),
+    );
+
+    const response = await GET();
+
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toEqual({
+      error: {
+        code: "WELFARE_SYNC_FAILED",
+        message: "공공데이터 API 키 미설정",
+      },
+    });
   });
 
   it("대상자 메모와 공공 복지사업을 결합해 검토 가능한 제안을 반환한다", async () => {

@@ -72,8 +72,6 @@ const ISSUE_KEYWORDS: Record<WelfareIssue, readonly string[]> = {
   [WelfareIssue.HOUSING_REPAIR]: ["주거", "주택", "수선", "개선", "단열"],
 };
 
-const MANUAL_REVIEW_CRITERIA = /(?:등록\s*)?장애|질환|질병|임신|재산|고용|실업|국적|가족관계|세대 구성/;
-
 function matchesIssue(program: WelfareProgram, issue: WelfareIssue): boolean {
   const searchable = `${program.name} ${program.summary} ${program.selectionCriteria} ${program.target}`;
   return ISSUE_KEYWORDS[issue].some((keyword) => searchable.includes(keyword));
@@ -91,6 +89,13 @@ function missingChecks(criteria: string): string[] {
     missing.push("최근 동일 사업 지원 이력");
   }
   return missing;
+}
+
+function criteriaFullyEvaluated(criteria: string): boolean {
+  const normalized = criteria.replace(/\s+/g, "");
+  return /^\d{2,3}세이상$/.test(normalized) ||
+    /^냉방기기가없거나고장난사람$/.test(normalized) ||
+    /^\d{2,3}세이상(?:이며|이고)?냉방기기가없거나고장난사람$/.test(normalized);
 }
 
 export function recommendWelfarePrograms({
@@ -122,7 +127,7 @@ export function recommendWelfarePrograms({
     ];
     if (
       missing.length === 0 &&
-      (confirmedChecks.length === 0 || MANUAL_REVIEW_CRITERIA.test(program.selectionCriteria))
+      (confirmedChecks.length === 0 || !criteriaFullyEvaluated(program.selectionCriteria))
     ) {
       missing.push("사업별 세부 자격요건");
     }

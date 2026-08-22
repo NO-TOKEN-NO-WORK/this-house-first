@@ -152,7 +152,7 @@ stateDiagram-v2
 | 한국사회보장정보원 중앙부처 복지서비스 | FR-11 복지 스캔 사업 검색 | 공공데이터포털 서비스 키 (서버 전용) | `PUBLIC_DATA_SERVICE_KEY` |
 | 카카오맵 JS SDK | F5 지도 | JS 앱 키 (클라이언트) | `NEXT_PUBLIC_KAKAO_MAP_KEY` |
 | 카카오 REST (로컬 주소검색·자동차 경로) | 지오코딩 + 법정동코드(`b_code` → 건축HUB 조회 키), FR-7 차량 최단 경로 | REST 키 (서버 전용) | `KAKAO_REST_KEY` |
-| OpenAI Responses API (`gpt-5.6-luna`, high) | FR-11 현장 메모의 문제 신호·근거 구조화 | API 키 (서버 전용) | `OPENAI_API_KEY` |
+| OpenAI Responses API (`gpt-5.6-luna`, high) | FR-11 구조화 설비 사실의 문제 신호 분류 | API 키 (서버 전용) | `OPENAI_API_KEY` |
 
 - 서버 전용 키는 절대 `NEXT_PUBLIC_` 접두사를 붙이지 않는다. 외부 호출은 Route Handler를 거쳐 프록시
 - 키 목록은 [.env.example](../.env.example) 참조. 실제 키는 커밋 금지
@@ -170,7 +170,7 @@ stateDiagram-v2
 | `/map` | 담당자 담당 가구 지도 | ✅ 구현됨 |
 | `/admin` | 관리자 지도 대시보드·건물별 카카오 오버레이 (FR-6) | ✅ 구현됨 |
 | `/admin/welfare-scan` | 관리자 복지 스캔·자격 검토 (FR-11) | ✅ 구현됨 |
-| `/api/welfare-scan` | `POST` 대상자 메모 분석·자격 비교 / `GET` 최신 복지사업 연결 확인 | ✅ 연동됨 |
+| `/api/welfare-scan` | `POST` 대상자 설비 사실 분석·자격 비교 / `GET` 최신 복지사업 연결 확인 | ✅ 연동됨 |
 | `/api/trigger` | `GET` 판정 미리보기 / `POST` 발령 — AlertDay + 당일 평가 + 가구 상태 생성 (FR-1·FR-3) | ✅ 연동됨 |
 | `/api/public-data/weather-warnings` | 기상청 기상특보 목록 | ✅ 연동됨 |
 | `/api/public-data/current-weather` | 기상청 초단기실황 현재 기온·현재 체감온도(10분 서버 캐시) | ✅ 연동됨 |

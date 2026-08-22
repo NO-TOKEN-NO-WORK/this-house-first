@@ -86,15 +86,18 @@ export async function GET(): Promise<Response> {
     return Response.json({
       data: { count: programs.length, syncedAt: new Date().toISOString() },
     });
-  } catch {
+  } catch (error) {
+    const code = error && typeof error === "object" && "code" in error
+      ? String(error.code)
+      : "";
     return Response.json(
       {
         error: {
           code: "WELFARE_SYNC_FAILED",
-          message: "복지사업 정보를 새로고침하지 못했습니다.",
+          message: connectionFailureMessage(error, "publicData"),
         },
       },
-      { status: 502 },
+      { status: code === "MISSING_SERVICE_KEY" ? 503 : 502 },
     );
   }
 }

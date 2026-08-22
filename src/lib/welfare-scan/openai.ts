@@ -45,22 +45,9 @@ function outputText(payload: unknown): string | null {
   return null;
 }
 
-function redactSensitiveMemo(memo: string | null): string | null {
-  if (!memo) return memo;
-  return memo
-    .replace(/(?:01[016789])[-.\s]?\d{3,4}[-.\s]?\d{4}/g, "[연락처 제거]")
-    .replace(/[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}/g, "[이메일 제거]")
-    .replace(
-      /(?:서울(?:특별)?시|부산(?:광역)?시|대구(?:광역)?시|인천(?:광역)?시|광주(?:광역)?시|대전(?:광역)?시|울산(?:광역)?시|세종(?:특별자치)?시|경기도|강원(?:특별자치)?도|충청[북남]도|전라[북남]도|경상[북남]도|제주(?:특별자치)?도)\s+[^,.\n]{1,50}(?:로|길|동|리)\s*\d*(?:-\d+)?/g,
-      "[주소 제거]",
-    )
-    .replace(/((?:성명|이름)\s*[:：]?\s*)[가-힣]{2,4}/g, "$1[이름 제거]")
-    .replace(/[가-힣]{2,4}\s*(?:어르신|님)/g, "[이름 제거]");
-}
-
 function parseSignals(
   text: string,
-  subjectIdsByAlias: Map<string, string>,
+  profilesByAlias: Map<string, WelfareSubjectProfile>,
 ): WelfareSignal[] {
   let parsed: unknown;
   try {
@@ -88,21 +75,29 @@ function parseSignals(
     const value = signal as Record<string, unknown>;
     if (
       typeof value.subjectId !== "string" ||
-      !subjectIdsByAlias.has(value.subjectId) ||
+      !profilesByAlias.has(value.subjectId) ||
       !Array.isArray(value.issues) ||
-      value.issues.some((issue) => typeof issue !== "string" || !ALLOWED_ISSUES.has(issue)) ||
-      !Array.isArray(value.evidence) ||
-      value.evidence.some((evidence) => typeof evidence !== "string")
+      value.issues.some((issue) => typeof issue !== "string" || !ALLOWED_ISSUES.has(issue))
     ) {
       throw new OpenAIWelfareError(
         "AI 분석 결과가 허용된 문제 코드와 맞지 않습니다.",
         "INVALID_OPENAI_RESPONSE",
       );
     }
+    const profile = profilesByAlias.get(value.subjectId)!;
+    const hasCoolingIssue = profile.hasAircon === false || profile.airconBroken;
+    const issues = (value.issues as WelfareSignal["issues"]).filter(
+      (issue) => issue === WelfareIssue.COOLING_ISSUE && hasCoolingIssue,
+    );
     return {
-      subjectId: subjectIdsByAlias.get(value.subjectId)!,
-      issues: value.issues as WelfareSignal["issues"],
-      evidence: (value.evidence as string[]).map((item) => redactSensitiveMemo(item) ?? ""),
+      subjectId: profile.subjectId,
+      issues,
+      evidence: issues.length === 0
+        ? []
+        : [
+            ...(profile.hasAircon === false ? ["냉방기기 없음 기록"] : []),
+            ...(profile.airconBroken ? ["냉방기기 고장 기록"] : []),
+          ],
     };
   });
 }
@@ -120,8 +115,8 @@ export async function extractWelfareSignals(
     );
   }
   const fetcher = options.fetcher ?? fetch;
-  const subjectIdsByAlias = new Map(
-    profiles.map((profile, index) => [`scan-${index + 1}`, profile.subjectId]),
+  const profilesByAlias = new Map(
+    profiles.map((profile, index) => [`scan-${index + 1}`, profile]),
   );
   let response: Response;
   try {
@@ -140,7 +135,7 @@ export async function extractWelfareSignals(
           {
             role: "system",
             content:
-              "당신은 사회복지 현장 메모에서 지원이 필요한 생활 문제만 구조화합니다. 수급 자격이나 선정 여부는 판단하지 마세요. 근거는 메모 또는 제공된 사실을 짧게 옮기고, 근거 없는 문제는 만들지 마세요.",
+              "당신은 제공된 구조화 사실에서 지원이 필요한 생활 문제만 분류합니다. 수급 자격이나 선정 여부는 판단하지 말고, 제공되지 않은 문제는 만들지 마세요.",
           },
           {
             role: "user",
@@ -151,7 +146,6 @@ export async function extractWelfareSignals(
                 livesAlone: profile.livesAlone,
                 hasAircon: profile.hasAircon,
                 airconBroken: profile.airconBroken,
-                latestMemo: redactSensitiveMemo(profile.latestMemo),
               })),
             ),
           },
@@ -174,9 +168,8 @@ export async function extractWelfareSignals(
                         type: "array",
                         items: { type: "string", enum: Object.values(WelfareIssue) },
                       },
-                      evidence: { type: "array", items: { type: "string" } },
                     },
-                    required: ["subjectId", "issues", "evidence"],
+                    required: ["subjectId", "issues"],
                     additionalProperties: false,
                   },
                 },
@@ -213,5 +206,5 @@ export async function extractWelfareSignals(
       "INCOMPLETE_OPENAI_RESPONSE",
     );
   }
-  return parseSignals(text, subjectIdsByAlias);
+  return parseSignals(text, profilesByAlias);
 }

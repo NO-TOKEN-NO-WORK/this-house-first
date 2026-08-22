@@ -100,6 +100,33 @@ describe("복지 자격 엔진", () => {
     });
   });
 
+  it("파싱하지 않은 지역 조건도 추가 정보 필요로 분류한다", () => {
+    const [recommendation] = recommendWelfarePrograms({
+      profile,
+      signal: {
+        subjectId: profile.subjectId,
+        issues: ["COOLING_ISSUE"],
+        evidence: ["냉방기기 고장 기록"],
+      },
+      programs: [
+        {
+          id: "regional-energy-1",
+          name: "취약가구 냉방 지원",
+          ministry: "산업통상자원부",
+          summary: "냉방기기를 지원합니다.",
+          selectionCriteria: "65세 이상이며 도시가스 미공급 지역 거주자",
+          target: "노년 취약가구",
+          link: "https://www.bokjiro.go.kr/",
+        },
+      ],
+    });
+
+    expect(recommendation).toMatchObject({
+      status: RecommendationStatus.NEEDS_INFO,
+      missingChecks: ["사업별 세부 자격요건"],
+    });
+  });
+
   it("감지 문제와 무관한 사업은 추천하지 않는다", () => {
     const recommendations = recommendWelfarePrograms({
       profile,

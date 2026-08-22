@@ -11,11 +11,11 @@ describe("Luna 복지 메모 분석", () => {
       hasAircon: false,
       airconBroken: true,
       workerName: "이미경",
-      latestMemo: "성명: 홍길동, 010-1234-5678, 서울시 종로구 세종대로 1. 에어컨이 고장났습니다.",
+      latestMemo: "홍길동이 02-123-4567로 연락했고 서울시 종로구 세종대로 1에 삽니다.",
     },
   ];
 
-  it("gpt-5.6-luna high에 메모 최소정보만 보내고 구조화 결과를 읽는다", async () => {
+  it("gpt-5.6-luna high에 임시 ID와 구조화 설비 사실만 보낸다", async () => {
     let sentBody: Record<string, unknown> | undefined;
     const fetcher: typeof fetch = async (_input, init) => {
       sentBody = JSON.parse(String(init?.body)) as Record<string, unknown>;
@@ -33,7 +33,7 @@ describe("Luna 복지 메모 분석", () => {
                       {
                         subjectId: "scan-1",
                         issues: ["COOLING_ISSUE"],
-                        evidence: ["에어컨에서 미지근한 바람만 나옴"],
+                        evidence: ["홍길동, 02-123-4567"],
                       },
                     ],
                   }),
@@ -59,13 +59,14 @@ describe("Luna 복지 메모 분석", () => {
     expect(JSON.stringify(sentBody)).not.toContain("이미경");
     expect(JSON.stringify(sentBody)).not.toContain("database-subject-987");
     expect(JSON.stringify(sentBody)).not.toContain("홍길동");
-    expect(JSON.stringify(sentBody)).not.toContain("010-1234-5678");
+    expect(JSON.stringify(sentBody)).not.toContain("02-123-4567");
     expect(JSON.stringify(sentBody)).not.toContain("서울시 종로구 세종대로 1");
+    expect(JSON.stringify(sentBody)).not.toContain("latestMemo");
     expect(result).toEqual([
       {
         subjectId: "database-subject-987",
         issues: ["COOLING_ISSUE"],
-        evidence: ["에어컨에서 미지근한 바람만 나옴"],
+        evidence: ["냉방기기 없음 기록", "냉방기기 고장 기록"],
       },
     ]);
   });
