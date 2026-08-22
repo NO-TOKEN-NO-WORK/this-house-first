@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { CurrentWeather } from "@/lib/public-data/kma";
+import { toKmaGrid, type KmaGrid } from "@/lib/public-data/kma-grid";
 
 const REFRESH_INTERVAL_MS = 600_000;
 const OBSERVED_AT_FORMAT = new Intl.DateTimeFormat("ko-KR", {
@@ -37,9 +38,14 @@ function isCurrentWeather(value: unknown): value is CurrentWeather {
 
 /** 내부 Route Handler 응답만 받아 클라이언트에 기상청 키가 노출되지 않게 한다. */
 export async function requestCurrentWeather(
+  grid: KmaGrid | null = null,
   fetcher: CurrentWeatherFetcher = fetch,
 ): Promise<CurrentWeather> {
-  const response = await fetcher("/api/public-data/current-weather");
+  const response = await fetcher(
+    grid
+      ? `/api/public-data/current-weather?nx=${grid.nx}&ny=${grid.ny}`
+      : "/api/public-data/current-weather",
+  );
   if (!response.ok) {
     throw new Error("현재 날씨를 불러오지 못했습니다.");
   }
@@ -55,6 +61,24 @@ export async function requestCurrentWeather(
   return weather;
 }
 
+export function requestCurrentLocationGrid(
+  geolocation: Geolocation,
+): Promise<KmaGrid> {
+  return new Promise((resolve, reject) => {
+    geolocation.getCurrentPosition(
+      ({ coords }) => {
+        try {
+          resolve(toKmaGrid(coords.latitude, coords.longitude));
+        } catch (error) {
+          reject(error);
+        }
+      },
+      reject,
+      { enableHighAccuracy: true, maximumAge: 300_000, timeout: 10_000 },
+    );
+  });
+}
+
 const ROOT_CLASS = {
   today:
     "flex min-h-28 flex-col justify-center gap-3 rounded-lg border border-border-default bg-surface-soft px-4 py-4 text-text-primary",
@@ -67,6 +91,39 @@ const VALUE_CLASS = {
   admin: "text-label-16",
 } as const;
 
+type LocationStatus = "idle" | "locating" | "active" | "failed";
+
+function LocationControl({
+  onRequest,
+  status,
+}: {
+  onRequest: () => void;
+  status: LocationStatus;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <button
+        className="min-h-11 rounded-md border border-border-default px-3 text-label-14 text-text-primary disabled:opacity-60"
+        disabled={status === "locating"}
+        onClick={onRequest}
+        type="button"
+      >
+        {status === "locating" ? "위치 확인 중…" : "현재 위치 날씨"}
+      </button>
+      {status === "active" ? (
+        <p role="status" className="text-body-14 text-text-tertiary">
+          현재 위치 기준
+        </p>
+      ) : null}
+      {status === "failed" ? (
+        <p role="alert" className="text-body-14 text-status-critical-strong">
+          위치를 확인하지 못했습니다
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
 export function CurrentWeatherSummary({
   variant,
 }: {
@@ -74,6 +131,10 @@ export function CurrentWeatherSummary({
 }) {
   const [weather, setWeather] = useState<CurrentWeather | null>(null);
   const [failed, setFailed] = useState(false);
+  const [grid, setGrid] = useState<KmaGrid | null>(null);
+  const [locationStatus, setLocationStatus] =
+    useState<LocationStatus>("idle");
+  const locationRequest = useRef(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -82,13 +143,15 @@ export function CurrentWeatherSummary({
     async function refresh() {
       const request = ++latestRequest;
       try {
-        const currentWeather = await requestCurrentWeather();
+        const currentWeather = await requestCurrentWeather(grid);
         if (!cancelled && request === latestRequest) {
           setWeather(currentWeather);
           setFailed(false);
         }
       } catch {
-        if (!cancelled && request === latestRequest) setFailed(true);
+        if (!cancelled && request === latestRequest) {
+          setFailed(true);
+        }
       }
     }
 
@@ -98,7 +161,32 @@ export function CurrentWeatherSummary({
       cancelled = true;
       clearInterval(interval);
     };
-  }, []);
+  }, [grid]);
+
+  useEffect(
+    () => () => {
+      locationRequest.current += 1;
+    },
+    [],
+  );
+
+  async function requestLocation() {
+    const request = ++locationRequest.current;
+    setLocationStatus("locating");
+    try {
+      if (!navigator.geolocation) throw new Error("Geolocation unavailable");
+      const nextGrid = await requestCurrentLocationGrid(navigator.geolocation);
+      if (request !== locationRequest.current) return;
+      setGrid(nextGrid);
+      setLocationStatus("active");
+    } catch {
+      if (request === locationRequest.current) setLocationStatus("failed");
+    }
+  }
+
+  const locationControl = (
+    <LocationControl onRequest={() => void requestLocation()} status={locationStatus} />
+  );
 
   if (weather) {
     return (
@@ -126,6 +214,7 @@ export function CurrentWeatherSummary({
             갱신 실패 · 마지막 관측값을 표시합니다
           </p>
         ) : null}
+        {locationControl}
       </section>
     );
   }
@@ -136,6 +225,7 @@ export function CurrentWeatherSummary({
         <p role="alert" className="text-body-15 text-text-secondary">
           현재 날씨를 불러오지 못했습니다
         </p>
+        {locationControl}
       </section>
     );
   }
@@ -145,6 +235,7 @@ export function CurrentWeatherSummary({
       <p role="status" className="text-body-15 text-text-secondary">
         날씨 확인 중
       </p>
+      {locationControl}
     </section>
   );
 }
