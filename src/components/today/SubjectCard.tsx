@@ -140,7 +140,7 @@ function CardAction({
     );
   }
 
-  const tone = `${shape} bg-action-secondary text-text-inverse active:bg-text-supporting`;
+  const tone = `${shape} bg-action-secondary text-text-inverse active:bg-action-secondary-strong`;
 
   if (external) {
     return (

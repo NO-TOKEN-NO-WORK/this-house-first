@@ -16,11 +16,12 @@ Figma `이집먼저` 파일에 **02 · Foundations** 페이지(node `16:25`)가 
 
 Figma가 명시한 사용 규칙이 있다 — *"컴포넌트에는 아래 값을 직접 사용하지 않고 Semantic Colors를 사용합니다"* (`16:33`). 스와치 라벨에는 CSS 변수 이름까지 적혀 있다(`var(--color-text-primary)`).
 
-기존 `globals.css`는 화면에서 눈으로 뽑은 이름(`--color-ink`, `--color-slate`, `--color-calm` …) 한 층뿐이었고 ADR-0014가 그 상태를 전제하고 있었다. 옮기면서 세 가지가 걸렸다.
+기존 `globals.css`는 화면에서 눈으로 뽑은 이름(`--color-ink`, `--color-slate`, `--color-calm` …) 한 층뿐이었고 ADR-0014가 그 상태를 전제하고 있었다. 옮기면서 네 가지가 걸렸다.
 
 1. **Foundations 페이지는 전체가 아니다.** 실제 화면(`0:1` UI 페이지)이 쓰는 Figma 변수 컬렉션을 뽑아 보니 색 34개·타이포 19개다. Foundations는 그중 큐레이션된 일부다. `color/text/supporting`·`color/action/secondary`·`color/border/soft`·`Body/15 Relaxed`·`Heading/19`·`Label/13` 등은 화면이 쓰는데 Foundations에는 없다.
 2. **`@theme inline`은 `--color-*`를 `:root`에 내보내지 않는다.** 값을 유틸리티에 인라인할 뿐이다. 그래서 `KakaoMap`이 `getComputedStyle(...).getPropertyValue("--color-danger")`로 읽던 마커 색은 **항상 빈 문자열이었다**(기존 버그).
-3. **기존 이름 중 일부는 Figma에 대응 토큰이 없다** — 조치함 기록 버튼 배경(`#eaf0f9`), 안전 결과 버튼의 글자/배경(`#136a42`/`#e6f4ec`), 3등급 칩 배경(`#9ca3af`).
+3. **기존 이름 중 일부는 Figma에 대응 토큰이 없다** — 조치함 기록 버튼 배경(`#eaf0f9`), 보조 행동 버튼 눌림 배경(`#374151`), 안전 결과 버튼의 글자/배경(`#136a42`/`#e6f4ec`), 3등급 칩 배경(`#9ca3af`).
+4. **Tailwind 자동 탐색은 Markdown도 평문으로 읽는다.** ADR과 에이전트 지침에 금지 예시로 적은 `text-[15px]`·`bg-[#fff]`까지 실제 CSS 유틸리티로 생성됐다. 앱과 무관한 문서가 산출물과 디자인 시스템 경계를 바꾸고 있었다.
 
 ## 결정 (Decision)
 
@@ -29,9 +30,10 @@ Figma가 명시한 사용 규칙이 있다 — *"컴포넌트에는 아래 값�
   - **2층 Semantic**만 `@theme`에 들어간다. 변수 이름은 Figma 스와치에 적힌 이름을 그대로 쓴다(`--color-text-primary` → `text-text-primary`). 유틸리티 이름이 길어지지만, 디자이너가 Figma에서 본 이름으로 코드를 grep할 수 있다는 값이 더 크다.
 - **`@theme static`을 쓴다.** `inline`과 달리 유틸리티에서 안 쓰는 토큰까지 `:root`에 항상 내보내므로 JS에서 `getComputedStyle`로 읽어도 안전하다. 위 2번 버그가 이걸로 사라진다.
 - **Tailwind 기본 팔레트를 지운다** (`--color-*: initial`). `bg-white`·`text-zinc-500`·`text-red-700`은 이제 존재하지 않는 클래스다. 디자인 시스템 밖의 색이 화면에 섞이면 위험 등급 색이 화면마다 달라 보인다.
+- **Tailwind 탐색 기준을 `src/`로 한정한다** (`@import "tailwindcss" source("../")`). 문서의 코드 예시가 앱 CSS를 만들지 않게 한다.
 - **토큰은 Foundations 페이지가 아니라 Figma 변수 컬렉션 전체(색 34 + 타이포 19)를 옮긴다.** Foundations는 문서화된 일부일 뿐 화면이 실제로 쓰는 이름이 더 많다.
 - **타이포그래피는 역할/크기 이름을 그대로 토큰화한다** (`text-display-28`, `text-body-15-relaxed`, `text-label-16-compact` …). Figma의 `lineHeight: 100`(=Auto)은 `normal`로, 명시 수치(22.4px·22.5px)는 px 그대로 옮겼다. `Navigation/11`의 `letterSpacing: 2`는 `2px`이다(Figma dev context가 `tracking-[2px]`로 확인해 준다).
-- **화면·컴포넌트의 색·글자 클래스를 전부 새 토큰으로 옮긴다.** 임의값(`text-[15px]`, `bg-white`, `text-zinc-400`)은 코드에서 사라진다.
+- **담당자·공용 Tailwind 화면의 색·글자 클래스를 전부 새 토큰으로 옮긴다.** 임의값(`text-[15px]`, `bg-white`, `text-zinc-400`)은 코드에서 사라진다. 관리자 CSS Module은 기존 `tokens.css`의 `--admin-*` 체계를 유지하고, 위험 등급 색만 전역 Semantic 토큰을 참조해 두 화면의 의미를 맞춘다.
 
 ### 옛 이름 → 새 이름
 
@@ -51,6 +53,7 @@ Figma가 명시한 사용 규칙이 있다 — *"컴포넌트에는 아래 값�
 | `warn-soft` | `status-warning-subtle` | `#fdf1de` → **`#fcf8e9`** |
 | `line-strong`(안내 상자 테두리) | `border-strong` | `#c6cfda` → **`#9ca3af`** |
 | `slate`(보조 행동 버튼) | `action-secondary` | `#6b7280` → **`#4b5563`** |
+| `ink-strong`(보조 행동 버튼 눌림) | `action-secondary-strong`(확장) | `#374151` 그대로 |
 | `slate`(3등급 글자) | `text-tertiary` | `#6b7280` 그대로 |
 | `disabled` | `surface-soft` | `#e2e7ee` 그대로 (아래 결과 §2 참고) |
 | `calm` | `status-neutral`(확장) | `#9ca3af` 그대로 |
@@ -77,17 +80,20 @@ Figma가 명시한 사용 규칙이 있다 — *"컴포넌트에는 아래 값�
   - 색·글자의 원본이 Figma 변수 하나로 모였다. 디자이너가 값을 바꾸면 `globals.css`의 Primitive 한 줄만 고치면 된다
   - **지도 마커 색 버그가 고쳐졌다.** `--color-status-critical` 등이 이제 `:root`에 실제로 나온다
   - 코드에서 임의 색·임의 글자 크기가 사라졌다 (`text-[15px]`·`bg-white`·`zinc-*` 0건)
-  - 보조 행동 버튼(`방문하기`·`전화하기`·`대상자 확인`)의 흰 글자 대비가 **4.79:1 → 7.46:1**로 올랐다 (`#6b7280` → `#4b5563`). 랜딩 화면의 `zinc-400` 보조 문구도 2.8:1 → 4.79:1
+  - Tailwind가 `src/`만 탐색하므로 문서의 금지 예시가 임의 유틸리티로 산출되지 않는다
+  - 보조 행동 버튼(`방문하기`·`전화하기`·`대상자 확인`)의 흰 글자 대비가 **4.83:1 → 7.56:1**로 올랐다 (`#6b7280` → `#4b5563`). 랜딩 화면의 `zinc-400` 보조 문구도 2.85:1 → 4.83:1
+  - 등급 섹션의 계획 문구는 `text-primary`로 통일했다. 등급은 바로 앞 칩이 전달하며, 새 `background/subtle` 위에서 2등급 4.45:1·3등급 4.23:1이던 대비를 13.68:1로 올렸다
 - 부정/트레이드오프
   1. **유틸리티 이름이 길다** (`text-text-primary`, `bg-background-subtle`). Figma 이름과의 1:1 대응을 산 값이다
   2. **비활성 버튼 배경은 `surface-soft`(`#e2e7ee`)를 쓴다.** 역할상으로는 `action-disabled`(`#c6cfda`)가 맞지만 그 위의 `text-secondary`가 3.67:1로 WCAG AA에 못 미친다. `surface-soft`는 4.67:1이다 — ADR-0014가 이미 같은 이유로 택한 값을 유지한다
   3. **화면 배경이 `#f4f6f9` → `#edf0f3`으로 살짝 어두워지고**, 2등급 결과 버튼 배경이 `#fdf1de` → `#fcf8e9`로 바뀐다. 둘 다 Figma 값이 맞다
   4. **`text-body-16`은 줄높이 22.4px를 함께 싣는다.** 예전 `text-base`는 줄높이를 지정하지 않았으므로 본문 여러 줄이 조금 넓어진다
   5. **13px 보통 굵기·11px 굵은 글씨는 팔레트에 없어 가장 가까운 토큰으로 올렸다** — 결과 버튼의 부연은 `Body/14`로, 배지(`선택됨`·`지원사업 연계`)는 `Caption/12`로. 60대 사용자 기준(PRD §9)에서 커지는 방향이라 그대로 둔다
-  6. **`선택됨` 배지·눌림 상태는 `#374151` → `action-secondary`(`#4b5563`)로 바뀐다.** 중립 어두운 *면*에 대응하는 토큰이 컬렉션에는 `action/secondary`뿐이다
-- **디자이너에게 확인이 필요한 것** — 아래 넷은 Figma 변수 컬렉션에 이름이 없어 `globals.css`에 `잠정`으로 두었다. 이름이 생기면 확장 묶음을 지운다
+  6. **`선택됨` 배지는 `#374151` → `action-secondary`(`#4b5563`)로 바뀐다.** 눌림 상태는 기존 값(`#374151`)을 `action-secondary-strong` 확장 토큰으로 유지해 글자 역할 토큰을 배경에 재사용하지 않는다
+- **디자이너에게 확인이 필요한 것** — 아래 다섯 역할은 Figma 변수 컬렉션에 이름이 없어 `globals.css`에 `잠정`으로 두었다. 이름이 생기면 확장 묶음을 지운다
   - `action/primary-subtle` `#eaf0f9` (조치함 기록 버튼 배경)
+  - `action/secondary-strong` `#374151` (보조 행동 버튼 눌림 배경)
   - `status/success-strong` `#136a42`, `status/success-subtle` `#e6f4ec` (안전 결과 버튼) — `green/50`·`green/700` 원시 색도 없다
   - `status/neutral` `#9ca3af` (3등급 칩 배경) — 값은 `border/strong`과 같지만 역할이 다르다
-- **남은 원시 색 하나** — `src/app/layout.tsx`의 PWA `themeColor: "#b91c1c"`는 CSS 변수를 참조할 수 없는 자리라 그대로 두었다. 브라우저 크롬 색이므로 디자인 시스템 색(`status/critical` `#d93025`)으로 맞출지는 별도 판단이 필요하다
+- **CSS 변수를 쓸 수 없는 PWA 정적 메타데이터·SVG는 해석값을 복제한다.** `src/app/layout.tsx`, `public/today.webmanifest`, `public/icons/icon.svg`의 위험색은 `status/critical`과 같은 `#d93025`, manifest 배경은 `neutral/0`과 같은 `#ffffff`로 맞춘다. 디자인 토큰 변경 리뷰에서 함께 확인해야 하는 의도적 중복이다
 - 되돌리기: 토큰은 `globals.css` 한 파일, 화면 변경은 클래스 이름 치환뿐이라 파일 단위로 되돌릴 수 있다. ADR-0014의 결정(문구는 `domain.ts`, 색은 Figma)은 그대로 유효하며 이 ADR은 그중 "색" 쪽을 구체화한 것이다

@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <!-- 앱 아이콘: 폭염(적색) 배경 위의 집 — maskable 대응을 위해 풀블리드 배경 -->
-  <rect width="512" height="512" fill="#b91c1c"/>
+  <rect width="512" height="512" fill="#d93025"/>
   <g fill="none" stroke="#ffffff" stroke-width="28" stroke-linecap="round" stroke-linejoin="round">
     <path d="M116 268 L256 148 L396 268"/>
     <path d="M156 252 V392 H356 V252"/>

@@ -264,7 +264,7 @@ export function KakaoMap({ apiKey, buildings, date, workerId }: Props) {
 
                 <Link
                   href={subjectHref(household.subjectId, date, workerId)}
-                  className="flex min-h-12 items-center justify-center rounded-lg bg-action-secondary px-4 text-label-16-compact text-text-inverse active:bg-text-supporting"
+                  className="flex min-h-12 items-center justify-center rounded-lg bg-action-secondary px-4 text-label-16-compact text-text-inverse active:bg-action-secondary-strong"
                 >
                   대상자 확인
                 </Link>

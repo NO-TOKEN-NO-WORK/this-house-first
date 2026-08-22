@@ -15,12 +15,6 @@ const GRADE_CHIP: Record<RiskGradeValue, string> = {
   [RiskGrade.MODERATE]: "bg-status-neutral text-text-primary",
 };
 
-const GRADE_TEXT: Record<RiskGradeValue, string> = {
-  [RiskGrade.CRITICAL]: "text-status-critical-strong",
-  [RiskGrade.HIGH]: "text-status-warning-strong",
-  [RiskGrade.MODERATE]: "text-text-tertiary",
-};
-
 export function GradeFilter({
   groups,
   initialGrade,
@@ -92,9 +86,11 @@ export function GradeFilter({
                 >
                   {group.gradeLabel}
                 </span>
-                <span
-                  className={`text-title-17 ${GRADE_TEXT[group.grade]}`}
-                >
+                {/*
+                  등급 색은 칩이 전달한다. 설명까지 등급색으로 쓰면 새 background/subtle에서
+                  2등급 4.45:1, 3등급 4.23:1로 WCAG AA(일반 텍스트 4.5:1)에 못 미친다.
+                */}
+                <span className="text-title-17 text-text-primary">
                   {group.subjects.length}명 | {group.plan}
                 </span>
               </h2>

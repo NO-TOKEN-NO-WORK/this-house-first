@@ -1,4 +1,5 @@
-@import "tailwindcss";
+/* 앱 코드(src/)만 스캔한다. 문서의 금지 예시가 실제 유틸리티로 생성되지 않게 한다. */
+@import "tailwindcss" source("../");
 
 /*
  * 디자인 시스템 — Figma "이집먼저" · 02 · Foundations (node 16:25)
@@ -51,7 +52,7 @@
 
   /*
    * Figma 원시 팔레트(16:29)에는 없지만 Semantic 층이 참조하는 색.
-   * 앞의 둘은 Figma 변수 컬렉션에 이미 있고(surface/placeholder), 뒤의 셋은
+   * gray-placeholder는 Figma 변수 컬렉션(surface/placeholder)에 이미 있고, 나머지 셋은
    * 화면에서만 쓰이던 색이라 아직 팔레트에 오르지 않았다 — ADR-0015 §결과 참고.
    */
   --gray-placeholder: #d9d9d9; /* color/surface/placeholder */
@@ -131,6 +132,7 @@
    * 화면에는 이미 있는데 토큰이 없어서 여기서 정의한다. 디자이너가 올리면 이 묶음은 사라진다.
    */
   --color-action-primary-subtle: var(--navy-50); /* 조치함 기록 버튼 배경 */
+  --color-action-secondary-strong: var(--neutral-800); /* 보조 행동 버튼 눌림 배경 */
   --color-status-success-strong: var(--green-700); /* 안전 결과 글자 */
   --color-status-success-subtle: var(--green-50); /* 안전 결과 배경 */
   --color-status-neutral: var(--neutral-400); /* 3등급 칩 배경·지도 마커 */
