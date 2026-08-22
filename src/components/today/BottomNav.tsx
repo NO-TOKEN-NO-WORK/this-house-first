@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { HomeIcon, MapPinIcon } from "./icons";
 
 /**
  * 담당자 하단 탭 (Figma ① 25:146).
@@ -11,8 +10,20 @@ import { HomeIcon, MapPinIcon } from "./icons";
  * `current="log"`로 열면 어느 탭도 활성이 아니다(없는 탭을 켜 두지 않는다).
  */
 const ITEMS = [
-  { key: "today", label: "오늘", href: "/today", Icon: HomeIcon },
-  { key: "map", label: "방문 동선", href: "/map", Icon: MapPinIcon },
+  {
+    key: "today",
+    label: "오늘",
+    href: "/today",
+    icon: "/figma/today-home.svg",
+    maskSize: "26px 26px",
+  },
+  {
+    key: "map",
+    label: "방문 동선",
+    href: "/map",
+    icon: "/figma/visit-route-pin.svg",
+    maskSize: "21.2334px 24.3256px",
+  },
 ] as const;
 
 function withContext(path: string, date?: string, workerId?: string): string {
@@ -37,7 +48,7 @@ export function BottomNav({
       aria-label="담당자 메뉴"
       className="fixed inset-x-0 bottom-0 z-40 mx-auto flex h-[79px] w-full max-w-[520px] border-t border-border-default bg-surface-default"
     >
-      {ITEMS.map(({ key, label, href, Icon }) => {
+      {ITEMS.map(({ key, label, href, icon, maskSize }) => {
         const active = key === current;
         /*
          * 비활성 탭 글자색은 Figma의 `action/disabled`(#c6cfda) 대신 `text-secondary`다.
@@ -53,7 +64,21 @@ export function BottomNav({
             aria-current={active ? "page" : undefined}
             className={`flex flex-1 flex-col items-center justify-center gap-[3px] ${tone}`}
           >
-            <Icon className="size-[26px]" />
+            <span
+              aria-hidden="true"
+              className="size-[26px] shrink-0"
+              style={{
+                backgroundColor: "currentColor",
+                WebkitMaskImage: `url('${icon}')`,
+                WebkitMaskPosition: "center",
+                WebkitMaskRepeat: "no-repeat",
+                WebkitMaskSize: maskSize,
+                maskImage: `url('${icon}')`,
+                maskPosition: "center",
+                maskRepeat: "no-repeat",
+                maskSize,
+              }}
+            />
             <span className="text-label-13">{label}</span>
           </Link>
         );
