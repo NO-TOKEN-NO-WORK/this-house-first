@@ -15,13 +15,17 @@ type CurrentWeatherFetcher = (
   input: RequestInfo | URL,
 ) => Promise<Pick<Response, "json" | "ok">>;
 
+function isTimestamp(value: unknown): value is string {
+  return typeof value === "string" && Number.isFinite(Date.parse(value));
+}
+
 function isCurrentWeather(value: unknown): value is CurrentWeather {
   if (!value || typeof value !== "object") return false;
   const weather = value as Partial<CurrentWeather>;
   return (
     weather.source === "기상청 초단기실황 조회서비스" &&
-    typeof weather.observedAt === "string" &&
-    typeof weather.fetchedAt === "string" &&
+    isTimestamp(weather.observedAt) &&
+    isTimestamp(weather.fetchedAt) &&
     typeof weather.temperature === "number" &&
     typeof weather.humidity === "number" &&
     typeof weather.feelsLikeTemperature === "number" &&
@@ -73,16 +77,18 @@ export function CurrentWeatherSummary({
 
   useEffect(() => {
     let cancelled = false;
+    let latestRequest = 0;
 
     async function refresh() {
+      const request = ++latestRequest;
       try {
         const currentWeather = await requestCurrentWeather();
-        if (!cancelled) {
+        if (!cancelled && request === latestRequest) {
           setWeather(currentWeather);
           setFailed(false);
         }
       } catch {
-        if (!cancelled) setFailed(true);
+        if (!cancelled && request === latestRequest) setFailed(true);
       }
     }
 
@@ -115,6 +121,11 @@ export function CurrentWeatherSummary({
           {" · "}
           {weather.source}
         </p>
+        {failed ? (
+          <p role="status" aria-live="polite" className="text-body-14 text-status-critical-strong">
+            갱신 실패 · 마지막 관측값을 표시합니다
+          </p>
+        ) : null}
       </section>
     );
   }

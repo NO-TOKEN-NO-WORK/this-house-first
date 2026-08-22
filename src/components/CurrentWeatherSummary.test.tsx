@@ -68,6 +68,19 @@ describe("requestCurrentWeather", () => {
       "현재 날씨를 불러오지 못했습니다.",
     );
   });
+
+  it("200 응답이어도 해석할 수 없는 관측시각이면 거절한다", async () => {
+    const fetcher = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({ data: { ...weather, observedAt: "not-a-timestamp" } }),
+        { status: 200 },
+      ),
+    );
+
+    await expect(requestCurrentWeather(fetcher)).rejects.toThrow(
+      "현재 날씨를 불러오지 못했습니다.",
+    );
+  });
 });
 
 describe("CurrentWeatherSummary", () => {
@@ -78,6 +91,10 @@ describe("CurrentWeatherSummary", () => {
     hooks.values = [];
     vi.clearAllMocks();
     vi.unstubAllGlobals();
+  }
+
+  async function settle() {
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
   }
 
   it("성공한 현재 기온·체감온도·관측시각과 출처를 표시한다", () => {
@@ -110,6 +127,84 @@ describe("CurrentWeatherSummary", () => {
 
     expect(html).toContain("현재 날씨를 불러오지 못했습니다");
     expect(html).toContain('role="alert"');
+  });
+
+  it("마지막 성공값이 있어도 갱신 실패를 명시한다", () => {
+    resetHooks();
+    hooks.values[WEATHER] = weather;
+    hooks.values[FAILED] = true;
+
+    const html = render();
+
+    expect(html).toMatch(/현재 기온.*31\.2°C/);
+    expect(html).toContain("갱신 실패");
+  });
+
+  it("200 응답의 잘못된 관측시각은 화면에 넣지 않고 실패로 처리한다", async () => {
+    resetHooks();
+    const setWeather = vi.fn();
+    const setFailed = vi.fn();
+    const setInterval = vi.fn().mockReturnValue(123);
+    const clearInterval = vi.fn();
+    hooks.setters = [setWeather, setFailed];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            data: { ...weather, observedAt: "not-a-timestamp" },
+          }),
+          { status: 200 },
+        ),
+      ),
+    );
+    vi.stubGlobal("setInterval", setInterval);
+    vi.stubGlobal("clearInterval", clearInterval);
+
+    CurrentWeatherSummary({ variant: "today" });
+    const cleanup = hooks.effects[0]?.();
+    await settle();
+
+    expect(setWeather).not.toHaveBeenCalled();
+    expect(setFailed).toHaveBeenCalledWith(true);
+    cleanup?.();
+  });
+
+  it("더 늦게 시작한 갱신이 먼저 끝나면 이전 응답으로 되돌리지 않는다", async () => {
+    resetHooks();
+    const setWeather = vi.fn();
+    const setFailed = vi.fn();
+    const setInterval = vi.fn().mockReturnValue(123);
+    const clearInterval = vi.fn();
+    const resolvers: Array<(response: Response) => void> = [];
+    const fetcher = vi.fn(
+      () =>
+        new Promise<Response>((resolve) => {
+          resolvers.push(resolve);
+        }),
+    );
+    const newerWeather = { ...weather, temperature: 32.1 };
+    hooks.setters = [setWeather, setFailed];
+    vi.stubGlobal("fetch", fetcher);
+    vi.stubGlobal("setInterval", setInterval);
+    vi.stubGlobal("clearInterval", clearInterval);
+
+    CurrentWeatherSummary({ variant: "today" });
+    const cleanup = hooks.effects[0]?.();
+    const refresh = setInterval.mock.calls[0]?.[0] as () => void;
+    refresh();
+
+    resolvers[1]!(
+      new Response(JSON.stringify({ data: newerWeather }), { status: 200 }),
+    );
+    await settle();
+    resolvers[0]!(new Response(JSON.stringify({ data: weather }), { status: 200 }));
+    await settle();
+
+    expect(setWeather).toHaveBeenCalledTimes(1);
+    expect(setWeather).toHaveBeenCalledWith(newerWeather);
+    expect(setFailed).toHaveBeenCalledWith(false);
+    cleanup?.();
   });
 
   it("마운트 시 조회하고 10분 갱신을 예약하며 해제 뒤 응답은 반영하지 않는다", async () => {
