@@ -1237,9 +1237,7 @@
 }
 
 .badge,
-.statusBadge,
-.workerActive,
-.workerIdle {
+.statusBadge {
   display: inline-flex;
   min-block-size: 1.5rem;
   align-items: center;
@@ -1255,8 +1253,6 @@
 .grade2 { color: var(--admin-warning); background: var(--admin-warning-soft); }
 .grade3 { color: var(--admin-accent); background: var(--admin-accent-soft); }
 .statusBadge { color: var(--admin-accent); background: var(--admin-accent-faint); }
-.workerActive { color: var(--admin-success); background: var(--admin-success-soft); }
-.workerIdle { color: var(--admin-ink-soft); background: var(--admin-surface-muted); }
 
 .tableScroller {
   min-inline-size: 0;

@@ -147,7 +147,6 @@ export function buildAdminWorkerDetail({
     alertLevel: firstAssessment && isAlertLevel(firstAssessment.alertDay.level)
       ? firstAssessment.alertDay.level
       : null,
-    workStatus: subjects.length ? "근무 중" : "휴식 중",
     lastStateChangedAt: latestStateTime === null
       ? null
       : TIME.format(new Date(latestStateTime)),

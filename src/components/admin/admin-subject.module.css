@@ -270,19 +270,6 @@
 .workerProfileCard { min-block-size: 13.25rem; }
 .workerProfileCard .profileAvatar { background: var(--admin-surface-muted); }
 .workerProfileCard .identityLine > strong { font-size: 1.25rem; }
-.workerActiveBadge {
-  display: inline-grid;
-  min-block-size: 1.65rem;
-  place-items: center;
-  padding-inline: 0.75rem;
-  border: 1px solid color-mix(in oklch, var(--admin-success) 35%, transparent);
-  border-radius: 0.35rem;
-  background: var(--admin-success-soft);
-  color: var(--admin-success);
-  font-size: 0.75rem;
-  font-weight: 800;
-  white-space: nowrap;
-}
 .workerProfileFacts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .workerProfileFacts div { min-inline-size: 0; }
 .workerInfoGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.875rem; }

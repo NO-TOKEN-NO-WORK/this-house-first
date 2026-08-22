@@ -13,7 +13,6 @@ const detail = {
   organization: "춘양면 행정복지센터",
   feelsLikeMax: 38.4,
   alertLevel: AlertLevel.EMERGENCY,
-  workStatus: "근무 중",
   lastStateChangedAt: "14:10",
   summary: {
     openCritical: 1,
@@ -81,6 +80,8 @@ describe("관리자 생활지원사 상세 화면", () => {
     expect(html).toContain('aria-label="대상자 검색"');
     expect(html).toContain('aria-label="대상자 상태"');
     expect(html).not.toContain("응급 연락 우선 대응");
+    expect(html).not.toContain("근무 상태");
+    expect(html).not.toContain("근무 중");
   });
 
   it("검색 결과가 비면 빈 상태를 명확히 안내한다", () => {

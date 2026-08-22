@@ -393,7 +393,6 @@ function WorkerPanel({ dashboard }: { dashboard: AdminAlertedDashboard }) {
               <th scope="col">이름</th>
               <th scope="col">담당 대상자 수</th>
               <th scope="col">연락처</th>
-              <th scope="col">상태</th>
               <th scope="col">관리</th>
             </tr>
           </thead>
@@ -411,11 +410,6 @@ function WorkerPanel({ dashboard }: { dashboard: AdminAlertedDashboard }) {
                     <span className={styles.inlineIconText}>
                       <Image alt="" aria-hidden="true" height={14} src="/admin/phone.png" width={14} />
                       {maskPhone(worker.phone ?? assigned[0]?.workerPhone)}
-                    </span>
-                  </td>
-                  <td>
-                    <span className={subjectCount ? styles.workerActive : styles.workerIdle}>
-                      {subjectCount ? "근무 중" : "휴식 중"}
                     </span>
                   </td>
                   <td>
