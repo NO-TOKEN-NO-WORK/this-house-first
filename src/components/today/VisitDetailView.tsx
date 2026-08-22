@@ -5,6 +5,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useId, useState, type ReactNode } from "react";
 import { RiskReasonsCard } from "@/components/today/RiskReasonsCard";
+import {
+  GradeChangeNotice,
+  VisitChecklist,
+  VisitHistory,
+} from "@/components/today/SubjectInformationSections";
 import { SubjectSummary } from "@/components/today/SubjectSummary";
 import {
   AlertCircleIcon,
@@ -12,117 +17,16 @@ import {
   CheckIcon,
   SnowflakeIcon,
 } from "@/components/today/icons";
-import type {
-  SubjectDetail,
-  SubjectHistoryItem,
-} from "@/lib/board/subject";
+import type { SubjectDetail } from "@/lib/board/subject";
 import {
   CheckKind,
-  GRADE_LABEL,
   type VisitResult,
   VisitResult as VisitResultValue,
-  VISIT_CHECKLIST,
   VISIT_RESULT_LABEL,
 } from "@/lib/domain";
 
 const BACK_BUTTON =
   "flex size-11 items-center justify-center text-icon-primary";
-
-function GradeChangeNotice({ detail }: { detail: SubjectDetail }) {
-  if (!detail.gradeChange) return null;
-
-  // 상승 사실만 알린다. 원인을 임의로 단정하지 않고 바로 아래의 스코어링 reasons를 그대로 보여 준다.
-  return (
-    <section className="flex min-h-[90px] items-center gap-2.5 rounded-xl border border-status-critical bg-status-critical-subtle p-3">
-      <span className="flex size-8 shrink-0 items-center justify-center rounded-[10px] bg-surface-default">
-        <Image
-          src="/icons/visit/arrow-up.svg"
-          alt=""
-          width={20}
-          height={20}
-        />
-      </span>
-      <div className="min-w-0 text-body-14">
-        <h2 className="text-label-14 text-status-critical-strong">
-          오늘 위험 단계가 올라갔어요
-        </h2>
-        <p className="mt-1 text-text-secondary">
-          {GRADE_LABEL[detail.gradeChange.previousGrade]} →{" "}
-          {GRADE_LABEL[detail.gradeChange.currentGrade]}으로 상향됐어요
-        </p>
-      </div>
-    </section>
-  );
-}
-
-function VisitChecklist() {
-  return (
-    <section className="flex flex-col gap-4 rounded-[10px] border border-border-default bg-surface-default p-6">
-      <h2 className="text-label-15 text-text-secondary">방문 체크리스트</h2>
-      <ul className="flex list-disc flex-col gap-2.5 pl-5 text-body-16 text-text-primary">
-        {VISIT_CHECKLIST.map((item) => (
-          <li key={item}>{item}</li>
-        ))}
-      </ul>
-    </section>
-  );
-}
-
-function historyMarker(item: SubjectHistoryItem, isLast: boolean): string {
-  if (
-    item.result === VisitResultValue.AIRCON_ISSUE ||
-    item.result === VisitResultValue.EMERGENCY_119
-  ) {
-    return "/icons/visit/timeline-warning.svg";
-  }
-  return isLast
-    ? "/icons/visit/timeline-last.svg"
-    : "/icons/visit/timeline.svg";
-}
-
-function VisitHistory({ items }: { items: SubjectHistoryItem[] }) {
-  return (
-    <section className="flex flex-col gap-6 overflow-hidden rounded-[14px] border border-border-default bg-surface-default p-4">
-      <h2 className="text-label-15 text-text-secondary">방문 히스토리</h2>
-      {items.length === 0 ? (
-        <p className="text-body-15 text-text-secondary">
-          최근 확인 기록이 없습니다.
-        </p>
-      ) : (
-        <ol className="flex flex-col">
-          {items.map((item, index) => {
-            const isLast = index === items.length - 1;
-            return (
-              <li key={item.id} className="flex min-h-[46px] gap-2.5">
-                <Image
-                  src={historyMarker(item, isLast)}
-                  alt=""
-                  width={18}
-                  height={isLast ? 46 : 58}
-                  className="h-full min-h-[46px] w-[18px] shrink-0 self-stretch"
-                />
-                <div className="min-w-0 flex-1 pb-3 text-body-14 text-text-primary">
-                  <p className="flex items-center gap-2">
-                    <strong className="text-label-14">{item.dateLabel}</strong>
-                    <span className="text-caption-12 text-text-secondary">
-                      {item.kindLabel}
-                    </span>
-                  </p>
-                  <p className="mt-1.5 break-words">{item.resultLabel}</p>
-                  {item.memo && (
-                    <p className="mt-1 break-words text-text-secondary">
-                      {item.memo}
-                    </p>
-                  )}
-                </div>
-              </li>
-            );
-          })}
-        </ol>
-      )}
-    </section>
-  );
-}
 
 interface VisitOption {
   value: VisitResult;

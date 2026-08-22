@@ -6,6 +6,7 @@ import { GRADE_CHIP } from "@/components/today/gradeStyles";
 import { RecordGrid } from "@/components/today/RecordGrid";
 import { RiskReasonsCard } from "@/components/today/RiskReasonsCard";
 import { VisitDetailView } from "@/components/today/VisitDetailView";
+import { SubjectInfoView } from "@/components/today/SubjectInfoView";
 import {
   ChevronLeftIcon,
   InfoIcon,
@@ -104,13 +105,22 @@ export function SubjectDetailView({
   backHref,
   onBack,
   onRecorded,
+  informationOnly = false,
 }: {
   detail: SubjectDetail;
   backHref: string;
   /** 있으면 Next 내비게이션 없이 보드로 되돌린다 (보드에서 연 상세) */
   onBack?: () => void;
   onRecorded?: (outcome: CheckOutcome) => void;
+  /** 카드 chevron으로 들어온 경우 기록 UI 없이 Figma 125:6175의 정보만 보여 준다. */
+  informationOnly?: boolean;
 }) {
+  if (informationOnly) {
+    return (
+      <SubjectInfoView detail={detail} backHref={backHref} onBack={onBack} />
+    );
+  }
+
   if (detail.nextCheckKind === CheckKind.VISIT) {
     return (
       <VisitDetailView
