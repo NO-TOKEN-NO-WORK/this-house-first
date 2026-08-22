@@ -37,6 +37,7 @@ function subject(over: Partial<BoardSubject> = {}): BoardSubject {
     open: true,
     nextCheckKind: CheckKind.CALL,
     lastResult: null,
+    lastCheckKind: null,
     lastCheckAtLabel: null,
     roadAddress: "전북특별자치도 남원시 춘향로 1",
     lat: 0,
@@ -121,6 +122,7 @@ describe("detailFromBoard", () => {
       statusLabel: HOUSEHOLD_STATUS_LABEL[HouseholdStatus.NO_ANSWER_1],
       callAttempts: 1,
       lastResult: CallResult.NO_ANSWER,
+      lastCheckKind: null,
     });
     expect(detailFromBoard(row, board(row)).lastResult).toBe(
       CallResult.NO_ANSWER,

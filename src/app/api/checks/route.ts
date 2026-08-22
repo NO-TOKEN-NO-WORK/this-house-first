@@ -102,10 +102,8 @@ export async function POST(request: Request): Promise<Response> {
     const subjectId = requiredId(body.subjectId, "subjectId");
     // 전화·방문 결과는 문자열 값이 일부 겹치므로(OK 등) kind별로 따로 좁힌다
     const check = parseCheck(body.kind, body.result);
+    // 냉방기 상태는 전화(Figma 99:1267)·방문(113:2365) 두 화면 모두에서 함께 받는다
     const coolingStatus = optionalCoolingStatus(body.coolingStatus);
-    if (coolingStatus && check.kind !== CheckKind.CALL) {
-      throw badRequest("냉방기 상태는 전화 확인에서만 기록할 수 있습니다.");
-    }
     const memo = optionalMemo(body.memo);
     const date = optionalIsoDate(body.date) ?? todayInKst();
     const requestedWorkerId = optionalId(body.workerId, "workerId");

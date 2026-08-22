@@ -181,6 +181,19 @@ function visitTransition(input: VisitTransitionInput): TransitionOutcome {
     case VisitResult.ACTED:
       return { ...base, status: HouseholdStatus.RESOLVED, airconIssue: false };
 
+    case VisitResult.SYMPTOM:
+    case VisitResult.ABSENT:
+      /*
+       * 방문했지만 그날 대응이 끝나지 않은 두 경우다 (Figma 113:2329 `걱정돼요`·`안 계셨어요`).
+       * 방문 큐에 그대로 두어 재방문 대상으로 남긴다 — 조치 완료로 닫으면 아무도 다시
+       * 가지 않는다. 이미 큐에 있던 가구라 새 승격(promoted)이 아니다 (ADR-0020).
+       */
+      return {
+        ...base,
+        status: HouseholdStatus.VISIT_QUEUED,
+        airconIssue: false,
+      };
+
     case VisitResult.EMERGENCY_119:
       return {
         ...base,

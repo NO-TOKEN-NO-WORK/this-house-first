@@ -58,6 +58,7 @@ function subject(name: string, grade: RiskGradeValue): BoardSubject {
     nextCheckKind:
       grade === RiskGrade.CRITICAL ? CheckKind.VISIT : CheckKind.CALL,
     lastResult: null,
+    lastCheckKind: null,
     lastCheckAtLabel: null,
     roadAddress: null,
     lat: 35.8,

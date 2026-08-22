@@ -289,7 +289,7 @@ export function isCallResult(value: unknown): value is CallResult {
   );
 }
 
-/** 전화 확인 중 함께 기록하는 냉방기 설비 상태 (Figma 99:1267) */
+/** 전화·방문 확인 중 함께 기록하는 냉방기 설비 상태 (Figma 99:1267 · 113:2365) */
 export const CoolingStatus = {
   NORMAL: "NORMAL",
   NEEDS_CHECK: "NEEDS_CHECK",
@@ -315,7 +315,7 @@ export function isCoolingStatus(value: unknown): value is CoolingStatus {
 }
 
 /**
- * 전화로 확인한 냉방기 상태를 Subject의 기존 두 필드로 옮긴다.
+ * 전화·방문으로 확인한 냉방기 상태를 Subject의 기존 두 필드로 옮긴다.
  * 없음·점검 필요는 모두 익일 위험도 가중 대상이고, hasAircon으로 지원사업 대상을 구분한다.
  */
 export function coolingStatusSubjectPatch(status: CoolingStatus): {
@@ -334,11 +334,15 @@ export function coolingStatusSubjectPatch(status: CoolingStatus): {
   }
 }
 
-/** 방문 결과 기록 (PRD F4) */
+/** 방문 결과 기록 (PRD F4 + Figma 113:2329의 방문 그리드 — ADR-0020) */
 export const VisitResult = {
   OK: "OK",
   /** 조치함 (냉방 가동·수분 등) */
   ACTED: "ACTED",
+  /** 방문했는데 이상 징후가 보임 — 그날 대응이 끝나지 않는다 (ADR-0020) */
+  SYMPTOM: "SYMPTOM",
+  /** 문을 두드렸지만 안 계심 — 방문 큐에 그대로 남는다 (ADR-0020) */
+  ABSENT: "ABSENT",
   /** 119 연계 */
   EMERGENCY_119: "EMERGENCY_119",
   /** 에어컨 없음·고장 → 익일 위험도 가중(FR-8) + 지원사업 연계 플래그(FR-11) */
@@ -346,12 +350,35 @@ export const VisitResult = {
 } as const;
 export type VisitResult = (typeof VisitResult)[keyof typeof VisitResult];
 
+/**
+ * 방문 결과 버튼에 그대로 쓰는 라벨 — UI에서 문자열을 다시 쓰지 않는다.
+ *
+ * 문구는 Figma 113:2222(방문하기)를 따른다. 담당자가 문 앞에서 방금 본 것을 그대로
+ * 고르는 자리라 상태 이름(`정상`·`119 연계`)보다 겪은 일을 말하는 쪽이 빠르다
+ * (60대 사용자 기준, PRD §9). 전화 결과(`CALL_RESULT_LABEL`)를 같은 이유로 고친
+ * ADR-0014의 두 번째 적용 사례다. 저장되는 값은 그대로라 DB·API는 바뀌지 않는다.
+ *
+ * `조치함`·`에어컨 없음·고장`은 Figma 그리드에 버튼이 없다 — 상세 화면(`RecordGrid`)에만 있다.
+ */
 export const VISIT_RESULT_LABEL: Record<VisitResult, string> = {
-  OK: "정상",
+  OK: "괜찮았어요",
   ACTED: "조치함",
-  EMERGENCY_119: "119 연계",
+  SYMPTOM: "걱정돼요",
+  ABSENT: "안 계셨어요",
+  EMERGENCY_119: "119 신고",
   AIRCON_ISSUE: "에어컨 없음·고장",
 };
+
+/**
+ * 방문 화면 그리드가 내미는 결과 4개 — Figma 113:2329의 배치 순서 그대로다
+ * (왼→오른쪽, 위→아래). 나머지 값은 상세 화면(`RecordGrid`)에서만 고른다 (ADR-0020).
+ */
+export const VISIT_RECORD_RESULTS: readonly VisitResult[] = [
+  VisitResult.OK,
+  VisitResult.SYMPTOM,
+  VisitResult.ABSENT,
+  VisitResult.EMERGENCY_119,
+];
 
 /**
  * 방문 전에 담당자가 현장에서 확인할 항목 — 방문 화면이 그대로 표시한다 (Figma 25:347).

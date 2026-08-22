@@ -28,6 +28,7 @@ function subject(
     open: true,
     nextCheckKind: CheckKind.VISIT,
     lastResult: null,
+    lastCheckKind: null,
     lastCheckAtLabel: null,
     ...options,
   };
