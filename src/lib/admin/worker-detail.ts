@@ -190,6 +190,7 @@ export async function getAdminWorkerDetail(
     where: { id: workerId },
     include: {
       subjects: {
+        where: { archivedAt: null },
         include: {
           building: true,
           assessments: {

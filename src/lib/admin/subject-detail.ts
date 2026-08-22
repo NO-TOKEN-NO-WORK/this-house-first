@@ -35,7 +35,7 @@ function checkResultLabel(kind: string, result: string): string {
 export async function getAdminSubjectOptions() {
   const [workers, buildings] = await Promise.all([
     prisma.worker.findMany({
-      where: { role: WorkerRole.WORKER },
+      where: { role: WorkerRole.WORKER, archivedAt: null },
       orderBy: [{ name: "asc" }, { id: "asc" }],
     }),
     prisma.building.findMany({

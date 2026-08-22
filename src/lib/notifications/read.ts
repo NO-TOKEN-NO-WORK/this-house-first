@@ -26,7 +26,7 @@ export async function getManagerNotificationFeed(
   const now = options.now ?? new Date();
   const date = options.date ?? todayInKst(now);
   const manager = await prisma.worker.findFirst({
-    where: { role: WorkerRole.MANAGER },
+    where: { role: WorkerRole.MANAGER, archivedAt: null },
     orderBy: { id: "asc" },
     select: { id: true },
   });

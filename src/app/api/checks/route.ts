@@ -124,7 +124,16 @@ export async function POST(request: Request): Promise<Response> {
       };
       const statusRow = await tx.householdDayStatus.findUnique({
         where: key,
-        include: { subject: { select: { name: true, workerId: true } } },
+        include: {
+          subject: {
+            select: {
+              name: true,
+              workerId: true,
+              archivedAt: true,
+              worker: { select: { archivedAt: true } },
+            },
+          },
+        },
       });
       if (!statusRow) {
         throw notFound(
@@ -133,11 +142,25 @@ export async function POST(request: Request): Promise<Response> {
         );
       }
 
+      if (statusRow.subject.archivedAt || statusRow.subject.worker.archivedAt) {
+        throw conflict(
+          "보관된 대상자 또는 담당자는 확인을 기록할 수 없습니다.",
+          "ARCHIVED_ROSTER",
+        );
+      }
+
       const worker = await tx.worker.findUnique({
         where: { id: requestedWorkerId ?? statusRow.subject.workerId },
+        select: { id: true, archivedAt: true },
       });
       if (!worker) {
         throw notFound("기록할 담당자를 찾지 못했습니다.", "WORKER_NOT_FOUND");
+      }
+      if (worker.archivedAt) {
+        throw conflict(
+          "보관된 대상자 또는 담당자는 확인을 기록할 수 없습니다.",
+          "ARCHIVED_ROSTER",
+        );
       }
 
       const current = parseHouseholdStatus(statusRow.status);
@@ -212,7 +235,7 @@ export async function POST(request: Request): Promise<Response> {
 
       if (next.promoted && check.kind === CheckKind.CALL) {
         const managers = await tx.worker.findMany({
-          where: { role: WorkerRole.MANAGER },
+          where: { role: WorkerRole.MANAGER, archivedAt: null },
           select: { id: true },
         });
         const cause = promotedCallCause(check.result);

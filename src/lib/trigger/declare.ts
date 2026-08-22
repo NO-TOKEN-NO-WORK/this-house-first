@@ -181,6 +181,7 @@ async function declareAlertDay(
   const year = yearOfCompactDate(date.replaceAll("-", ""));
 
   const subjects = await client.subject.findMany({
+    where: { archivedAt: null, worker: { archivedAt: null } },
     include: { building: true },
     orderBy: { id: "asc" },
   });
@@ -209,7 +210,7 @@ async function declareAlertDay(
     const notificationDrafts: NotificationDraft[] = [];
     const assessedRecipients: Array<{ workerId: string; grade: RiskGrade }> = [];
     const managers = await tx.worker.findMany({
-      where: { role: WorkerRole.MANAGER },
+      where: { role: WorkerRole.MANAGER, archivedAt: null },
       select: { id: true },
     });
     let visitQueued = 0;
