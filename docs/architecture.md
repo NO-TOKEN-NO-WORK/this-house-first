@@ -164,7 +164,7 @@ stateDiagram-v2
 | 한국사회보장정보원 중앙부처 복지서비스 | FR-11 복지 스캔 사업 검색 | 공공데이터포털 서비스 키 (서버 전용) | `PUBLIC_DATA_SERVICE_KEY` |
 | 카카오맵 JS SDK | F5 지도 | JS 앱 키 (클라이언트) | `NEXT_PUBLIC_KAKAO_MAP_KEY` |
 | 카카오 REST (로컬 주소검색·자동차 경로) | 지오코딩 + 법정동코드(`b_code` → 건축HUB 조회 키), FR-7 차량 최단 경로 | REST 키 (서버 전용) | `KAKAO_REST_KEY` |
-| OpenAI Responses API (`gpt-5.6-luna`, high) | FR-11 설비 사실·비식별 현장 용어의 문제 신호 분류 | API 키 (서버 전용) | `OPENAI_API_KEY` |
+| Vercel AI Gateway Responses API (`openai/gpt-5.6-luna`, high) | FR-11 설비 사실·비식별 현장 용어의 문제 신호 분류 | Vercel OIDC / 로컬 Gateway 키 (서버 전용) | `VERCEL_OIDC_TOKEN`(자동), `AI_GATEWAY_API_KEY`(로컬) |
 
 - 서버 전용 키는 절대 `NEXT_PUBLIC_` 접두사를 붙이지 않는다. 외부 호출은 Route Handler를 거쳐 프록시
 - 키 목록은 [.env.example](../.env.example) 참조. 실제 키는 커밋 금지

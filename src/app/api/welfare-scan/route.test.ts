@@ -135,6 +135,23 @@ describe("POST /api/welfare-scan", () => {
     });
   });
 
+  it("Gateway 인증이 없으면 Vercel 인증 설정을 안내한다", async () => {
+    mocks.extractWelfareSignals.mockRejectedValue(
+      Object.assign(new Error("Vercel AI Gateway 인증이 설정되지 않았습니다."), {
+        code: "MISSING_AI_GATEWAY_AUTH",
+      }),
+    );
+
+    const response = await POST();
+    const payload = await response.json();
+
+    expect(payload.data.connections.ai).toEqual({
+      ok: false,
+      message: "AI Gateway 인증 미설정",
+      reason: "Vercel OIDC 또는 AI_GATEWAY_API_KEY 인증이 필요합니다.",
+    });
+  });
+
   it("외부 서비스 응답 오류의 상세 원인을 함께 반환한다", async () => {
     mocks.refreshWelfarePrograms.mockRejectedValue(
       Object.assign(new Error("복지서비스 API가 HTTP 503으로 응답했습니다."), {

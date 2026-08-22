@@ -4,7 +4,7 @@ import {
   type WelfareSubjectProfile,
 } from "./eligibility";
 
-const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses";
+const AI_GATEWAY_RESPONSES_URL = "https://ai-gateway.vercel.sh/v1/responses";
 const ALLOWED_ISSUES = new Set<string>(Object.values(WelfareIssue));
 const SAFE_MEMO_TERMS: Record<WelfareIssue, readonly string[]> = {
   [WelfareIssue.COOLING_ISSUE]: ["에어컨", "냉방기", "선풍기", "냉방", "더위", "미지근", "시원하지"],
@@ -133,11 +133,14 @@ export async function extractWelfareSignals(
   profiles: WelfareSubjectProfile[],
   options: { apiKey?: string; fetcher?: typeof fetch } = {},
 ): Promise<WelfareSignal[]> {
-  const apiKey = options.apiKey ?? process.env.OPENAI_API_KEY ?? "";
+  const apiKey = options.apiKey ??
+    process.env.AI_GATEWAY_API_KEY ??
+    process.env.VERCEL_OIDC_TOKEN ??
+    "";
   if (!apiKey.trim()) {
     throw new OpenAIWelfareError(
-      "OPENAI_API_KEY 환경변수가 설정되지 않았습니다.",
-      "MISSING_OPENAI_API_KEY",
+      "Vercel AI Gateway 인증이 설정되지 않았습니다.",
+      "MISSING_AI_GATEWAY_AUTH",
       503,
     );
   }
@@ -150,24 +153,26 @@ export async function extractWelfareSignals(
   );
   let response: Response;
   try {
-    response = await fetcher(OPENAI_RESPONSES_URL, {
+    response = await fetcher(AI_GATEWAY_RESPONSES_URL, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey.trim()}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gpt-5.6-luna",
+        model: "openai/gpt-5.6-luna",
         reasoning: { effort: "high" },
         store: false,
         max_output_tokens: 4_000,
         input: [
           {
+            type: "message",
             role: "system",
             content:
               "당신은 제공된 구조화 사실과 개인정보를 제거한 현장 기록 용어에서 지원이 필요한 생활 문제만 분류합니다. 수급 자격이나 선정 여부는 판단하지 말고, 제공되지 않은 문제는 만들지 마세요.",
           },
           {
+            type: "message",
             role: "user",
             content: JSON.stringify(
               profiles.map((profile, index) => ({

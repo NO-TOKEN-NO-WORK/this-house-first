@@ -15,9 +15,13 @@ describe("Luna 복지 메모 분석", () => {
     },
   ];
 
-  it("gpt-5.6-luna high에 임시 ID와 구조화 설비 사실만 보낸다", async () => {
+  it("Vercel AI Gateway의 Luna high에 임시 ID와 구조화 설비 사실만 보낸다", async () => {
+    let requestedUrl = "";
+    let authorization = "";
     let sentBody: Record<string, unknown> | undefined;
-    const fetcher: typeof fetch = async (_input, init) => {
+    const fetcher: typeof fetch = async (input, init) => {
+      requestedUrl = String(input);
+      authorization = new Headers(init?.headers).get("Authorization") ?? "";
       sentBody = JSON.parse(String(init?.body)) as Record<string, unknown>;
       return new Response(
         JSON.stringify({
@@ -52,14 +56,20 @@ describe("Luna 복지 메모 분석", () => {
     };
 
     const result = await extractWelfareSignals(profiles, {
-      apiKey: "test-key",
+      apiKey: "gateway-test-key",
       fetcher,
     });
 
+    expect(requestedUrl).toBe("https://ai-gateway.vercel.sh/v1/responses");
+    expect(authorization).toBe("Bearer gateway-test-key");
     expect(sentBody).toMatchObject({
-      model: "gpt-5.6-luna",
+      model: "openai/gpt-5.6-luna",
       reasoning: { effort: "high" },
       store: false,
+      input: [
+        { type: "message", role: "system" },
+        { type: "message", role: "user" },
+      ],
       text: { format: { type: "json_schema", strict: true } },
     });
     expect(JSON.stringify(sentBody)).not.toContain("이미경");
@@ -93,6 +103,43 @@ describe("Luna 복지 메모 분석", () => {
     ]);
   });
 
+  it("Vercel 배포에서는 자동 OIDC 토큰으로 Gateway를 인증한다", async () => {
+    const originalGatewayKey = process.env.AI_GATEWAY_API_KEY;
+    const originalOidcToken = process.env.VERCEL_OIDC_TOKEN;
+    const originalOpenAiKey = process.env.OPENAI_API_KEY;
+    delete process.env.AI_GATEWAY_API_KEY;
+    delete process.env.OPENAI_API_KEY;
+    process.env.VERCEL_OIDC_TOKEN = "vercel-oidc-token";
+    let authorization = "";
+
+    try {
+      const fetcher: typeof fetch = async (_input, init) => {
+        authorization = new Headers(init?.headers).get("Authorization") ?? "";
+        return new Response(JSON.stringify({
+          status: "completed",
+          output: [{
+            type: "message",
+            content: [{
+              type: "output_text",
+              text: JSON.stringify({ signals: [{ subjectId: "scan-1", issues: [] }] }),
+            }],
+          }],
+        }));
+      };
+
+      await extractWelfareSignals(profiles, { fetcher });
+
+      expect(authorization).toBe("Bearer vercel-oidc-token");
+    } finally {
+      if (originalGatewayKey === undefined) delete process.env.AI_GATEWAY_API_KEY;
+      else process.env.AI_GATEWAY_API_KEY = originalGatewayKey;
+      if (originalOidcToken === undefined) delete process.env.VERCEL_OIDC_TOKEN;
+      else process.env.VERCEL_OIDC_TOKEN = originalOidcToken;
+      if (originalOpenAiKey === undefined) delete process.env.OPENAI_API_KEY;
+      else process.env.OPENAI_API_KEY = originalOpenAiKey;
+    }
+  });
+
   it("모델이 빠뜨려도 구조화 설비 문제는 유지한다", async () => {
     const fetcher: typeof fetch = async () => new Response(
       JSON.stringify({
@@ -115,11 +162,11 @@ describe("Luna 복지 메모 분석", () => {
     });
   });
 
-  it("서버 API 키가 없으면 연결 실패 상태로 분류할 수 있는 오류를 낸다", async () => {
+  it("Gateway 인증이 없으면 연결 실패 상태로 분류할 수 있는 오류를 낸다", async () => {
     await expect(
       extractWelfareSignals(profiles, { apiKey: "" }),
     ).rejects.toMatchObject({
-      code: "MISSING_OPENAI_API_KEY",
+      code: "MISSING_AI_GATEWAY_AUTH",
       status: 503,
     });
   });
