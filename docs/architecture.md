@@ -40,10 +40,9 @@ flowchart LR
 ```
 src/
 ├── app/
-│   ├── layout.tsx            # 루트 레이아웃 (ko, PWA 등록)
+│   ├── layout.tsx            # 루트 레이아웃 (ko)
 │   ├── page.tsx              # 홈 (진입점 안내)
-│   ├── manifest.ts           # PWA Web App Manifest (ADR-0006)
-│   ├── today/                # 담당자: 오늘의 대응 보드 + [subjectId] 상세·기록 (F3, F4)
+│   ├── today/                # 담당자: 오늘의 대응 보드 + PWA 등록 + [subjectId] 상세·기록 (F3, F4)
 │   ├── admin/                # [예정] 관리자: 관제 대시보드 (F5)
 │   └── api/                  # Route Handlers (공공데이터 프록시 포함)
 ├── components/
@@ -74,7 +73,8 @@ prisma/
 └── seed/                     # config(지역·슬롯) · select(순수 선별) · synthetic(합성 인물)
 prisma.config.ts              # Prisma 7 CLI 설정 (.env 로딩, DIRECT_URL)
 public/
-└── sw.js                     # 수제 Service Worker (ADR-0006)
+├── today.webmanifest          # /today 전용 Web App Manifest (ADR-0006)
+└── sw.js                     # /today scope 수제 Service Worker (ADR-0006)
 ```
 
 ## 3. 데이터 모델

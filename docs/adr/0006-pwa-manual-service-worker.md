@@ -10,13 +10,14 @@
 
 ## 결정 (Decision)
 
-- **Web App Manifest**: Next.js Metadata Route(`src/app/manifest.ts`)로 제공 — 설치 가능성(installability) 확보
-- **Service Worker**: `public/sw.js`에 직접 작성한 최소 워커 (페이지는 network-first + 캐시 폴백, 정적 자원은 cache-first). 등록은 `ServiceWorkerRegistrar` 클라이언트 컴포넌트에서 production에서만 수행
+- **Web App Manifest**: `public/today.webmanifest`로 제공하고 `/today` 레이아웃에서만 연결한다. `id`·`start_url`·`scope`는 모두 `/today`로 둔다
+- **Service Worker**: `public/sw.js`에 직접 작성한 최소 워커 (페이지는 network-first + 캐시 폴백, 정적 자원은 cache-first). `/today` 레이아웃의 `ServiceWorkerRegistrar`가 production에서 `scope: "/today"`로만 등록하며, 기존 전역 scope 등록은 제거한다
 - 오프라인 기록 큐잉(PRD §9)은 구현하지 않고 데모 멘트로만 다룬다
 
 ## 근거 (Rationale)
 
 - 빌드 체인과 완전 분리 — Turbopack/Next 버전과 무관하게 항상 동작
+- 담당자용 `/today`만 설치 대상이 되어 관리자·안내 화면이 동일 PWA에 섞이지 않음
 - 설치 가능 + 기본 오프라인 폴백이면 v0 PWA 요구를 100% 충족
 - 수십 줄짜리 워커는 디버깅 가능, 라이브러리 블랙박스는 해커톤에서 시한폭탄
 
