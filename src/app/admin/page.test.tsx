@@ -314,4 +314,30 @@ describe("관리자 관제 화면", () => {
     expect(html).toContain("국토부 건축HUB 건축물대장");
     expect(html).toContain("카카오맵 API");
   });
+
+  it("상태 적용은 화면에서 선택한 담당자를 같은 폼으로 제출한다", () => {
+    const html = renderToStaticMarkup(
+      <AdminDashboardView
+        dashboard={{
+          alerted: false,
+          date: "2026-08-22",
+          dateLabel: "8월 22일(토)",
+          selectedWorkerId: null,
+          workers: [{ id: "worker-1", name: "이담당" }],
+          generatedAt: "2026-08-22T08:00:00.000Z",
+          subjects: [],
+          buildings: [],
+        }}
+        mapKey=""
+      />,
+    );
+    const filterFormId = html.indexOf('id="admin-filter-form"');
+    const filterFormStart = html.lastIndexOf("<form", filterFormId);
+    const filterForm = html.slice(filterFormStart, html.indexOf("</form>", filterFormStart));
+
+    expect(filterFormId).toBeGreaterThan(-1);
+    expect(filterForm).toContain('name="workerId"');
+    expect(html).toMatch(/form="admin-filter-form"[^>]*name="status"/);
+    expect(html).toContain('form="admin-filter-form" type="submit">상태 적용');
+  });
 });
