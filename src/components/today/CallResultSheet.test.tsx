@@ -25,10 +25,12 @@ const RESULT = 0;
 const COOLING = 1;
 const PENDING = 3;
 const ERROR = 4;
+const RECORDING = 5;
 
 import { CallResultSheet } from "./CallResultSheet";
 import {
   CallResult,
+  CALL_RECORDING_LABELS,
   CALL_RESULT_LABEL,
   CoolingStatus,
   COOLING_STATUS_LABEL,
@@ -136,6 +138,40 @@ describe("CallResultSheet", () => {
     expect(html).toMatch(/<button[^>]*disabled[^>]*>\s*저장 중/);
     // 결과 칸도 잠근다 — 저장 도중에 값이 바뀌면 안 된다
     expect(html).toMatch(/aria-pressed="[^"]*"[^>]*disabled/);
+  });
+
+  /*
+   * 음성 파일 첨부는 화면만 있고 저장은 없다 (Figma 163:3468 · 164:9043).
+   * 아래 두 검사는 그 사실을 고정한다 — 저장 계약(`onSave`)에 파일이 끼어들면 여기서 깨진다.
+   */
+  it("첨부 전에는 무엇을 붙이는 자리인지 안내만 보여 준다", () => {
+    const html = render(base);
+    const text = html.replace(/<[^>]+>/g, "");
+
+    expect(text).toContain(CALL_RECORDING_LABELS.SECTION);
+    expect(text).toContain(CALL_RECORDING_LABELS.EMPTY);
+    expect(text).toContain(CALL_RECORDING_LABELS.NOT_SAVED);
+    expect(html).toContain('accept="audio/*"');
+    expect(text).not.toContain(CALL_RECORDING_LABELS.REMOVE);
+  });
+
+  it("파일을 고르면 이름과 지우기 버튼으로 바뀐다", () => {
+    hooks.values[RECORDING] = "2026-08-23.m4a";
+    const html = render(base);
+
+    expect(html).toContain("2026-08-23.m4a");
+    expect(html).toContain(`aria-label="${CALL_RECORDING_LABELS.REMOVE}"`);
+    // 지우기 버튼의 누르는 자리는 44px다 (ADR-0014 접근성)
+    expect(html).toContain("size-11");
+  });
+
+  it("첨부는 저장 조건에 끼어들지 않는다 — 결과와 냉방기 상태만 본다", () => {
+    hooks.values[RECORDING] = "2026-08-23.m4a";
+    expect(render(base)).toMatch(/<button[^>]*disabled[^>]*>\s*저장하기/);
+
+    hooks.values[RESULT] = CallResult.OK;
+    hooks.values[COOLING] = CoolingStatus.NORMAL;
+    expect(render(base)).not.toMatch(/<button[^>]*disabled[^>]*>\s*저장하기/);
   });
 
   it("저장이 실패하면 이유를 그대로 보여 주고 시트를 닫지 않는다", () => {

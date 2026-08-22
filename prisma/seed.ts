@@ -5,17 +5,16 @@ import { prisma } from "../src/lib/db";
 import {
   AlertLevel,
   ALERT_LEVEL_LABEL,
-  CallResult,
-  CheckKind,
   GRADE_LABEL,
   RiskGrade,
-  VisitResult,
   WorkerRole,
 } from "../src/lib/domain";
 import { geocodeAddress, resolveRegionCodes } from "../src/lib/kakao/local";
 import { simulateWeightedExposure } from "../src/lib/scoring/exposure";
 import { assessRisk } from "../src/lib/scoring/score";
+import { todayInKst } from "../src/lib/board/today";
 import { BUILDING_SLOTS, REGION, SELECTION_SEED } from "./seed/config";
+import { CHECK_HISTORY, HISTORY_ALERT_DAYS } from "./seed/history";
 import { hasEnoughCandidates, isSeedCandidate, rankCandidatesForSlots } from "./seed/select";
 import { SUBJECTS, TOP_FLOOR_SLOTS, WORKERS } from "./seed/synthetic";
 
@@ -204,69 +203,8 @@ async function main(): Promise<void> {
     seededSubjects.push(subject);
   }
 
-  /*
-   * FR-12 데모 입력 — 사람·메모는 전부 합성이다.
-   * 건물대장 실주소와 분리해 생활 맥락만 만들며, 이름·전화·주소·기관 고유명은 메모에 넣지 않는다.
-   */
-  const historyDays = await Promise.all([
-    prisma.alertDay.create({
-      data: { date: "2026-08-17", level: AlertLevel.ADVISORY, feelsLikeMax: 33 },
-    }),
-    prisma.alertDay.create({
-      data: { date: "2026-08-19", level: AlertLevel.WARNING, feelsLikeMax: 35 },
-    }),
-    prisma.alertDay.create({
-      data: { date: "2026-08-20", level: AlertLevel.EMERGENCY, feelsLikeMax: 38 },
-    }),
-  ]);
-  const contextMemos = [
-    "평소 아침 일찍 산책하고 오후에는 집에서 쉬는 편이라고 했다.",
-    "경로당에서 이웃들과 꽃과 텃밭 이야기를 나누는 시간이 중요하다고 했다.",
-    "가까운 거리는 걸어서 다니지만 먼 병원은 버스로 이동한다고 했다.",
-    "최근 무릎이 불편해 외출이 줄었고 다음 진료 때 이동 방법이 걱정된다고 했다.",
-    "복지 프로그램에 관심은 있지만 전화 신청 절차가 복잡하게 느껴진다고 했다.",
-  ] as const;
-  const ongoingMemos = [
-    "지난 통화에서 말한 냉방기 리모컨 문제가 해결됐는지 다음 방문에 확인하기로 했다.",
-    "요즘 식사 시간이 불규칙해져 점심을 챙겨 드시는지 다시 묻기로 했다.",
-    "가족과 주말에 통화하기로 했는데 연락이 이어졌는지 확인이 필요하다.",
-    "최근 외출이 줄어 이웃과 만나는 시간도 줄었는지 살펴보기로 했다.",
-    "다음 주 진료에 갈 교통편을 아직 정하지 못해 함께 확인하기로 했다.",
-  ] as const;
-
-  await prisma.checkEvent.createMany({
-    data: seededSubjects.flatMap((subject, index) => [
-      {
-        alertDayId: historyDays[0]!.id,
-        subjectId: subject.id,
-        workerId: careWorker.id,
-        kind: CheckKind.CALL,
-        result: CallResult.OK,
-        memo: contextMemos[index % contextMemos.length],
-        createdAt: new Date("2026-08-17T01:00:00.000Z"),
-      },
-      {
-        alertDayId: historyDays[1]!.id,
-        subjectId: subject.id,
-        workerId: careWorker.id,
-        kind: CheckKind.CALL,
-        result: CallResult.OK,
-        memo: ongoingMemos[index % ongoingMemos.length],
-        createdAt: new Date("2026-08-19T01:00:00.000Z"),
-      },
-      {
-        alertDayId: historyDays[2]!.id,
-        subjectId: subject.id,
-        workerId: careWorker.id,
-        kind: CheckKind.VISIT,
-        result: index % 4 === 0 ? VisitResult.AIRCON_ISSUE : VisitResult.OK,
-        memo: index % 4 === 0
-          ? "냉방기가 제대로 작동하지 않아 점검이 필요했고 다음 방문에 상태를 다시 보기로 했다."
-          : "집 안 온도와 냉방기 작동을 확인했고 물을 자주 마시고 있었다.",
-        createdAt: new Date("2026-08-20T01:00:00.000Z"),
-      },
-    ]),
-  });
+  // 4-b. 과거 경보일 + 합성 확인 기록 — 맥락 브리핑(FR-12)의 유일한 입력 (ADR-0024)
+  const checkCount = await seedCheckHistory(seededSubjects, careWorker.id);
 
   // 5. 점수 분포 — 컷오프 캘리브레이션용 (순수 함수라 DB 재조회 없이 계산)
   console.log("\n▶ 위험점수 분포 (컷오프 캘리브레이션용, weights.ts GRADE_CUTOFF 참고)");
@@ -293,7 +231,79 @@ async function main(): Promise<void> {
     }
   }
 
-  console.log(`\n✔ 시드 완료: 담당자 ${workers.length}명 · 건물 ${chosen.length}동(실 건축물대장) · 대상자 ${SUBJECTS.length}명(합성) · 합성 확인 기록 ${seededSubjects.length * 3}건`);
+  console.log(
+    `\n✔ 시드 완료: 담당자 ${workers.length}명 · 건물 ${chosen.length}동(실 건축물대장) · 대상자 ${SUBJECTS.length}명(합성) · 확인 기록 ${checkCount}건(합성 이력)`,
+  );
+}
+
+/**
+ * 과거 경보일과 그날의 확인 기록을 만든다 (`seed/history.ts`).
+ *
+ * 오늘 날짜에는 아무것도 만들지 않는다 — 오늘의 발령은 트리거(FR-1)나 관리자 데모 토글의 몫이고,
+ * 시드가 오늘을 경보일로 만들면 "평상시엔 조용하다"는 데모 첫 장면이 깨진다 (PRD §10).
+ *
+ * `RiskAssessment`·`HouseholdDayStatus`도 만들지 않는다. 브리핑에 필요한 것은 기록 원장뿐이고,
+ * 과거 평가를 넣으면 상세 화면의 "오늘 위험 단계가 올라갔어요" 안내가 시드 때문에 뜬다.
+ */
+async function seedCheckHistory(
+  subjects: Array<{ id: string; name: string }>,
+  workerId: string,
+): Promise<number> {
+  console.log("▶ 합성 확인 기록 이력 (맥락 브리핑 입력, FR-12)");
+  const today = todayInKst();
+  const subjectIds = new Map(subjects.map((s) => [s.name, s.id] as const));
+  const alertDayIds = new Map<number, string>();
+
+  for (const day of HISTORY_ALERT_DAYS) {
+    const row = await prisma.alertDay.create({
+      data: {
+        date: shiftIsoDate(today, -day.daysAgo),
+        level: day.level,
+        feelsLikeMax: day.feelsLikeMax,
+      },
+    });
+    alertDayIds.set(day.daysAgo, row.id);
+  }
+
+  let created = 0;
+  for (const [name, checks] of Object.entries(CHECK_HISTORY)) {
+    const subjectId = subjectIds.get(name);
+    if (!subjectId) throw new Error(`확인 기록의 대상자를 찾지 못했습니다: ${name}`);
+    for (const check of checks) {
+      const alertDayId = alertDayIds.get(check.daysAgo);
+      if (!alertDayId) {
+        throw new Error(`확인 기록의 경보일이 없습니다: ${check.daysAgo}일 전`);
+      }
+      await prisma.checkEvent.create({
+        data: {
+          alertDayId,
+          subjectId,
+          workerId,
+          kind: check.kind,
+          result: check.result,
+          memo: check.memo,
+          // 같은 날 여러 건은 시각을 벌려 둔다 — 최신 기록 판정(캐시 키)이 흔들리지 않게 한다
+          createdAt: checkEventTime(today, check.daysAgo, check.order ?? 0),
+        },
+      });
+      created += 1;
+    }
+  }
+
+  console.log(`  경보일 ${HISTORY_ALERT_DAYS.length}일 · 확인 기록 ${created}건`);
+  return created;
+}
+
+/** "YYYY-MM-DD"에 일 단위로 더한다 (KST 날짜 문자열 그대로 다룬다) */
+function shiftIsoDate(isoDate: string, days: number): string {
+  const [y, m, d] = isoDate.split("-").map(Number);
+  return new Date(Date.UTC(y!, m! - 1, d! + days)).toISOString().slice(0, 10);
+}
+
+/** 그날 오전 9시(KST) 기준으로 순서만큼 30분씩 민다 — KST 09:00은 UTC 00:00이다 */
+function checkEventTime(today: string, daysAgo: number, order: number): Date {
+  const base = Date.parse(`${shiftIsoDate(today, -daysAgo)}T00:00:00.000Z`);
+  return new Date(base + order * 30 * 60_000);
 }
 
 main()

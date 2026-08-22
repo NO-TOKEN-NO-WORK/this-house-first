@@ -95,6 +95,13 @@ export const XIcon = (props: IconProps) => (
   </Icon>
 );
 
+/** 첨부 — 통화 결과 시트의 `전화 음성 파일` (Figma 164:9028 tabler-icon-paperclip) */
+export const PaperclipIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M21.4 11.1 12.3 20a5.5 5.5 0 0 1-7.8-7.8l9.2-9.1a3.7 3.7 0 0 1 5.2 5.2l-9.2 9.1a1.8 1.8 0 0 1-2.6-2.6l8.5-8.4" />
+  </Icon>
+);
+
 export const ChevronLeftIcon = (props: IconProps) => (
   <Icon {...props}>
     <path d="M15 5 8 12l7 7" />
