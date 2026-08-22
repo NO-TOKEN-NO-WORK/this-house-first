@@ -186,8 +186,8 @@ function readKmaItems<T>(payload: KmaEnvelope<T>): T[] {
   return Array.isArray(items.item) ? items.item : [items.item];
 }
 
-function finiteNumber(value: string): number | null {
-  if (!value.trim()) return null;
+function finiteNumber(value: unknown): number | null {
+  if (typeof value !== "string" || !value.trim()) return null;
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
 }

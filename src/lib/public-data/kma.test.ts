@@ -132,7 +132,10 @@ describe("getCurrentWeather", () => {
     });
   });
 
-  it("빈 관측값을 숫자 0으로 해석하지 않는다", async () => {
+  it.each([
+    ["빈 문자열", " "],
+    ["null", null],
+  ])("%s 관측값을 숫자 0으로 해석하지 않는다", async (_label, obsrValue) => {
     const fetcher: PublicDataFetch = async () =>
       new Response(
         JSON.stringify({
@@ -145,7 +148,7 @@ describe("getCurrentWeather", () => {
                     baseDate: "20260822",
                     baseTime: "1400",
                     category: "T1H",
-                    obsrValue: " ",
+                    obsrValue,
                     nx: 60,
                     ny: 127,
                   },
