@@ -1,7 +1,137 @@
 import { describe, expect, it } from "vitest";
 import { AlertLevel } from "../domain";
-import type { PublicDataFetch } from "./client";
-import { getHeatForecast, resolveForecastBase } from "./kma";
+import type { NextRequestInit, PublicDataFetch } from "./client";
+import {
+  getCurrentWeather,
+  getHeatForecast,
+  resolveForecastBase,
+  resolveObservationBase,
+} from "./kma";
+
+describe("resolveObservationBase", () => {
+  it.each([
+    [
+      "14:09에는 이전 정시를 쓴다",
+      new Date("2026-08-22T05:09:00.000Z"),
+      { baseDate: "20260822", baseTime: "1300" },
+    ],
+    [
+      "14:10에는 현재 정시를 쓴다",
+      new Date("2026-08-22T05:10:00.000Z"),
+      { baseDate: "20260822", baseTime: "1400" },
+    ],
+    [
+      "00:05에는 전날 23시를 쓴다",
+      new Date("2026-08-21T15:05:00.000Z"),
+      { baseDate: "20260821", baseTime: "2300" },
+    ],
+  ])("%s", (_label, now, expected) => {
+    expect(resolveObservationBase(now)).toEqual(expected);
+  });
+});
+
+describe("getCurrentWeather", () => {
+  it("T1H·REH 초단기실황을 현재 날씨로 변환하고 600초 캐시를 사용한다", async () => {
+    let requestedUrl: URL | undefined;
+    let requestedInit: NextRequestInit | undefined;
+    const fetcher: PublicDataFetch = async (url, init) => {
+      requestedUrl = url;
+      requestedInit = init;
+      return new Response(
+        JSON.stringify({
+          response: {
+            header: { resultCode: "00", resultMsg: "NORMAL_SERVICE" },
+            body: {
+              items: {
+                item: [
+                  {
+                    baseDate: "20260822",
+                    baseTime: "1400",
+                    category: "T1H",
+                    obsrValue: "31.2",
+                    nx: 60,
+                    ny: 127,
+                  },
+                  {
+                    baseDate: "20260822",
+                    baseTime: "1400",
+                    category: "REH",
+                    obsrValue: "68",
+                    nx: 60,
+                    ny: 127,
+                  },
+                ],
+              },
+            },
+          },
+        }),
+      );
+    };
+
+    const result = await getCurrentWeather(
+      { nx: 60, ny: 127 },
+      {
+        serviceKey: "decoded/key+value=",
+        fetcher,
+        now: new Date("2026-08-22T05:12:00.000Z"),
+      },
+    );
+
+    expect(requestedUrl?.searchParams.get("ServiceKey")).toBe(
+      "decoded/key+value=",
+    );
+    expect(requestedUrl?.searchParams.get("base_date")).toBe("20260822");
+    expect(requestedUrl?.searchParams.get("base_time")).toBe("1400");
+    expect(requestedInit).toMatchObject({ next: { revalidate: 600 } });
+    expect(requestedInit).not.toHaveProperty("cache");
+    expect(result).toEqual({
+      source: "기상청 초단기실황 조회서비스",
+      grid: { nx: 60, ny: 127 },
+      observedAt: "2026-08-22T14:00:00+09:00",
+      fetchedAt: "2026-08-22T05:12:00.000Z",
+      temperature: 31.2,
+      humidity: 68,
+      feelsLikeTemperature: 32.3,
+    });
+  });
+
+  it("T1H 또는 REH가 없으면 상위 응답 오류를 반환한다", async () => {
+    const fetcher: PublicDataFetch = async () =>
+      new Response(
+        JSON.stringify({
+          response: {
+            header: { resultCode: "00", resultMsg: "NORMAL_SERVICE" },
+            body: {
+              items: {
+                item: {
+                  baseDate: "20260822",
+                  baseTime: "1400",
+                  category: "T1H",
+                  obsrValue: "31.2",
+                  nx: 60,
+                  ny: 127,
+                },
+              },
+            },
+          },
+        }),
+      );
+
+    await expect(
+      getCurrentWeather(
+        { nx: 60, ny: 127 },
+        {
+          serviceKey: "decoded/key+value=",
+          fetcher,
+          now: new Date("2026-08-22T05:12:00.000Z"),
+        },
+      ),
+    ).rejects.toMatchObject({
+      code: "INVALID_UPSTREAM_RESPONSE",
+      status: 502,
+    });
+  });
+});
 
 describe("resolveForecastBase", () => {
   it("17시 정각에는 아직 게시되지 않은 17시 발표 대신 14시 발표를 쓴다", () => {

@@ -5,9 +5,13 @@
  * 클라이언트 컴포넌트로 가져오지 않는다 (AGENTS.md: 외부 API는 서버 프록시).
  */
 
+export type NextRequestInit = RequestInit & {
+  next?: { revalidate: number };
+};
+
 export type PublicDataFetch = (
   input: URL,
-  init?: RequestInit,
+  init?: NextRequestInit,
 ) => Promise<Response>;
 
 export class PublicDataError extends Error {
@@ -60,14 +64,19 @@ function extractXmlError(text: string): string | null {
 export async function fetchPublicDataJson<T>(
   url: URL,
   fetcher: PublicDataFetch = fetch,
+  options: { revalidateSeconds?: number } = {},
 ): Promise<T> {
+  const init: NextRequestInit = {
+    headers: { Accept: "application/json" },
+    signal: AbortSignal.timeout(8_000),
+    ...(options.revalidateSeconds == null
+      ? { cache: "no-store" }
+      : { next: { revalidate: options.revalidateSeconds } }),
+  };
+
   let response: Response;
   try {
-    response = await fetcher(url, {
-      cache: "no-store",
-      headers: { Accept: "application/json" },
-      signal: AbortSignal.timeout(8_000),
-    });
+    response = await fetcher(url, init);
   } catch (error) {
     throw new PublicDataError(
       error instanceof Error && error.name === "TimeoutError"
