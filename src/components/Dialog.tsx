@@ -115,7 +115,7 @@ export function Dialog({
   return createPortal(
     // 스크림을 누르면 닫는다. 카드 안에서 시작한 드래그가 밖에서 끝나도 닫히지 않게 target을 본다
     <div
-      className={`fixed inset-0 z-50 flex justify-center bg-overlay-scrim ${
+      className={`fixed inset-0 z-50 flex justify-center bg-overlay-scrim motion-safe:animate-scrim-in ${
         bottom ? "items-end" : "items-center px-6"
       }`}
       onMouseDown={(event) => {
@@ -128,10 +128,14 @@ export function Dialog({
         aria-modal="true"
         aria-labelledby={labelledBy ?? (label ? titleId : undefined)}
         tabIndex={-1}
+        /*
+          등장만 애니메이션한다. `motion-safe:`라 "동작 줄이기"를 켠 기기에서는 바로 나타난다 —
+          그 설정을 켠 사람에게 움직임은 도움이 아니라 방해다.
+        */
         className={`relative w-full overflow-y-auto bg-surface-default outline-none ${
           bottom
-            ? "max-h-[85dvh] max-w-[520px] rounded-t-[20px]"
-            : "max-h-[calc(100dvh-48px)] max-w-[366px] rounded-[20px]"
+            ? "max-h-[85dvh] max-w-[520px] rounded-t-[20px] motion-safe:animate-sheet-in"
+            : "max-h-[calc(100dvh-48px)] max-w-[366px] rounded-[20px] motion-safe:animate-dialog-in"
         }`}
       >
         {label && !labelledBy && (
