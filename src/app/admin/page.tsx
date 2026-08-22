@@ -420,7 +420,7 @@ function WorkerPanel({ dashboard }: { dashboard: AdminAlertedDashboard }) {
                   </td>
                   <td>
                     <span className={styles.rowActions}>
-                      <Link href={`/today?workerId=${worker.id}`}>상세</Link>
+                      <Link href={`/admin/workers/${worker.id}?date=${dashboard.date}`}>상세</Link>
                       <Link href={`/admin/workers/${worker.id}/edit`}>수정</Link>
                       <Link className={styles.dangerLink} href={`/admin/workers/${worker.id}/edit#delete`}>삭제</Link>
                     </span>

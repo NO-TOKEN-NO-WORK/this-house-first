@@ -64,3 +64,59 @@
 - [x] Arc 브라우저 기능 QA
 
 final result: passed
+
+---
+
+# Design QA — 관리자 생활지원사 상세
+
+## Comparison target
+
+- Source visual truth: `/var/folders/nj/p0_b3g6d0y73t8t3dy_7cwhh0000gn/T/codex-clipboard-7b8e44e1-6c6f-4661-8866-575f72741743.png`
+- Implementation screenshot: `docs/design-qa/admin-worker-detail-implementation.png`
+- Full-view comparison: `docs/design-qa/admin-worker-detail-comparison.png` (source left, implementation right)
+- Focused profile/information/table comparison: `docs/design-qa/admin-worker-detail-detail-comparison.png` (source left, implementation right)
+- Viewport: desktop `1680 × 942` CSS px
+- State: `/admin/workers/:workerId?date=2026-08-22`, assigned worker with an emergency alert-day snapshot
+
+## Normalization
+
+- Source: `1672 × 941` px.
+- Implementation: `1680 × 942` px at a `1680 × 942` CSS viewport; browser reported device pixel ratio `2`, while the screenshot API returned CSS-sized pixels.
+- Full comparison: each image scaled to `836 × 470` before horizontal composition.
+- Focused comparison: `1140 × 520` crops scaled to `570 × 260` before horizontal composition.
+
+## Findings
+
+No actionable P0, P1, or P2 differences remain.
+
+- Fonts and typography: the existing admin sans stack, weights, line heights, and hierarchy track the reference. Heading, metadata, badge, and dense table text remain readable without wrapping regressions.
+- Spacing and layout rhythm: header, secondary breadcrumb, profile card, paired information cards, table, and right rail align to the same desktop composition. No horizontal overflow is present.
+- Colors and visual tokens: all UI colors use the existing `--admin-*` token system, with the global semantic risk colors preserved for 위험 단계.
+- Image quality and asset fidelity: the generated fictional care-worker portrait matches the reference's flat illustrated purple-vest treatment; existing raster admin icons and map artwork are reused without CSS/SVG stand-ins.
+- Copy and content: section labels and actions follow the reference. Person, address, counts, statuses, activities, and risk reasons come from project data; risk reasons are displayed without rewriting.
+
+## Interaction verification
+
+- Dashboard `상세` link navigated to the worker detail route.
+- Subject search submitted through the visible GET form and produced the explicit empty state.
+- Phone, edit, subject-detail, assignment-change, list, and activity-history links expose the intended destinations.
+- Browser console warnings/errors checked: none.
+
+## Comparison history
+
+1. Initial implementation: `docs/design-qa/admin-worker-detail-before.png`.
+   - P1: a metropolitan road address produced `서구 북비산로`, treating the road name as an administrative region.
+   - P2: the top header omitted the `관리자 관제` title and placed the breadcrumb inside the header.
+   - P2: information rows and right-rail metrics were taller than the reference, reducing above-the-fold table and activity visibility.
+2. Fixes applied:
+   - Region extraction now distinguishes province-style and metropolitan addresses.
+   - The reference header hierarchy and secondary breadcrumb row were restored for the worker detail screen.
+   - Information rows, quick actions, metrics, and map card were compacted to the reference rhythm.
+3. Post-fix evidence: `docs/design-qa/admin-worker-detail-comparison.png` and `docs/design-qa/admin-worker-detail-detail-comparison.png`.
+
+## Follow-up polish
+
+- P3: the reference map includes address callout labels; the implementation keeps the existing project map artwork and location pins, with full addresses available in the adjacent subject table.
+- P3: the reference places small icons beside each information-row label; the implementation keeps the current admin detail-card label treatment for consistency with the existing product.
+
+final result: passed
