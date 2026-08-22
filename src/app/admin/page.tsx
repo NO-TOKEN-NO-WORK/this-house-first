@@ -406,7 +406,7 @@ export function PriorityList({
                       <span className={styles.rowActions}>
                         <Link href={subjectHref(subject.subjectId, date, workerId)}>상세</Link>
                         <Link href={`/admin/subjects/${subject.subjectId}/edit`}>수정</Link>
-                        <Link className={styles.dangerLink} href={`${subjectHref(subject.subjectId, date, workerId)}#delete`}>삭제</Link>
+                        <Link className={styles.dangerLink} href={`${subjectHref(subject.subjectId, date, workerId)}#archive`}>보관</Link>
                       </span>
                     )}
                   </td>
@@ -505,7 +505,7 @@ function WorkerPanel({
                       <span className={styles.rowActions}>
                         <Link href={`/admin/workers/${worker.id}?date=${date}`}>상세</Link>
                         <Link href={`/admin/workers/${worker.id}/edit`}>수정</Link>
-                        <Link className={styles.dangerLink} href={`/admin/workers/${worker.id}/edit#delete`}>삭제</Link>
+                        <Link className={styles.dangerLink} href={`/admin/workers/${worker.id}/edit#archive`}>보관</Link>
                       </span>
                     )}
                   </td>

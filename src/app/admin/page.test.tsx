@@ -284,6 +284,8 @@ describe("관리자 관제 화면", () => {
     expect(html).toContain("경보 없음");
     expect(html).not.toContain("오늘의 관제 요약");
     expect(html).toContain('aria-label="현재 날씨"');
+    expect(html).toContain(">보관</a>");
+    expect(html).not.toContain(">삭제</a>");
   });
 
   it("경보 상태 필터는 원장 대상자에도 적용한다", () => {

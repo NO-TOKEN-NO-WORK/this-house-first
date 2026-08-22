@@ -6,15 +6,15 @@ type WorkerAction = (form: FormData) => void | Promise<void>;
 
 export function AdminWorkerFormView({
   action,
-  deleteAction,
+  archiveAction,
   worker,
 }: {
   action: WorkerAction;
-  deleteAction?: WorkerAction;
+  archiveAction?: WorkerAction;
   worker: { name: string; phone: string | null; assigned: number; checks: number } | null;
 }) {
   const title = worker ? "생활지원사 수정" : "생활지원사 등록";
-  const canDelete = worker && worker.assigned === 0 && worker.checks === 0;
+  const canArchive = worker && worker.assigned === 0;
   return (
     <div className={styles.page}>
       <AdminManagementHeader detail={null} label={title} />
@@ -22,14 +22,15 @@ export function AdminWorkerFormView({
         <div className={styles.formActions}>
           <Link href="/admin">취소</Link>
           <button className={styles.primaryButton} type="submit">저장</button>
-          {deleteAction ? (
+          {archiveAction ? (
             <button
               className={styles.dangerButton}
-              disabled={!canDelete}
-              formAction={deleteAction}
-              title={canDelete ? undefined : "담당 대상자나 점검 기록이 있어 삭제할 수 없습니다."}
+              disabled={!canArchive}
+              formAction={archiveAction}
+              id="archive"
+              title={canArchive ? undefined : "활성 대상자가 배정되어 있어 보관할 수 없습니다."}
               type="submit"
-            >삭제</button>
+            >보관</button>
           ) : null}
         </div>
         <main className={styles.workerFormShell}>
@@ -41,7 +42,7 @@ export function AdminWorkerFormView({
               <label><span>담당 대상자 수</span><input disabled value={`${worker?.assigned ?? 0}명`} /></label>
               <label><span>점검 기록 수</span><input disabled value={`${worker?.checks ?? 0}건`} /></label>
             </div>
-            {worker && !canDelete ? <p className={styles.formNotice}>담당 대상자 또는 점검 기록이 있어 삭제할 수 없습니다. 먼저 담당자를 변경해 주세요.</p> : null}
+            {worker && !canArchive ? <p className={styles.formNotice}>활성 대상자가 배정되어 있어 보관할 수 없습니다. 먼저 담당자를 변경하거나 대상자를 보관해 주세요.</p> : null}
           </section>
         </main>
       </form>

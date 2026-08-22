@@ -10,6 +10,10 @@ function refreshAdmin() {
   revalidatePath("/admin");
 }
 
+function isNotFoundError(error: unknown) {
+  return typeof error === "object" && error !== null && "code" in error && error.code === "P2025";
+}
+
 export async function createSubject(form: FormData) {
   const subject = await prisma.subject.create({ data: parseSubjectForm(form) });
   refreshAdmin();
@@ -25,13 +29,18 @@ export async function updateSubject(subjectId: string, form: FormData) {
   redirect(`/admin/subjects/${subjectId}`);
 }
 
-export async function deleteSubject(subjectId: string) {
-  await prisma.$transaction([
-    prisma.checkEvent.deleteMany({ where: { subjectId } }),
-    prisma.householdDayStatus.deleteMany({ where: { subjectId } }),
-    prisma.riskAssessment.deleteMany({ where: { subjectId } }),
-    prisma.subject.delete({ where: { id: subjectId } }),
-  ]);
+export async function archiveSubject(subjectId: string) {
+  try {
+    await prisma.subject.update({
+      where: { id: subjectId, archivedAt: null },
+      data: { archivedAt: new Date() },
+    });
+  } catch (error) {
+    if (isNotFoundError(error)) {
+      throw new Error("대상자를 찾을 수 없거나 이미 보관되었습니다.");
+    }
+    throw error;
+  }
   refreshAdmin();
   redirect("/admin");
 }
@@ -53,18 +62,30 @@ export async function updateWorker(workerId: string, form: FormData) {
   redirect("/admin");
 }
 
-export async function deleteWorker(workerId: string) {
-  const worker = await prisma.worker.findUnique({
-    where: { id: workerId },
-    include: { _count: { select: { subjects: true, checkEvents: true } } },
+export async function archiveWorker(workerId: string) {
+  const worker = await prisma.worker.findFirst({
+    where: { id: workerId, role: WorkerRole.WORKER, archivedAt: null },
   });
-  if (!worker || worker.role !== WorkerRole.WORKER) {
-    throw new Error("생활지원사를 찾을 수 없습니다.");
+  if (!worker) {
+    throw new Error("생활지원사를 찾을 수 없거나 이미 보관되었습니다.");
   }
-  if (worker._count.subjects > 0 || worker._count.checkEvents > 0) {
-    throw new Error("담당 대상자나 점검 기록이 있는 생활지원사는 삭제할 수 없습니다.");
+  const activeSubjectCount = await prisma.subject.count({
+    where: { workerId, archivedAt: null },
+  });
+  if (activeSubjectCount > 0) {
+    throw new Error("활성 대상자가 배정된 생활지원사는 보관할 수 없습니다. 먼저 담당자를 변경하거나 대상자를 보관해 주세요.");
   }
-  await prisma.worker.delete({ where: { id: workerId } });
+  try {
+    await prisma.worker.update({
+      where: { id: workerId, archivedAt: null },
+      data: { archivedAt: new Date() },
+    });
+  } catch (error) {
+    if (isNotFoundError(error)) {
+      throw new Error("생활지원사를 찾을 수 없거나 이미 보관되었습니다.");
+    }
+    throw error;
+  }
   refreshAdmin();
   redirect("/admin");
 }

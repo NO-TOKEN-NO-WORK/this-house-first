@@ -118,6 +118,17 @@ describe("관리자 대상자 상세·수정 화면", () => {
     expect(html).toContain("③ 설비 점검 정보");
     expect(html).toContain("저장");
   });
+
+  it("보관 시 현재 목록에서만 제외하고 과거 관제 이력은 유지한다고 안내한다", async () => {
+    const { AdminSubjectDetailView } = await import("./AdminSubjectViews");
+    const html = renderToStaticMarkup(
+      <AdminSubjectDetailView archiveAction={async () => {}} detail={detail} />,
+    );
+
+    expect(html).toContain("대상자 보관");
+    expect(html).toContain("과거 경보·점검 이력은 보존됩니다.");
+    expect(html).not.toContain("대상자 삭제");
+  });
 });
 
 describe("현장 메모", () => {

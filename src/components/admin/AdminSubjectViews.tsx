@@ -103,10 +103,10 @@ function LocationCard({ detail }: { detail: AdminSubjectDetail }) {
 
 export function AdminSubjectDetailView({
   detail,
-  deleteAction,
+  archiveAction,
 }: {
   detail: AdminSubjectDetail;
-  deleteAction?: SubjectAction;
+  archiveAction?: SubjectAction;
 }) {
   const cooling = detail.airconBroken
     ? "점검 필요"
@@ -200,7 +200,7 @@ export function AdminSubjectDetailView({
             <div className={styles.quickActions}>
               <Link className={styles.primaryButton} href={`/admin/subjects/${detail.id}/edit#facility`}>설비 점검 기록</Link>
               <Link href={`/admin/subjects/${detail.id}/edit`}>수정</Link>
-              <a className={styles.dangerButton} href="#delete">삭제</a>
+              <a className={styles.dangerButton} href="#archive">보관</a>
               <Link href="/admin">목록으로</Link>
             </div>
           </section>
@@ -213,10 +213,10 @@ export function AdminSubjectDetailView({
             <a className={styles.messageButton} href={detail.workerPhone ? `sms:${detail.workerPhone}` : undefined}>메시지 보내기</a>
           </section>
           <LocationCard detail={detail} />
-          {deleteAction ? (
-            <form action={deleteAction} className={styles.deletePanel} id="delete">
-              <p>대상자를 삭제하면 기존 점검 기록도 함께 삭제됩니다.</p>
-              <button type="submit">대상자 삭제</button>
+          {archiveAction ? (
+            <form action={archiveAction} className={styles.deletePanel} id="archive">
+              <p>대상자를 보관하면 현재 관리 목록에서는 제외되며 과거 경보·점검 이력은 보존됩니다.</p>
+              <button type="submit">대상자 보관</button>
             </form>
           ) : null}
         </aside>
@@ -239,14 +239,14 @@ export function AdminSubjectFormView({
   mode,
   workers = detail?.workers ?? [],
   buildings = detail?.buildings ?? [],
-  deleteAction,
+  archiveAction,
 }: {
   action: SubjectAction;
   detail: AdminSubjectDetail | null;
   mode: "new" | "edit";
   workers?: AdminSubjectDetail["workers"];
   buildings?: AdminSubjectDetail["buildings"];
-  deleteAction?: SubjectAction;
+  archiveAction?: SubjectAction;
 }) {
   const title = mode === "edit" ? "대상자 수정" : "대상자 등록";
   const selectedAircon = detail?.airconBroken || detail?.hasAircon === false
@@ -261,7 +261,7 @@ export function AdminSubjectFormView({
           <Link href={detail ? `/admin/subjects/${detail.id}` : "/admin"}>취소</Link>
           <button className={styles.secondaryButton} type="submit">임시 저장</button>
           <button className={styles.primaryButton} type="submit">저장</button>
-          {deleteAction ? <button className={styles.dangerButton} formAction={deleteAction} type="submit">삭제</button> : null}
+          {archiveAction ? <button className={styles.dangerButton} formAction={archiveAction} id="archive" type="submit">보관</button> : null}
         </div>
         <main className={styles.formShell}>
           <div className={styles.formColumn}>
