@@ -193,35 +193,41 @@ describe("CurrentWeatherSummary", () => {
     expect(html).toContain("기상청 초단기실황 조회서비스");
   });
 
-  it("값 전용 모드는 현재 온도와 체감 온도만 표시한다", () => {
+  it("값 전용 모드는 위치 조회 뒤 지정된 한 줄만 표시한다", () => {
     resetHooks();
     hooks.values[WEATHER] = weather;
+    hooks.values[LOCATION_STATUS] = "active";
 
     const html = render("admin", true);
 
-    expect(html).toMatch(/현재 온도.*31\.2°C/);
-    expect(html).toMatch(/체감 온도.*32\.3°C/);
+    expect(html).toMatch(/기온:.*31\.2도.*\/.*체감온도:.*32\.3도/);
     expect(html).not.toContain("<button");
     expect(html).not.toContain("관측");
     expect(html).not.toContain("기상청 초단기실황 조회서비스");
-    expect(html).not.toContain("현재 위치");
   });
 
-  it("값 전용 모드는 데이터가 없으면 로딩·오류 문구와 버튼을 표시하지 않는다", () => {
+  it("값 전용 모드는 첫 요청 전 현재 위치 날씨 버튼만 표시한다", () => {
     resetHooks();
-    const loadingHtml = render("admin", true);
+    const html = render("admin", true);
 
+    expect(html).toContain("현재 위치 날씨");
+    expect(html).toContain('type="button"');
+    expect(html).not.toContain("기온:");
+    expect(html).not.toContain("체감온도:");
+  });
+
+  it("값 전용 모드는 버튼을 누르기 전 날씨를 조회하지 않는다", () => {
     resetHooks();
-    hooks.values[FAILED] = true;
-    const failedHtml = render("admin", true);
+    const fetcher = vi.fn();
+    const setInterval = vi.fn();
+    vi.stubGlobal("fetch", fetcher);
+    vi.stubGlobal("setInterval", setInterval);
 
-    for (const html of [loadingHtml, failedHtml]) {
-      expect(html).toContain('aria-label="현재 날씨"');
-      expect(html).not.toContain("<button");
-      expect(html).not.toContain("날씨 확인 중");
-      expect(html).not.toContain("현재 날씨를 불러오지 못했습니다");
-      expect(html).not.toContain("현재 위치");
-    }
+    CurrentWeatherSummary({ variant: "admin", valuesOnly: true });
+    hooks.effects[0]?.();
+
+    expect(fetcher).not.toHaveBeenCalled();
+    expect(setInterval).not.toHaveBeenCalled();
   });
 
   it("첫 요청 전에는 고정된 날씨 확인 상태를 표시한다", () => {
@@ -233,22 +239,22 @@ describe("CurrentWeatherSummary", () => {
     expect(html).toContain('role="status"');
   });
 
-  it("사용자가 직접 위치 권한을 요청하는 현재 위치 날씨 버튼을 표시한다", () => {
+  it("일반 날씨 요약에는 현재 위치 날씨 버튼을 표시하지 않는다", () => {
     resetHooks();
 
     const html = render();
 
-    expect(html).toContain("현재 위치 날씨");
-    expect(html).toContain('type="button"');
+    expect(html).not.toContain("현재 위치 날씨");
+    expect(html).not.toContain("<button");
   });
 
-  it("현재 위치 날씨가 적용됐음을 표시한다", () => {
+  it("값 전용 모드는 현재 위치를 받은 뒤 날씨 조회 상태를 표시한다", () => {
     resetHooks();
     hooks.values[LOCATION_STATUS] = "active";
 
-    const html = render();
+    const html = render("admin", true);
 
-    expect(html).toContain("현재 위치 기준");
+    expect(html).toContain("날씨 확인 중");
     expect(html).toContain('role="status"');
   });
 
@@ -256,7 +262,7 @@ describe("CurrentWeatherSummary", () => {
     resetHooks();
     hooks.values[LOCATION_STATUS] = "failed";
 
-    const html = render();
+    const html = render("admin", true);
 
     expect(html).toContain("위치를 확인하지 못했습니다");
     expect(html).toContain('role="alert"');
@@ -276,13 +282,42 @@ describe("CurrentWeatherSummary", () => {
     vi.stubGlobal("setInterval", vi.fn().mockReturnValue(123));
     vi.stubGlobal("clearInterval", vi.fn());
 
-    CurrentWeatherSummary({ variant: "today" });
+    CurrentWeatherSummary({ variant: "admin", valuesOnly: true });
     const cleanup = hooks.effects[0]?.();
     await settle();
 
     expect(setFailed).toHaveBeenCalledWith(true);
     expect(setLocationStatus).not.toHaveBeenCalledWith("failed");
     cleanup?.();
+  });
+
+  it("날씨 조회 실패 뒤 재시도하면 이전 오류를 지우고 GPS 실패를 표시한다", async () => {
+    resetHooks();
+    const setFailed = vi.fn();
+    const setLocationStatus = vi.fn();
+    hooks.values[FAILED] = true;
+    hooks.values[LOCATION_STATUS] = "active";
+    hooks.setters = [vi.fn(), setFailed, vi.fn(), setLocationStatus];
+    vi.stubGlobal("navigator", {
+      geolocation: {
+        getCurrentPosition(
+          _success: PositionCallback,
+          error: PositionErrorCallback,
+        ) {
+          error({} as GeolocationPositionError);
+        },
+      },
+    });
+
+    const button = findButton(
+      CurrentWeatherSummary({ variant: "admin", valuesOnly: true }),
+    );
+    button!.props.onClick();
+    await settle();
+
+    expect(setFailed).toHaveBeenCalledWith(false);
+    expect(setLocationStatus).toHaveBeenNthCalledWith(1, "locating");
+    expect(setLocationStatus).toHaveBeenNthCalledWith(2, "failed");
   });
 
   it("연속 위치 요청에서는 가장 최근 GPS 응답만 적용한다", async () => {
@@ -299,7 +334,9 @@ describe("CurrentWeatherSummary", () => {
       },
     });
 
-    const button = findButton(CurrentWeatherSummary({ variant: "today" }));
+    const button = findButton(
+      CurrentWeatherSummary({ variant: "admin", valuesOnly: true }),
+    );
     expect(button).not.toBeNull();
     button!.props.onClick();
     button!.props.onClick();
@@ -332,7 +369,9 @@ describe("CurrentWeatherSummary", () => {
       },
     });
 
-    const button = findButton(CurrentWeatherSummary({ variant: "today" }));
+    const button = findButton(
+      CurrentWeatherSummary({ variant: "admin", valuesOnly: true }),
+    );
     button!.props.onClick();
     const cleanup = hooks.effects.at(-1)?.();
     cleanup?.();
