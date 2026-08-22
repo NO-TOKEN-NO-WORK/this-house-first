@@ -24,10 +24,13 @@ model Worker {
   name              String
   phone             String?
   role              String             @default("WORKER") // domain.ts WorkerRole: WORKER | MANAGER
+  archivedAt        DateTime?
   subjects          Subject[]
   checkEvents       CheckEvent[]
   notifications     Notification[]     @relation("NotificationRecipient")
   pushSubscriptions PushSubscription[]
+
+  @@index([role, archivedAt])
 }
 
 // 건물 — 건축HUB 건축물대장 실데이터 (FR-2)
@@ -61,6 +64,7 @@ model Subject {
   hasChronicDisease Boolean?
   hasAircon         Boolean? // null = 미확인. false → 지원사업 연계 플래그 (FR-11)
   airconBroken      Boolean              @default(false) // 방문 발견 → 익일 가중 (FR-8)
+  archivedAt        DateTime?
   building          Building             @relation(fields: [buildingId], references: [id])
   buildingId        String
   worker            Worker               @relation(fields: [workerId], references: [id])
@@ -69,6 +73,8 @@ model Subject {
   dayStatuses       HouseholdDayStatus[]
   checkEvents       CheckEvent[]
   notifications     Notification[]
+
+  @@index([workerId, archivedAt])
 }
 
 // 경보일 — F1 트리거가 생성. 비경보일에는 행이 없다 (침묵이 스펙)
