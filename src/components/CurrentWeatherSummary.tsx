@@ -126,8 +126,10 @@ function LocationControl({
 
 export function CurrentWeatherSummary({
   variant,
+  valuesOnly = false,
 }: {
   variant: "today" | "admin";
+  valuesOnly?: boolean;
 }) {
   const [weather, setWeather] = useState<CurrentWeather | null>(null);
   const [failed, setFailed] = useState(false);
@@ -187,6 +189,26 @@ export function CurrentWeatherSummary({
   const locationControl = (
     <LocationControl onRequest={() => void requestLocation()} status={locationStatus} />
   );
+
+  if (valuesOnly) {
+    return (
+      <section aria-label="현재 날씨" className={ROOT_CLASS[variant]}>
+        {weather ? (
+          <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+            <p className="text-body-15 text-text-secondary">
+              현재 온도 <strong className={VALUE_CLASS[variant]}>{weather.temperature}°C</strong>
+            </p>
+            <p className="text-body-15 text-text-secondary">
+              체감 온도{" "}
+              <strong className={VALUE_CLASS[variant]}>
+                {weather.feelsLikeTemperature}°C
+              </strong>
+            </p>
+          </div>
+        ) : null}
+      </section>
+    );
+  }
 
   if (weather) {
     return (

@@ -77,9 +77,12 @@ function findButton(node: ReactNode): ButtonElement | null {
   return null;
 }
 
-function render(variant: "today" | "admin" = "today") {
+function render(
+  variant: "today" | "admin" = "today",
+  valuesOnly = false,
+) {
   hooks.cursor = 0;
-  return renderToStaticMarkup(CurrentWeatherSummary({ variant }));
+  return renderToStaticMarkup(CurrentWeatherSummary({ variant, valuesOnly }));
 }
 
 describe("requestCurrentWeather", () => {
@@ -173,6 +176,37 @@ describe("CurrentWeatherSummary", () => {
     expect(html).toMatch(/현재 체감.*32\.3°C/);
     expect(html).toMatch(/관측.*14:00/);
     expect(html).toContain("기상청 초단기실황 조회서비스");
+  });
+
+  it("값 전용 모드는 현재 온도와 체감 온도만 표시한다", () => {
+    resetHooks();
+    hooks.values[WEATHER] = weather;
+
+    const html = render("admin", true);
+
+    expect(html).toMatch(/현재 온도.*31\.2°C/);
+    expect(html).toMatch(/체감 온도.*32\.3°C/);
+    expect(html).not.toContain("<button");
+    expect(html).not.toContain("관측");
+    expect(html).not.toContain("기상청 초단기실황 조회서비스");
+    expect(html).not.toContain("현재 위치");
+  });
+
+  it("값 전용 모드는 데이터가 없으면 로딩·오류 문구와 버튼을 표시하지 않는다", () => {
+    resetHooks();
+    const loadingHtml = render("admin", true);
+
+    resetHooks();
+    hooks.values[FAILED] = true;
+    const failedHtml = render("admin", true);
+
+    for (const html of [loadingHtml, failedHtml]) {
+      expect(html).toContain('aria-label="현재 날씨"');
+      expect(html).not.toContain("<button");
+      expect(html).not.toContain("날씨 확인 중");
+      expect(html).not.toContain("현재 날씨를 불러오지 못했습니다");
+      expect(html).not.toContain("현재 위치");
+    }
   });
 
   it("첫 요청 전에는 고정된 날씨 확인 상태를 표시한다", () => {

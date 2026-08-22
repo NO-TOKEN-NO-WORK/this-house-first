@@ -45,6 +45,10 @@ describe("복지 스캔 관리자 화면", () => {
     expect(html).toMatch(
       /<a aria-current="page"[^>]*href="\/admin\/welfare-scan\?preview=1"[^>]*>[\s\S]*?복지 스캔[\s\S]*?<\/a>/,
     );
+    expect(html).toContain('aria-label="현재 날씨"');
+    expect(html).not.toContain("최고 체감온도");
+    expect(html).not.toContain("현재 위치 날씨");
+    expect(html).not.toContain("날씨 확인 중");
     expect(html).not.toContain("AI 분석 정확도");
   });
 });

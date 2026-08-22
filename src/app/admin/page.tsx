@@ -667,11 +667,10 @@ export function AdminDashboardView({
         items={[
           { icon: "/admin/calendar.png", label: "날짜", value: dashboard.date.replaceAll("-", ".") },
           { icon: "/admin/location.png", label: "담당 지역", value: compactRegion(dashboard) },
-          ...(dashboard.alerted ? [{ icon: "/admin/thermometer.png", label: "최고 체감온도", tone: "danger" as const, value: `${dashboard.feelsLikeMax}°C` }] : []),
           { icon: "/admin/clock.png", label: "마지막 갱신", value: <time dateTime={dashboard.generatedAt}>{LAST_UPDATED_FORMAT.format(new Date(dashboard.generatedAt))}</time> },
           { icon: "/admin/refresh.png", label: "자동 갱신", live: true, value: "켜짐" },
         ]}
-        metaTail={<CurrentWeatherSummary variant="admin" />}
+        metaTail={<CurrentWeatherSummary valuesOnly variant="admin" />}
         title="관리자 관제"
       />}
       pageClassName={styles.page}
