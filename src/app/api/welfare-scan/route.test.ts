@@ -112,8 +112,45 @@ describe("POST /api/welfare-scan", () => {
     expect(payload.data.recommendations).toEqual([]);
     expect(payload.data.partial).toBe(true);
     expect(payload.data.connections).toEqual({
-      publicData: { ok: false, message: "공공데이터 API 키 미설정" },
-      ai: { ok: false, message: "AI 분석 응답 시간 초과" },
+      publicData: {
+        ok: false,
+        message: "공공데이터 API 키 미설정",
+        reason: "PUBLIC_DATA_SERVICE_KEY 환경변수가 설정되지 않았습니다.",
+      },
+      ai: {
+        ok: false,
+        message: "AI 분석 응답 시간 초과",
+        reason: "AI 분석 응답 시간이 초과되었습니다.",
+      },
+    });
+  });
+
+  it("외부 서비스 응답 오류의 상세 원인을 함께 반환한다", async () => {
+    mocks.refreshWelfarePrograms.mockRejectedValue(
+      Object.assign(new Error("복지서비스 API가 HTTP 503으로 응답했습니다."), {
+        code: "UPSTREAM_HTTP_ERROR",
+      }),
+    );
+    mocks.extractWelfareSignals.mockRejectedValue(
+      Object.assign(new Error("AI 분석 서비스가 HTTP 502로 응답했습니다."), {
+        code: "OPENAI_HTTP_ERROR",
+      }),
+    );
+
+    const response = await POST();
+    const payload = await response.json();
+
+    expect(payload.data.connections).toEqual({
+      publicData: {
+        ok: false,
+        message: "공공데이터 응답 오류",
+        reason: "복지서비스 API가 HTTP 503으로 응답했습니다.",
+      },
+      ai: {
+        ok: false,
+        message: "AI 분석 응답 오류",
+        reason: "AI 분석 서비스가 HTTP 502로 응답했습니다.",
+      },
     });
   });
 });

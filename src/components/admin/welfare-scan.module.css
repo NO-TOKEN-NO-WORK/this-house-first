@@ -64,6 +64,7 @@
 }
 .statusStrip strong { color: var(--admin-ink); }
 .statusStrip span { display: inline-flex; align-items: center; gap: 0.375rem; }
+.statusStrip span[title] { cursor: help; text-decoration: underline dotted; text-underline-offset: 0.2rem; }
 .statusStrip img { object-fit: contain; }
 
 .notice,

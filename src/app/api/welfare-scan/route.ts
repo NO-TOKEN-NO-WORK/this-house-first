@@ -80,6 +80,22 @@ function connectionFailureMessage(
   return service === "publicData" ? "공공데이터 연결 실패" : "AI 분석 연결 실패";
 }
 
+function connectionFailureState(
+  error: unknown,
+  service: "publicData" | "ai",
+): { ok: false; message: string; reason: string } {
+  const code = error && typeof error === "object" && "code" in error
+    ? String(error.code)
+    : "";
+  return {
+    ok: false,
+    message: connectionFailureMessage(error, service),
+    reason: code && error instanceof Error && error.message.trim()
+      ? error.message
+      : "외부 서비스 처리 중 예상하지 못한 오류가 발생했습니다.",
+  };
+}
+
 export async function GET(): Promise<Response> {
   try {
     const programs = await refreshWelfarePrograms();
@@ -163,16 +179,10 @@ export async function POST(): Promise<Response> {
         connections: {
           publicData: programResult.status === "fulfilled"
             ? { ok: true, message: "공공데이터 연결 정상" }
-            : {
-                ok: false,
-                message: connectionFailureMessage(programResult.reason, "publicData"),
-              },
+            : connectionFailureState(programResult.reason, "publicData"),
           ai: signalResult.status === "fulfilled"
             ? { ok: true, message: "AI 분석 연결 정상" }
-            : {
-                ok: false,
-                message: connectionFailureMessage(signalResult.reason, "ai"),
-              },
+            : connectionFailureState(signalResult.reason, "ai"),
         },
       },
     });
