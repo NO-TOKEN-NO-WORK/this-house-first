@@ -8,6 +8,7 @@ import {
   RECOMMENDATION_STATUS_LABEL,
   WelfareIssue,
   type WelfareIssue as WelfareIssueCode,
+  type WelfareProgram,
   type WelfareRecommendation,
 } from "@/lib/welfare-scan/eligibility";
 import { AdminShell, AdminTopBar } from "./AdminShell";
@@ -87,12 +88,15 @@ export function ConnectionStatus({
 }
 
 export function WelfareScanWorkspace({
+  initialPrograms = [],
   initialRecommendations = [],
   previewMode = false,
 }: {
+  initialPrograms?: WelfareProgram[];
   initialRecommendations?: WelfareRecommendation[];
   previewMode?: boolean;
 }) {
+  const [welfarePrograms, setWelfarePrograms] = useState(initialPrograms);
   const [recommendations, setRecommendations] = useState(initialRecommendations);
   const [phase, setPhase] = useState<"idle" | "scanning" | "success" | "error">(
     initialRecommendations.length > 0 ? "success" : "idle",
@@ -103,7 +107,7 @@ export function WelfareScanWorkspace({
   );
   const [scannedAt, setScannedAt] = useState<string | null>(null);
   const [scannedCount, setScannedCount] = useState(0);
-  const [programCount, setProgramCount] = useState(0);
+  const [programCount, setProgramCount] = useState(initialPrograms.length);
   const [connections, setConnections] = useState<ConnectionState | null>(null);
   const [selectedKey, setSelectedKey] = useState<string | null>(
     previewMode && initialRecommendations[0]
@@ -176,13 +180,17 @@ export function WelfareScanWorkspace({
     try {
       const response = await fetch("/api/welfare-scan");
       const payload = (await response.json()) as {
-        data?: { count?: number };
+        data?: { programs?: WelfareProgram[]; count?: number };
         error?: { message?: string };
       };
       if (!response.ok || !payload.data) {
         throw new Error(payload.error?.message || "복지사업 정보를 새로고침하지 못했습니다.");
       }
-      setNotice(`${payload.data.count ?? 0}개 관련 복지사업을 새로 확인했습니다.`);
+      const nextPrograms = payload.data.programs ?? [];
+      const count = payload.data.count ?? nextPrograms.length;
+      setWelfarePrograms(nextPrograms);
+      setProgramCount(count);
+      setNotice(`${count}개 관련 복지사업을 새로 확인했습니다.`);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "복지사업 정보를 새로고침하지 못했습니다.");
     } finally {
@@ -261,6 +269,31 @@ export function WelfareScanWorkspace({
                 <span>대상자 사실 확인 → 현장 메모 분석 → 복지사업 자격 비교</span>
               </div>
               <progress aria-label="복지 스캔 진행 중" />
+            </section>
+          ) : null}
+
+          {welfarePrograms.length > 0 ? (
+            <section className={styles.tablePanel} aria-label="불러온 복지사업 목록">
+              <header className={styles.tableHeader}>
+                <div><h2>불러온 복지사업</h2><span>복지로에서 확인한 최신 중앙부처 사업입니다.</span></div>
+                <p className={styles.resultMeta}><strong>전체 {welfarePrograms.length}건</strong></p>
+              </header>
+              <div className={styles.tableScroller}>
+                <table className={styles.table}>
+                  <thead><tr><th>사업명</th><th>소관 부처</th><th>지원 대상</th><th>사업 요약</th><th>공식 정보</th></tr></thead>
+                  <tbody>
+                    {welfarePrograms.map((program) => (
+                      <tr key={program.id}>
+                        <td><strong>{program.name}</strong></td>
+                        <td>{program.ministry}</td>
+                        <td className={styles.programTextCell}>{program.target || "대상 정보 확인 필요"}</td>
+                        <td className={styles.programTextCell}>{program.summary || "요약 정보 확인 필요"}</td>
+                        <td><a aria-label={`${program.name} 공식 정보 보기`} className={styles.viewButton} href={program.link} rel="noreferrer" target="_blank">보기</a></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </section>
           ) : null}
 

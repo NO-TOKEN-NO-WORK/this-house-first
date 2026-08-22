@@ -80,7 +80,7 @@ model Subject {
 // 경보일 — F1 트리거가 생성. 비경보일에는 행이 없다 (침묵이 스펙)
 model AlertDay {
   id            String               @id @default(cuid())
-  date          String               @unique // "YYYY-MM-DD" (KST)
+  date          String // "YYYY-MM-DD" (KST)
   level         String // domain.ts AlertLevel: ADVISORY | WARNING | EMERGENCY
   feelsLikeMax  Float // 당일 최고 체감온도
   isDemo        Boolean              @default(false) // 관리자 38도 데모 토글로 만든 경보만 안전하게 초기화
@@ -89,6 +89,8 @@ model AlertDay {
   dayStatuses   HouseholdDayStatus[]
   checkEvents   CheckEvent[]
   notifications Notification[]
+
+  @@unique([date, isDemo])
 }
 
 // 대상자별 당일 위험도 평가 — F2 스코어링 결과 스냅샷

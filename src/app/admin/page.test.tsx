@@ -536,9 +536,9 @@ describe("관리자 관제 화면", () => {
     expect(html).toContain("person.png");
     expect(html).toContain("phone.png");
     expect(html).toContain('aria-label="현재 날씨"');
-    expect(html).toMatch(/현재 온도.*38°C/);
+    expect(html).not.toContain("기온:");
     expect(html).not.toContain("최고 체감온도");
-    expect(html).not.toContain("현재 위치 날씨");
+    expect(html).toContain("현재 위치 날씨");
     expect(html).not.toContain("날씨 확인 중");
     expect(html).not.toContain("근무 중");
     expect(html).not.toContain("휴식 중");

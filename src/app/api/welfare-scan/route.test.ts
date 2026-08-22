@@ -71,6 +71,23 @@ describe("POST /api/welfare-scan", () => {
     });
   });
 
+  it("새로 불러온 복지사업 목록을 반환한다", async () => {
+    const response = await GET();
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload.data.count).toBe(1);
+    expect(payload.data.programs).toEqual([
+      expect.objectContaining({
+        id: "energy-1",
+        name: "저소득층 에너지효율개선사업",
+        ministry: "기후에너지환경부",
+        target: "저소득 노인가구",
+        link: "https://www.bokjiro.go.kr/energy",
+      }),
+    ]);
+  });
+
   it("대상자 메모와 공공 복지사업을 결합해 검토 가능한 제안을 반환한다", async () => {
     const response = await POST();
     const payload = await response.json();
@@ -178,6 +195,21 @@ describe("POST /api/welfare-scan", () => {
         message: "AI 분석 응답 오류",
         reason: "AI 분석 서비스가 HTTP 502로 응답했습니다.",
       },
+    });
+  });
+
+  it("공공데이터포털 인증 오류 코드를 안전한 원인으로 안내한다", async () => {
+    mocks.refreshWelfarePrograms.mockRejectedValue(
+      Object.assign(new Error("등록되지 않은 서비스키"), { code: "30" }),
+    );
+
+    const response = await POST();
+    const payload = await response.json();
+
+    expect(payload.data.connections.publicData).toEqual({
+      ok: false,
+      message: "공공데이터 인증 오류",
+      reason: "등록되지 않은 공공데이터 서비스키입니다.",
     });
   });
 

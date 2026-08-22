@@ -191,7 +191,8 @@
 .statusBadge[data-status="HIGH"],
 .reviewedBadge { background: var(--admin-success-soft); color: var(--admin-success); }
 .statusBadge[data-status="NEEDS_INFO"] { background: var(--admin-warning-soft); color: var(--admin-warning); }
-.viewButton { min-height: 2rem; padding-inline: 0.75rem; border-color: var(--admin-accent); color: var(--admin-accent); }
+.viewButton { display: inline-flex; min-height: 2rem; align-items: center; padding-inline: 0.75rem; border-color: var(--admin-accent); color: var(--admin-accent); text-decoration: none; }
+.programTextCell { max-width: 24rem; line-height: 1.5; white-space: normal; }
 
 .emptyState {
   display: grid;

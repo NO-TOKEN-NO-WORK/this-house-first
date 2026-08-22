@@ -22,6 +22,7 @@ import {
   VISIT_RESULT_LABEL,
 } from "../domain";
 import { labelReasons, type LabeledReason } from "../scoring/reasons";
+import { findActiveAlertDay } from "../trigger/active-alert-day";
 import {
   ageOf,
   dongOf,
@@ -139,7 +140,7 @@ export async function getSubjectDetail(options: {
     dateLabel: formatBoardDate(date),
   };
 
-  const alertDay = await prisma.alertDay.findUnique({ where: { date } });
+  const alertDay = await findActiveAlertDay(prisma, date);
   if (!alertDay) {
     return {
       ...base,

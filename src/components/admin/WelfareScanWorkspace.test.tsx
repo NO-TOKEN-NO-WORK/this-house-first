@@ -6,6 +6,17 @@ describe("복지 스캔 관리자 화면", () => {
   it("스캔 현황·필터·검토표와 선택한 제안의 근거를 한 화면에 제공한다", () => {
     const html = renderToStaticMarkup(
       <WelfareScanWorkspace
+        initialPrograms={[
+          {
+            id: "energy-1",
+            name: "저소득층 에너지효율개선사업",
+            ministry: "기후에너지환경부",
+            summary: "냉방기기와 단열 개선을 지원합니다.",
+            selectionCriteria: "기초생활수급자 또는 차상위계층",
+            target: "저소득 노인가구",
+            link: "https://www.bokjiro.go.kr/energy",
+          },
+        ]}
         initialRecommendations={[
           {
             subjectId: "subject-1",
@@ -27,10 +38,16 @@ describe("복지 스캔 관리자 화면", () => {
       />,
     );
     const navigation = html.match(/<nav[^>]*aria-label="관리자 메뉴"[^>]*>[\s\S]*?<\/nav>/)?.[0] ?? "";
+    const programList = html.match(/<section[^>]*aria-label="불러온 복지사업 목록"[^>]*>[\s\S]*?<\/section>/)?.[0] ?? "";
 
     expect(html).toContain("복지 스캔");
     expect(html).toContain("복지 스캔 시작");
     expect(html).toContain("복지사업 정보 새로고침");
+    expect(programList).toMatch(/<h2[^>]*>불러온 복지사업<\/h2>/);
+    expect(programList).toContain("저소득 노인가구");
+    expect(programList).toContain("냉방기기와 단열 개선을 지원합니다.");
+    expect(programList).toContain('href="https://www.bokjiro.go.kr/energy"');
+    expect(programList).toContain('aria-label="저소득층 에너지효율개선사업 공식 정보 보기"');
     expect(html).toMatch(/<h2[^>]*>복지 제안 검토<\/h2>/);
     expect(html).toContain("새로운 제안");
     expect(html).toContain("추가 정보 필요");
@@ -47,7 +64,7 @@ describe("복지 스캔 관리자 화면", () => {
     );
     expect(html).toContain('aria-label="현재 날씨"');
     expect(html).not.toContain("최고 체감온도");
-    expect(html).not.toContain("현재 위치 날씨");
+    expect(html).toContain("현재 위치 날씨");
     expect(html).not.toContain("날씨 확인 중");
     expect(html).not.toContain("AI 분석 정확도");
   });

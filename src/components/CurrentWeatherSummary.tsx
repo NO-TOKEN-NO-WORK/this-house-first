@@ -144,7 +144,10 @@ export function CurrentWeatherSummary({
     let cancelled = false;
     let latestRequest = 0;
 
-    if (demoTemperature !== undefined) return;
+    if (
+      (valuesOnly && !grid) ||
+      (demoTemperature !== undefined && !valuesOnly)
+    ) return;
 
     async function refresh() {
       const request = ++latestRequest;
@@ -167,7 +170,7 @@ export function CurrentWeatherSummary({
       cancelled = true;
       clearInterval(interval);
     };
-  }, [demoTemperature, grid]);
+  }, [demoTemperature, grid, valuesOnly]);
 
   useEffect(
     () => () => {
@@ -178,6 +181,7 @@ export function CurrentWeatherSummary({
 
   async function requestLocation() {
     const request = ++locationRequest.current;
+    setFailed(false);
     setLocationStatus("locating");
     try {
       if (!navigator.geolocation) throw new Error("Geolocation unavailable");
@@ -194,22 +198,20 @@ export function CurrentWeatherSummary({
     <LocationControl onRequest={() => void requestLocation()} status={locationStatus} />
   );
 
-  if (demoTemperature !== undefined) {
+  if (demoTemperature !== undefined && !valuesOnly) {
     return (
       <section aria-label="현재 날씨" className={ROOT_CLASS[variant]}>
         <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
           <p className="text-body-15 text-text-secondary">
-            현재 {valuesOnly ? "온도" : "기온"}{" "}
+            현재 기온{" "}
             <strong className={VALUE_CLASS[variant]}>{demoTemperature}°C</strong>
           </p>
           <p className="text-body-15 text-text-secondary">
-            {valuesOnly ? "체감 온도" : "현재 체감"}{" "}
+            현재 체감{" "}
             <strong className={VALUE_CLASS[variant]}>{demoTemperature}°C</strong>
           </p>
         </div>
-        {valuesOnly ? null : (
-          <p className="text-body-14 text-text-tertiary">데모 설정</p>
-        )}
+        <p className="text-body-14 text-text-tertiary">데모 설정</p>
       </section>
     );
   }
@@ -218,18 +220,24 @@ export function CurrentWeatherSummary({
     return (
       <section aria-label="현재 날씨" className={ROOT_CLASS[variant]}>
         {weather ? (
-          <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
-            <p className="text-body-15 text-text-secondary">
-              현재 온도 <strong className={VALUE_CLASS[variant]}>{weather.temperature}°C</strong>
+          <p className="text-body-15 text-text-secondary">
+            기온: <strong className={VALUE_CLASS[variant]}>{weather.temperature}도</strong>
+            {" / "}
+            체감온도:{" "}
+            <strong className={VALUE_CLASS[variant]}>{weather.feelsLikeTemperature}도</strong>
+          </p>
+        ) : failed ? (
+          <>
+            <p role="alert" className="text-body-15 text-text-secondary">
+              현재 날씨를 불러오지 못했습니다
             </p>
-            <p className="text-body-15 text-text-secondary">
-              체감 온도{" "}
-              <strong className={VALUE_CLASS[variant]}>
-                {weather.feelsLikeTemperature}°C
-              </strong>
-            </p>
-          </div>
-        ) : null}
+            <LocationControl onRequest={() => void requestLocation()} status="idle" />
+          </>
+        ) : locationStatus === "active" ? (
+          <p role="status" className="text-body-15 text-text-secondary">
+            날씨 확인 중
+          </p>
+        ) : locationControl}
       </section>
     );
   }
@@ -260,7 +268,6 @@ export function CurrentWeatherSummary({
             갱신 실패 · 마지막 관측값을 표시합니다
           </p>
         ) : null}
-        {locationControl}
       </section>
     );
   }
@@ -271,7 +278,6 @@ export function CurrentWeatherSummary({
         <p role="alert" className="text-body-15 text-text-secondary">
           현재 날씨를 불러오지 못했습니다
         </p>
-        {locationControl}
       </section>
     );
   }
@@ -281,7 +287,6 @@ export function CurrentWeatherSummary({
       <p role="status" className="text-body-15 text-text-secondary">
         날씨 확인 중
       </p>
-      {locationControl}
     </section>
   );
 }

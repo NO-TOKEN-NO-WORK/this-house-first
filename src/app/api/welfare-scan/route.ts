@@ -12,6 +12,24 @@ import { extractWelfareSignals } from "@/lib/welfare-scan/openai";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+const PUBLIC_DATA_PORTAL_FAILURES: Record<
+  string,
+  { message: string; reason: string }
+> = {
+  "20": {
+    message: "공공데이터 활용신청 오류",
+    reason: "공공데이터 활용신청이 승인되지 않았거나 중지되었습니다.",
+  },
+  "22": {
+    message: "공공데이터 호출 한도 초과",
+    reason: "공공데이터 개발계정의 일일 호출 한도를 초과했습니다.",
+  },
+  "30": {
+    message: "공공데이터 인증 오류",
+    reason: "등록되지 않은 공공데이터 서비스키입니다.",
+  },
+};
+
 async function getSubjectProfiles(): Promise<WelfareSubjectProfile[]> {
   const { prisma } = await import("@/lib/db");
   const year = Number(todayInKst().slice(0, 4));
@@ -69,6 +87,10 @@ function connectionFailureMessage(
     ? String(error.code)
     : "";
   const message = error instanceof Error ? error.message : "";
+  const portalFailure = service === "publicData"
+    ? PUBLIC_DATA_PORTAL_FAILURES[code]
+    : undefined;
+  if (portalFailure) return portalFailure.message;
   if (code === "MISSING_SERVICE_KEY" || code === "MISSING_AI_GATEWAY_AUTH") {
     return service === "publicData" ? "공공데이터 API 키 미설정" : "AI Gateway 인증 미설정";
   }
@@ -98,6 +120,10 @@ function connectionFailureReason(
   const code = error && typeof error === "object" && "code" in error
     ? String(error.code)
     : "";
+  const portalFailure = service === "publicData"
+    ? PUBLIC_DATA_PORTAL_FAILURES[code]
+    : undefined;
+  if (portalFailure) return portalFailure.reason;
   if (message.endsWith("API 키 미설정")) {
     return "PUBLIC_DATA_SERVICE_KEY 환경변수가 설정되지 않았습니다.";
   }
@@ -141,7 +167,7 @@ export async function GET(): Promise<Response> {
   try {
     const programs = await refreshWelfarePrograms();
     return Response.json({
-      data: { count: programs.length, syncedAt: new Date().toISOString() },
+      data: { programs, count: programs.length, syncedAt: new Date().toISOString() },
     });
   } catch (error) {
     const code = error && typeof error === "object" && "code" in error

@@ -1,6 +1,7 @@
 import { prisma } from "../db";
 import { NotificationType, WorkerRole } from "../domain";
 import { todayInKst } from "../board/today";
+import { findActiveAlertDay } from "../trigger/active-alert-day";
 
 export interface NotificationFeedItem {
   id: string;
@@ -25,19 +26,23 @@ export async function getManagerNotificationFeed(
 ): Promise<ManagerNotificationFeed> {
   const now = options.now ?? new Date();
   const date = options.date ?? todayInKst(now);
-  const manager = await prisma.worker.findFirst({
-    where: { role: WorkerRole.MANAGER, archivedAt: null },
-    orderBy: { id: "asc" },
-    select: { id: true },
-  });
+  const [manager, alertDay] = await Promise.all([
+    prisma.worker.findFirst({
+      where: { role: WorkerRole.MANAGER, archivedAt: null },
+      orderBy: { id: "asc" },
+      select: { id: true },
+    }),
+    findActiveAlertDay(prisma, date),
+  ]);
   if (!manager) return { recipientId: null, items: [] };
+  if (!alertDay) return { recipientId: manager.id, items: [] };
 
   const rows = await prisma.notification.findMany({
     where: {
       recipientId: manager.id,
       type: NotificationType.VISIT_PROMOTED,
       availableAt: { lte: now },
-      alertDay: { date },
+      alertDayId: alertDay.id,
       ...(options.workerId
         ? { subject: { is: { workerId: options.workerId } } }
         : {}),

@@ -7,6 +7,7 @@ import {
 
 const WELFARE_API_BASE =
   "https://apis.data.go.kr/B554287/NationalWelfareInformationsV001";
+const WELFARE_HOME = "https://www.bokjiro.go.kr/";
 const RELEVANT_TERMS = [
   "노인",
   "노년",
@@ -54,6 +55,18 @@ function xmlBlocks(xml: string, tag: string): string[] {
   );
 }
 
+function welfareLink(value: string): string {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" &&
+      (url.hostname === "bokjiro.go.kr" || url.hostname.endsWith(".bokjiro.go.kr"))
+      ? url.toString()
+      : WELFARE_HOME;
+  } catch {
+    return WELFARE_HOME;
+  }
+}
+
 function assertSuccessfulXml(xml: string): void {
   const code = xmlValue(xml, "resultCode") || xmlValue(xml, "returnReasonCode");
   if (code && !["0", "00", "INFO-0"].includes(code)) {
@@ -82,14 +95,14 @@ async function fetchXml(url: URL, fetcher: PublicDataFetch): Promise<string> {
       "UPSTREAM_UNAVAILABLE",
     );
   }
+  const xml = await response.text();
+  assertSuccessfulXml(xml);
   if (!response.ok) {
     throw new PublicDataError(
       `복지서비스 API가 HTTP ${response.status}로 응답했습니다.`,
       "UPSTREAM_HTTP_ERROR",
     );
   }
-  const xml = await response.text();
-  assertSuccessfulXml(xml);
   return xml;
 }
 
@@ -102,7 +115,7 @@ function parseSummaries(xml: string): WelfareProgramSummary[] {
     target: [xmlValue(block, "lifeArray"), xmlValue(block, "trgterIndvdlArray")]
       .filter(Boolean)
       .join(" · "),
-    link: xmlValue(block, "servDtlLink") || "https://www.bokjiro.go.kr/",
+    link: welfareLink(xmlValue(block, "servDtlLink")),
   }));
 }
 
