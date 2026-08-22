@@ -372,6 +372,64 @@ describe("관리자 관제 화면", () => {
     expect(html).not.toContain("상태 필터 제외 대상자");
   });
 
+  it("과거 경보 스냅샷 대상자는 원장에서 보관돼도 읽기 전용으로 표시한다", () => {
+    const html = renderToStaticMarkup(
+      <AdminDashboardView
+        dashboard={{
+          alerted: true,
+          date: "2026-08-22",
+          dateLabel: "8월 22일(토)",
+          selectedWorkerId: null,
+          roster: { workers: [], subjects: [] },
+          workers: [],
+          generatedAt: "2026-08-22T08:00:00.000Z",
+          level: AlertLevel.EMERGENCY,
+          levelLabel: "비상",
+          feelsLikeMax: 38.4,
+          summary: {
+            total: 1,
+            open: 1,
+            openCritical: 1,
+            visitQueued: 1,
+            completed: 0,
+          },
+          subjects: [
+            {
+              subjectId: "archived-snapshot-subject",
+              name: "보관된 과거 대상자",
+              phone: "010-0000-0199",
+              birthYear: 1938,
+              workerId: "archived-worker",
+              workerName: "과거 담당자",
+              workerPhone: "010-0000-0001",
+              buildingId: "building-1",
+              address: "대구광역시 서구 비산동 1",
+              lat: 35.87,
+              lng: 128.56,
+              grade: 1,
+              score: 31.5,
+              reasons: ["과거 경보 당시 냉방기기 고장"],
+              status: HouseholdStatus.VISIT_QUEUED,
+              statusLabel: HOUSEHOLD_STATUS_LABEL[HouseholdStatus.VISIT_QUEUED],
+              open: true,
+            },
+          ],
+          buildings: [],
+        }}
+        mapKey=""
+      />,
+    );
+
+    expect(html).toContain("보관된 과거 대상자");
+    expect(html).toContain("심각");
+    expect(html).toContain(HOUSEHOLD_STATUS_LABEL[HouseholdStatus.VISIT_QUEUED]);
+    expect(html).toContain("과거 경보 당시 냉방기기 고장");
+    expect(html).toContain("과거 기록");
+    expect(html).toContain('href="/admin/subjects/archived-snapshot-subject?date=2026-08-22"');
+    expect(html).not.toContain('href="/admin/subjects/archived-snapshot-subject/edit"');
+    expect(html).not.toContain('/admin/subjects/archived-snapshot-subject?date=2026-08-22#archive');
+  });
+
   it("레퍼런스의 관제 패널을 실제 도메인 데이터로 제공한다", () => {
     const html = renderToStaticMarkup(
       <AdminDashboardView

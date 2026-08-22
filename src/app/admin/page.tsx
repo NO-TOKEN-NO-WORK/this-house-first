@@ -307,7 +307,10 @@ export function PriorityList({
   previewMode = false,
 }: {
   subjects: Array<
-    AdminRosterSubject & Partial<Pick<AdminDashboardSubject, "grade" | "reasons" | "statusLabel" | "open">>
+    AdminRosterSubject &
+    Partial<Pick<AdminDashboardSubject, "grade" | "reasons" | "statusLabel" | "open">> & {
+      historical?: boolean;
+    }
   >;
   date?: string;
   workerId?: string | null;
@@ -379,6 +382,7 @@ export function PriorityList({
                         width={30}
                       />
                       <strong>{subject.name}</strong>
+                      {subject.historical ? <span className={styles.statusBadge}>과거 기록</span> : null}
                     </span>
                   </td>
                   <td>
@@ -402,6 +406,8 @@ export function PriorityList({
                   <td>
                     {previewMode ? (
                       <span className={styles.statusBadge} aria-disabled="true">미리보기</span>
+                    ) : subject.historical ? (
+                      <Link href={subjectHref(subject.subjectId, date, workerId)}>상세</Link>
                     ) : (
                       <span className={styles.rowActions}>
                         <Link href={subjectHref(subject.subjectId, date, workerId)}>상세</Link>
@@ -676,31 +682,30 @@ export function AdminDashboardView({
   pushPublicKey?: string;
   previewMode?: boolean;
 }) {
-  const snapshotBySubjectId = new Map(
-    dashboard.subjects.map((subject, index) => [subject.subjectId, { index, subject }]),
+  const rosterBySubjectId = new Map(
+    dashboard.roster.subjects.map((subject) => [subject.subjectId, subject]),
   );
-  const managementRosterSubjects =
-    dashboard.alerted && filters.selectedStatuses !== undefined
-      ? dashboard.roster.subjects.filter((subject) => snapshotBySubjectId.has(subject.subjectId))
-      : dashboard.roster.subjects;
-  const managementSubjects = managementRosterSubjects
-    .map((subject) => {
-      const snapshot = snapshotBySubjectId.get(subject.subjectId)?.subject;
-      return snapshot
-        ? {
-          ...subject,
-          grade: snapshot.grade,
-          reasons: snapshot.reasons,
-          statusLabel: snapshot.statusLabel,
-          open: snapshot.open,
-        }
-        : subject;
-    })
-    .sort(
-      (left, right) =>
-        (snapshotBySubjectId.get(left.subjectId)?.index ?? Infinity) -
-        (snapshotBySubjectId.get(right.subjectId)?.index ?? Infinity),
-    );
+  const snapshotSubjects = dashboard.subjects.map((snapshot) => {
+    const roster = rosterBySubjectId.get(snapshot.subjectId);
+    return roster
+      ? {
+        ...roster,
+        grade: snapshot.grade,
+        reasons: snapshot.reasons,
+        statusLabel: snapshot.statusLabel,
+        open: snapshot.open,
+      }
+      : { ...snapshot, historical: true };
+  });
+  const snapshotSubjectIds = new Set(snapshotSubjects.map((subject) => subject.subjectId));
+  const managementSubjects = !dashboard.alerted
+    ? dashboard.roster.subjects
+    : filters.selectedStatuses !== undefined
+      ? snapshotSubjects
+      : [
+        ...snapshotSubjects,
+        ...dashboard.roster.subjects.filter((subject) => !snapshotSubjectIds.has(subject.subjectId)),
+      ];
 
   return (
     <AdminShell
