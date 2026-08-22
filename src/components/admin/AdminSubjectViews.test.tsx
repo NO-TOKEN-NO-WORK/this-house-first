@@ -37,6 +37,11 @@ const detail = {
   date: "2026-08-22",
   workers: [{ id: "worker-1", name: "박○○", phone: "010-0000-0001", role: "WORKER" }],
   buildings: [],
+  latestMemo: {
+    text: "냉방기 필터 청소 권고",
+    createdAt: "2026.08.22 10:05",
+    workerName: "박○○",
+  },
   checks: [
     {
       id: "check-1",
@@ -85,5 +90,46 @@ describe("관리자 대상자 상세·수정 화면", () => {
     expect(html).toContain("② 위험/관제 정보");
     expect(html).toContain("③ 설비 점검 정보");
     expect(html).toContain("저장");
+  });
+});
+
+describe("현장 메모", () => {
+  it("위험 사유와 함께, 언제·누가 남겼는지까지 보여준다", async () => {
+    const { AdminSubjectDetailView } = await import("./AdminSubjectViews");
+    const html = renderToStaticMarkup(<AdminSubjectDetailView detail={detail} />);
+
+    expect(html).toContain("현장 메모");
+    expect(html).toContain("냉방기 필터 청소 권고");
+    // 오래된 메모를 오늘 관찰로 읽지 않도록 시각·점검자를 함께 싣는다
+    expect(html).toContain("2026.08.22 10:05 · 박○○");
+  });
+
+  it("가장 최근 기록에 메모가 없어도 남아 있는 메모를 지우지 않는다", async () => {
+    // 상세 화면의 원터치 기록(RecordGrid)은 메모를 받지 않는다.
+    // 그 기록이 맨 앞에 와도 관리자 화면에서 메모가 사라지면 안 된다.
+    const withMemolessLatest = {
+      ...detail,
+      checks: [
+        {
+          id: "check-2",
+          date: "2026-08-22",
+          createdAt: "2026.08.22 14:20",
+          workerName: "박○○",
+          kind: "전화",
+          result: "안 받으셨어요",
+          memo: null,
+        },
+        ...detail.checks,
+      ],
+    } as unknown as AdminSubjectDetail;
+
+    const { AdminSubjectDetailView } = await import("./AdminSubjectViews");
+    const html = renderToStaticMarkup(
+      <AdminSubjectDetailView detail={withMemolessLatest} />,
+    );
+
+    // 현장 메모 칸만 집어서 본다 — "미등록"은 다른 항목도 쓰는 문구다
+    const memoCell = /<dt>현장 메모<\/dt><dd>([^<]*)<\/dd>/.exec(html)?.[1];
+    expect(memoCell).toContain("냉방기 필터 청소 권고");
   });
 });
