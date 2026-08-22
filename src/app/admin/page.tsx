@@ -294,7 +294,7 @@ export function PriorityList({
               </tr>
             </thead>
             <tbody>
-              {subjects.slice(0, 6).map((subject, index) => (
+              {subjects.map((subject, index) => (
                 <tr key={subject.subjectId} className={subject.open ? styles.openRow : ""}>
                   <td><span className={styles.rankBadge}>{index + 1}</span></td>
                   <td>
@@ -348,7 +348,7 @@ function BuildingStatusPanel({ buildings }: { buildings: AdminDashboardBuilding[
     <section className={styles.buildingPanel} aria-labelledby="building-status-title">
       <h2 id="building-status-title" className={styles.panelTitle}>건물별 미처리 현황</h2>
       <ul className={styles.buildingList}>
-        {buildings.slice(0, 5).map((building) => (
+        {buildings.map((building) => (
           <li key={building.buildingId} className={styles.buildingRow}>
             <Image
               alt=""
