@@ -26,3 +26,4 @@
 | [0011](0011-deploy-local-demo-first.md) | 배포/데모 전략: 로컬 데모 우선, 수동 트리거 | 승인됨 |
 | [0012](0012-seed-runner-tsx.md) | 시드: tsx 실행기 + 건축HUB 실호출로 건물 데이터 생성 | 승인됨 |
 | [0013](0013-prisma-postgres.md) | DB: Prisma Postgres 전환 + Vercel 배포 | 승인됨 |
+| [0014](0014-figma-design-with-domain-terms.md) | 담당자 화면: Figma 디자인 + 도메인 상수 문구 | 승인됨 |

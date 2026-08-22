@@ -167,7 +167,9 @@ stateDiagram-v2
 
 ## 8. 비기능 구현 방침
 
-- **접근성(담당자 앱)**: 기본 글자 크기 상향, 터치 타깃 최소 48px, 화면당 결정 1개, 기록 완료까지 탭 2회 이내 (PRD §9) — 공용 컴포넌트로 강제
+- **접근성(담당자 앱)**: 기본 글자 크기 상향, 터치 타깃 최소 48px, 화면당 결정 1개, 기록 완료까지 탭 2회 이내 (PRD §9) — 공용 컴포넌트로 강제. 보드 카드 버튼(탭 1) → 상세의 결과 버튼(탭 2)이 기록 경로다
+- **담당자 화면 디자인**: Figma `junction` ①(`8:1803`)·①-b(`14:2926`)·②(`3:505`)를 따른다. 색은 `src/app/globals.css`의 `@theme` 토큰, 아이콘은 인라인 SVG(`src/components/today/icons.tsx`). **문구는 `src/lib/domain.ts` 상수를 쓰며 디자인과 의도적으로 다른 지점이 있다** — 근거와 목록은 [ADR-0014](adr/0014-figma-design-with-domain-terms.md)
+- **하단 탭(오늘·지도·기록)**: 지도(④)·기록 화면이 없는 동안은 비활성 항목으로 둔다. 눌러도 아무 일이 없는 링크는 담당자에게 고장으로 읽힌다
 - **알림 침묵 원칙**: 비경보일 알림 0건. 알림 생성은 도메인 로직, 전달은 v0 인앱([ADR-0008](adr/0008-notification-in-app-first.md))
 - **PWA**: manifest + 수제 SW([ADR-0006](adr/0006-pwa-manual-service-worker.md)). 오프라인 기록 큐잉은 데모에서 언급만
 - **배포**: Vercel([ADR-0013](adr/0013-prisma-postgres.md)) — `vercel-build`가 direct 연결(`DIRECT_URL`)로 `prisma migrate deploy` 후 빌드하고, 런타임은 pooled 연결(`DATABASE_URL`)을 쓴다. 데모 진행은 여전히 로컬 실행이 기본이고([ADR-0011](adr/0011-deploy-local-demo-first.md)) 배포 URL은 심사위원 접속용 보조 경로다. 절차는 [docs/deploy-vercel.md](deploy-vercel.md)
@@ -181,3 +183,11 @@ stateDiagram-v2
 | D1 밤: 담당자 모바일 웹 | `src/app/today/` |
 | D2 오전: 관리자 대시보드 | `src/app/admin/`, 카카오맵 컴포넌트 |
 | D2 오후: 출동 경로 + 리허설 | `/api/visit-queue`, 시뮬레이션 계산 |
+
+## 10. 알려진 문제
+
+| 문제 | 영향 | 현재 대응 |
+|---|---|---|
+| `POST /api/trigger`가 콜드 커넥션에서 Prisma 인터랙티브 트랜잭션 5초 제한을 넘겨 500 (`A commit cannot be executed on an expired transaction`) | 그날 첫 발령이 실패한다. **데모 첫 시연에서 바로 터질 수 있다** | 재시도하면 성공. `declareTrigger`의 `$transaction`에 `timeout` 상향 또는 대상자별 쓰기를 트랜잭션 밖으로 빼는 것이 근본 대응 |
+| 비경보일에는 가구 확인 기록을 남길 수 없다 | ①-b 화면의 `연락 완료` 칩·`3 / 15` 요약을 구현하지 못함 | 명단만 표시하고 전화는 `tel:`로 바로 건다. 저장하려면 `HouseholdDayStatus`를 `AlertDay`에서 분리해야 하며 별도 ADR 필요 ([ADR-0014](adr/0014-figma-design-with-domain-terms.md)) |
+| ③ 방문 큐 & 출동 경로(`1:883`) 미구현 | 승격된 가구의 이동 순서·경로 안내가 없다 | 방문 결과 기록은 대상자 상세에서 가능. 경로는 `/api/visit-queue`(D2 예정)와 함께 |
