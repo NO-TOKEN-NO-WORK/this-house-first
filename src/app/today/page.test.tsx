@@ -149,7 +149,7 @@ function findAppSettings(node: ReactNode): ReactElement | null {
 }
 
 describe("TodayPage 위험 단계 필터", () => {
-  it("경보 여부와 무관하게 인사말 아래에 현재 날씨를 표시한다", async () => {
+  it("경보 여부와 무관하게 현재 날씨를 표시하지 않는다", async () => {
     for (const currentBoard of [board, silentBoard]) {
       getBoard.mockResolvedValue(currentBoard);
 
@@ -160,7 +160,7 @@ describe("TodayPage 위험 단계 필터", () => {
         }),
       );
 
-      expect(html).toContain('aria-label="현재 날씨"');
+      expect(html).not.toContain('aria-label="현재 날씨"');
     }
   });
 
