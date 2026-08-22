@@ -1,6 +1,6 @@
 # ADR-0020: 복지 스캔 — Luna 신호 추출 + 규칙 기반 자격 판정
 
-- 상태: 부분 대체됨([ADR-0023](0023-vercel-ai-gateway-luna.md))
+- 상태: 부분 대체됨([ADR-0023](0023-vercel-ai-gateway-luna.md), [ADR-0024](0024-subject-context-briefing.md))
 - 날짜: 2026-08-22
 
 ## 맥락

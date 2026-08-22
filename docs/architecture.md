@@ -24,6 +24,7 @@ flowchart LR
         HUB["국토부 건축HUB<br/>건축물대장"]
         MOIS["행안부<br/>연령별 주민등록인구"]
         KAKAO["카카오맵<br/>지도·경로"]
+        AIGW["Vercel AI Gateway<br/>openai/gpt-5.6-luna"]
     end
     W --> RH
     A --> RH
@@ -32,6 +33,7 @@ flowchart LR
     TR --> KMA
     RH --> HUB
     RH --> MOIS
+    RH -->|복지 스캔·맥락 브리핑| AIGW
     A -.->|JS SDK| KAKAO
 ```
 
@@ -61,6 +63,8 @@ src/
 │   │   ├── reasons.ts        # 위험 사유 분류(개인·건물·기상) — 문장은 그대로 둔다
 │   │   └── *.test.ts
 │   ├── escalation/           # initial(발령 시 진입) · transition(기록 전이, FR-5) — 모두 순수 함수
+│   ├── welfare-scan/         # eligibility(순수 규칙 자격 판정) · openai(Luna 신호 추출, FR-11)
+│   ├── briefing/             # 맥락 브리핑 (FR-12) — 마스킹·모델 호출·근거 대조. 스코어링과 데이터가 겹치지 않는다
 │   ├── board/                # today.ts(보드 — /today·/api/subjects 공유) · subject.ts(상세) · log.ts(기록 탭 화면 모델) · log-read.ts(조회) · format.ts(날짜·나이·동)
 │   ├── http.ts               # 앱 API 공통 오류·검증 헬퍼
 │   ├── public-data/          # 공공데이터포털 공통 클라이언트 + 기상청(예보·초단기실황·특보)·인구 (서버 전용)
@@ -96,6 +100,7 @@ erDiagram
     AlertDay ||--o{ Notification : "알림 사건"
     Worker ||--o{ Notification : "수신"
     Worker ||--o{ PushSubscription : "기기 구독"
+    Subject ||--o| SubjectBriefing : "맥락 브리핑 캐시"
 
     Worker {
         string role "WORKER | MANAGER"
@@ -112,11 +117,14 @@ erDiagram
     CheckEvent { string result "CALL·VISIT 결과 코드" }
     Notification { string type "ALERT_DAY_SUMMARY | VISIT_PROMOTED" }
     PushSubscription { string endpoint "브라우저별 Push endpoint" }
+    SubjectBriefing { string sourceCheckEventId "이 기록 이후 새 확인이 없으면 재생성 안 함" }
 ```
 
 핵심 원칙: **"건물은 진짜, 사람은 가짜"** (PRD §8) — `Building`은 실존 주소의 실제 건축물대장 값, `Subject`는 합성 인물. 실명 개인정보는 어떤 형태로도 저장 금지.
 
 `Worker`·`Subject`·`Building`은 경보와 무관한 영구 원장이다. 현재 관리 대상은 `archivedAt IS NULL`이며, 관리자 보관 작업은 행을 삭제하지 않고 `archivedAt`만 기록한다. 따라서 과거 경보·점검 이력의 외래키 관계는 유지된다([ADR-0022](adr/0022-permanent-roster-alert-snapshot-separation.md)).
+
+`SubjectBriefing`은 `CheckEvent` 이력에서 생성한 맥락 브리핑의 캐시다(FR-12). 대상자당 최대 한 행이며 생성 근거가 된 최신 `CheckEvent.id`를 함께 들고 있어, 그 뒤로 새 확인 기록이 없으면 모델을 다시 부르지 않는다. 파생 데이터이므로 지워도 다음 열람에서 다시 만들어진다 — 원장은 `CheckEvent`다([ADR-0024](adr/0024-subject-context-briefing.md)).
 
 `AlertDay`가 없는 날짜에도 활성 생활지원사·대상자 원장은 항상 조회한다. `RiskAssessment`·`HouseholdDayStatus`·`CheckEvent`는 경보일별 스냅샷이므로 해당 날짜에 행이 없으면 관리자 원장 화면은 위험 단계·상태를 복사하지 않고 `경보 없음`으로 표시한다. 새 경보·신규 점검·기본 담당자/관리자 선택에서는 보관 원장을 제외하지만, 명시 ID로 여는 과거 상세와 기존 경보 스냅샷은 보존한다.
 
@@ -154,6 +162,24 @@ stateDiagram-v2
 - 엔진: `src/lib/scoring/score.ts` — 순수 함수, 점수 + 위험 단계 + **위험 사유(reasons)** 반환
 - UI의 위험 사유 카드(F3)는 엔진이 반환한 reasons만 표시한다 (설명 가능성 보장)
 
+### 5-b. 맥락 브리핑 (FR-12) — 스코어링과 분리된 경로
+
+`CheckEvent` 이력에서 대면 전 한 줄과 인수인계 3줄을 만든다(PRD F6, [ADR-0024](adr/0024-subject-context-briefing.md)). **위험도 경로와 아무것도 공유하지 않는 것이 이 설계의 요점이다.**
+
+| | 위험도 (§5) | 맥락 브리핑 (5-b) |
+|---|---|---|
+| 답하는 질문 | 누구부터 확인할까 | 만나서 무엇을 확인할까 |
+| 입력 | 대상자·건물 속성 + 당일 기상 | `CheckEvent` 이력(결과 + 메모) |
+| 판단 주체 | `scoring/` 순수 규칙 엔진 | 외부 모델 + 서버 근거 대조 |
+| 출력이 닿는 곳 | `RiskAssessment.score`·`grade`·`reasons` | `SubjectBriefing`, 화면의 별도 영역 |
+| 실패했을 때 | 발령 자체가 실패 | 브리핑 영역만 사라지고 기록 원문은 그대로 |
+
+- **AI는 `RiskAssessment`에 쓰지도 읽지도 않는다.** 점수·순서는 계속 [ADR-0005](adr/0005-rule-based-risk-model.md)의 규칙 엔진이 단독으로 정한다
+- **근거 대조**: 모델은 문장마다 `sourceCheckEventId`를 함께 낸다. 서버가 그 행이 실재하고 **해당 대상자의 것인지** 확인하고, 통과 못한 문장은 버린다. 화면의 근거 문구(날짜·확인 종류·결과)는 모델 출력이 아니라 DB 행에서 만든다 — 위험 사유를 UI가 재작성하지 않는 원칙(AGENTS.md 도메인 규칙 3)과 같다
+- **개인정보 경계**: 담당자가 그 대상자를 열었을 때 **1명분만** 보낸다. 전송 전 서버가 메모에서 이름·전화·주소·기관명 패턴을 지우고, 대상자 식별자는 요청마다 새로 만드는 임시 별칭을 쓴다. `Subject.id`·이름·연락처·주소·담당자 이름은 보내지 않는다. `store: false` + strict Structured Outputs. 관리자 일괄 배치는 하지 않는다
+- **알림을 만들지 않는다** — `Notification` 행을 생성하지 않는다(도메인 규칙 4)
+- reasoning effort는 `medium`이다. 담당자가 화면을 여는 동안 기다리는 호출이라 지연이 비싸다 — 관리자가 수동 실행하는 복지 스캔(`high`)과 다른 선택이다
+
 ## 6. 외부 연동
 
 | 연동 | 용도 | 인증 | env 키 |
@@ -165,6 +191,7 @@ stateDiagram-v2
 | 카카오맵 JS SDK | F5 지도 | JS 앱 키 (클라이언트) | `NEXT_PUBLIC_KAKAO_MAP_KEY` |
 | 카카오 REST (로컬 주소검색·자동차 경로) | 지오코딩 + 법정동코드(`b_code` → 건축HUB 조회 키), FR-7 차량 최단 경로 | REST 키 (서버 전용) | `KAKAO_REST_KEY` |
 | Vercel AI Gateway Responses API (`openai/gpt-5.6-luna`, high) | FR-11 설비 사실·비식별 현장 용어의 문제 신호 분류 | Vercel OIDC / 로컬 Gateway 키 (서버 전용) | `VERCEL_OIDC_TOKEN`(자동), `AI_GATEWAY_API_KEY`(로컬) |
+| Vercel AI Gateway Responses API (`openai/gpt-5.6-luna`, medium) | FR-12 마스킹된 확인 기록 → 맥락 브리핑 (1명 단위 온디맨드) | 같음 | 같음 |
 
 - 서버 전용 키는 절대 `NEXT_PUBLIC_` 접두사를 붙이지 않는다. 외부 호출은 Route Handler를 거쳐 프록시
 - 키 목록은 [.env.example](../.env.example) 참조. 실제 키는 커밋 금지
@@ -193,6 +220,7 @@ stateDiagram-v2
 | `/api/push-subscriptions` | 담당자·관리자 Web Push 구독 등록·해지 | ✅ 구현됨 |
 | `/api/notifications/dispatch` | 오전 8시 예약·실패 재시도 Push 발송 | ✅ 구현됨 |
 | `/api/visit-queue` | 방문 큐 + 위험 단계 우선 차량 최단 순서 + 카카오 자동차 경로·예상시간 (FR-7) | ✅ 구현됨 |
+| `/api/subjects/[subjectId]/briefing` | `GET` 대상자 맥락 브리핑 — 새 확인 기록이 없으면 캐시 반환 (FR-12) | 예정 (Should) |
 | `/api/report` | 일일 보고서 (FR-9) | 예정 (Could) |
 
 ## 8. 비기능 구현 방침
@@ -219,4 +247,5 @@ stateDiagram-v2
 | 문제 | 영향 | 현재 대응 |
 |---|---|---|
 | `POST /api/trigger`가 콜드 커넥션에서 Prisma 인터랙티브 트랜잭션 5초 제한을 넘겨 500 (`A commit cannot be executed on an expired transaction`) | 그날 첫 발령이 실패한다. **데모 첫 시연에서 바로 터질 수 있다** | 재시도하면 성공. `declareTrigger`의 `$transaction`에 `timeout` 상향 또는 대상자별 쓰기를 트랜잭션 밖으로 빼는 것이 근본 대응 |
+| 시드가 `CheckEvent`를 지우기만 하고 만들지 않는다 (`prisma/seed.ts:155`) | FR-11 복지 스캔은 최신 메모 1건, FR-12 맥락 브리핑은 입력 전체가 0건이 된다. **브리핑을 붙여도 데모에서 빈 화면이 나온다** | 대상자별 과거 경보일·확인 기록·메모를 합성해 시드에 넣는 것이 FR-12의 선행 작업이다 ([ADR-0024](adr/0024-subject-context-briefing.md)) |
 | 비경보일에는 가구 확인 기록을 남길 수 없다 | ①-b 화면의 `연락 완료` 칩·`3 / 15` 요약을 구현하지 못함 | 명단만 표시하고 전화는 `tel:`로 바로 건다. 저장하려면 `HouseholdDayStatus`를 `AlertDay`에서 분리해야 하며 별도 ADR 필요 ([ADR-0014](adr/0014-figma-design-with-domain-terms.md)) |
