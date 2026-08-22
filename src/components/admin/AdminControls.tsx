@@ -104,7 +104,7 @@ export function AdminControls({ date }: { date: string }) {
         </label>
         <button
           aria-busy={pending}
-          className={`${styles.submitButton} ${styles.demoButton}`}
+          className={styles.submitButton}
           disabled={pending}
           type="submit"
         >

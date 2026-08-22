@@ -1,6 +1,12 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { AdminMap, cleanupKakaoMap, loadKakaoSdk } from "./AdminMap";
+import {
+  AdminMap,
+  adminMapBuildingsSignature,
+  cleanupKakaoMap,
+  isValidMapCoordinate,
+  loadKakaoSdk,
+} from "./AdminMap";
 
 type FakeScript = {
   async: boolean;
@@ -101,6 +107,50 @@ describe("AdminMap", () => {
     );
 
     expect(html).toContain("지도에 표시할 수 있는 건물 좌표가 없습니다");
+  });
+
+  it("위도·경도 범위를 벗어난 유한 좌표도 지도에서 제외한다", () => {
+    expect(isValidMapCoordinate(90, 180)).toBe(true);
+    expect(isValidMapCoordinate(90.01, 128.56)).toBe(false);
+    expect(isValidMapCoordinate(35.87, 180.01)).toBe(false);
+  });
+
+  it("내용이 같은 새 건물 배열은 같은 지도 초기화 서명을 만든다", () => {
+    const buildings = [
+      {
+        buildingId: "building-1",
+        address: "대구광역시 서구 비산동 1",
+        lat: 35.87,
+        lng: 128.56,
+        grade: 1 as const,
+        score: 31.5,
+        statusCategory: "unchecked" as const,
+        openCount: 1,
+        subjects: [
+          {
+            subjectId: "subject-1",
+            name: "김○○",
+            workerId: "worker-1",
+            workerName: "이담당",
+            buildingId: "building-1",
+            address: "대구광역시 서구 비산동 1",
+            lat: 35.87,
+            lng: 128.56,
+            grade: 1 as const,
+            score: 31.5,
+            reasons: ["1938년생 (88세)·독거"],
+            status: "UNCHECKED" as const,
+            statusLabel: "미확인",
+            open: true,
+          },
+        ],
+      },
+    ];
+    const refreshedBuildings = JSON.parse(JSON.stringify(buildings));
+
+    expect(adminMapBuildingsSignature(refreshedBuildings)).toBe(
+      adminMapBuildingsSignature(buildings),
+    );
   });
 
   it("실패한 SDK 스크립트를 제거해 다음 로드를 다시 시도한다", async () => {

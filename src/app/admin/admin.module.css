@@ -1,4 +1,5 @@
 /* Hallmark · genre: modern-minimal · macrostructure: Map / Diagram · theme: Cobalt · enrichment: map · nav: N9 · footer: Ft2 */
+/* Committed tone: utilitarian · palette anchor hue: cobalt */
 /* Hallmark · pre-emit critique: P4 H4 E4 S5 R5 V4 */
 /* Hallmark · contrast: pass (40–41) · nav: N9 · footer: Ft2 · slop: pass (42–45) · honest: pass (46) · chrome: pass (47) · tokens: pass (48) · responsive: implementation-pass (49; viewport QA unavailable) · icons: pass (30) · mobile: implementation-pass (34, 49, 50–57; viewport QA unavailable) */
 @import "../../../tokens.css";
@@ -378,6 +379,96 @@
   min-inline-size: 0;
 }
 
+.legend,
+.dataSources {
+  padding: var(--admin-space-3);
+  border: 1px solid var(--admin-rule);
+  background: var(--admin-surface);
+}
+
+.legendGrid {
+  display: grid;
+  gap: var(--admin-space-3);
+}
+
+.legendGroup {
+  min-inline-size: 0;
+}
+
+.legendTitle {
+  margin: 0 0 var(--admin-space-2);
+  font-size: 0.875rem;
+}
+
+.legendList {
+  display: grid;
+  gap: var(--admin-space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-2);
+}
+
+.legendMarker,
+.statusLegendMarker {
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+  flex: 0 0 auto;
+  border: 3px solid var(--admin-ink);
+  border-radius: 50%;
+}
+
+.legendGrade1 {
+  background: var(--admin-grade-critical);
+}
+
+.legendGrade2 {
+  background: var(--admin-grade-high);
+}
+
+.legendGrade3 {
+  background: var(--admin-grade-moderate);
+}
+
+.statusLegendMarker {
+  background: var(--admin-surface);
+}
+
+.statusLegendMarker.emergency {
+  border-color: var(--admin-grade-critical);
+}
+
+.statusLegendMarker.visit {
+  border-color: var(--admin-accent);
+}
+
+.statusLegendMarker.unchecked {
+  border-color: var(--admin-ink);
+}
+
+.statusLegendMarker.unreachable {
+  border-color: var(--admin-ink-soft);
+}
+
+.statusLegendMarker.called {
+  border-color: var(--admin-grade-high);
+}
+
+.statusLegendMarker.resolved {
+  border-color: var(--admin-grade-moderate);
+}
+
+.dataSources p {
+  margin: 0;
+  color: var(--admin-ink-soft);
+  line-height: 1.6;
+}
+
 .sectionTitle {
   margin: 0 0 var(--admin-space-3);
   font-family: var(--admin-font-display);
@@ -574,6 +665,10 @@
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: end;
   }
+
+  .legendGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (min-width: 80rem) {
@@ -601,22 +696,20 @@
 
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .navLink:hover,
-  .subjectLink:hover {
-    color: var(--admin-accent);
-  }
+.navLink:hover,
+.subjectLink:hover {
+  color: var(--admin-accent);
+}
 
-  .filterControl:hover,
-  .submitButton:not(:disabled):hover {
-    border-color: var(--admin-ink);
-  }
+.filterControl:hover,
+.submitButton:not(:disabled):hover {
+  border-color: var(--admin-ink);
+}
 
-  .mapMarker:not(:disabled):hover {
-    box-shadow: 0 0 0 1px var(--admin-ink);
-  }
+.mapMarker:not(:disabled):hover {
+  box-shadow: 0 0 0 1px var(--admin-ink);
+}
 
-  .priorityItem:hover {
-    border-color: var(--admin-accent);
-  }
+.priorityItem:hover {
+  border-color: var(--admin-accent);
 }

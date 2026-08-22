@@ -6,6 +6,7 @@ import {
   type AdminAlertedDashboard,
   type AdminDashboard,
   type AdminDashboardSubject,
+  type AdminStatusCategory,
 } from "../../lib/admin/dashboard";
 import { isIsoDate } from "../../lib/board/format";
 import {
@@ -25,6 +26,27 @@ const GRADE_CLASS: Record<RiskGrade, string> = {
   [RiskGrade.HIGH]: styles.grade2,
   [RiskGrade.MODERATE]: styles.grade3,
 };
+
+const STATUS_LEGEND: Array<{
+  category: AdminStatusCategory;
+  statuses: HouseholdStatus[];
+}> = [
+  {
+    category: "emergency",
+    statuses: [HouseholdStatus.EMERGENCY_119],
+  },
+  {
+    category: "visit",
+    statuses: [HouseholdStatus.VISITING, HouseholdStatus.VISIT_QUEUED],
+  },
+  {
+    category: "unchecked",
+    statuses: [HouseholdStatus.NO_ANSWER_1, HouseholdStatus.UNCHECKED],
+  },
+  { category: "unreachable", statuses: [HouseholdStatus.UNREACHABLE] },
+  { category: "called", statuses: [HouseholdStatus.CALL_OK] },
+  { category: "resolved", statuses: [HouseholdStatus.RESOLVED] },
+];
 
 const LAST_UPDATED_FORMAT = new Intl.DateTimeFormat("ko-KR", {
   hour: "2-digit",
@@ -122,6 +144,65 @@ export function PriorityList({
           ))}
         </ol>
       )}
+    </section>
+  );
+}
+
+function MapLegend() {
+  return (
+    <section className={styles.legend} aria-labelledby="map-legend-title">
+      <h2 id="map-legend-title" className={styles.sectionTitle}>
+        지도 표시 기준
+      </h2>
+      <div className={styles.legendGrid}>
+        <section className={styles.legendGroup} aria-labelledby="grade-legend-title">
+          <h3 id="grade-legend-title" className={styles.legendTitle}>
+            등급 채움색
+          </h3>
+          <ul className={styles.legendList}>
+            {Object.values(RiskGrade).map((grade) => (
+              <li key={grade} className={styles.legendItem}>
+                <span
+                  aria-hidden="true"
+                  className={`${styles.legendMarker} ${styles[`legendGrade${grade}`]}`}
+                />
+                {GRADE_LABEL[grade]}
+              </li>
+            ))}
+          </ul>
+        </section>
+        <section className={styles.legendGroup} aria-labelledby="status-legend-title">
+          <h3 id="status-legend-title" className={styles.legendTitle}>
+            상태 테두리색
+          </h3>
+          <ul className={styles.legendList}>
+            {STATUS_LEGEND.map((entry) => (
+              <li key={entry.category} className={styles.legendItem}>
+                <span
+                  aria-hidden="true"
+                  className={`${styles.statusLegendMarker} ${styles[entry.category]}`}
+                />
+                {entry.statuses
+                  .map((status) => HOUSEHOLD_STATUS_LABEL[status])
+                  .join(" · ")}
+              </li>
+            ))}
+          </ul>
+        </section>
+      </div>
+    </section>
+  );
+}
+
+function DataSources() {
+  return (
+    <section className={styles.dataSources} aria-labelledby="data-sources-title">
+      <h2 id="data-sources-title" className={styles.sectionTitle}>
+        데이터 출처
+      </h2>
+      <p>
+        경보 단계·체감온도: 기상청 단기예보·특보 API · 건물 정보: 국토부 건축HUB 건축물대장 · 지도: 카카오맵 API
+      </p>
     </section>
   );
 }
@@ -227,12 +308,14 @@ export function AdminDashboardView({
                 workerId={dashboard.selectedWorkerId}
               />
             </section>
+            <MapLegend />
           </>
         ) : (
           <p className={styles.silentState}>
             오늘은 경보가 없습니다. 경보가 내려지면 위험도와 우선 확인 대상을 안내합니다.
           </p>
         )}
+        <DataSources />
         {controls}
       </main>
       <footer className={styles.footer}>© 2026 이 집 먼저 · 관리자 관제</footer>
@@ -240,12 +323,20 @@ export function AdminDashboardView({
   );
 }
 
+export function normalizeAdminSearchParams(params: {
+  date?: string | string[];
+  workerId?: string | string[];
+}): { date?: string; workerId?: string } | null {
+  if (Array.isArray(params.date) || Array.isArray(params.workerId)) return null;
+  if (params.date !== undefined && !isIsoDate(params.date)) return null;
+  return { date: params.date, workerId: params.workerId };
+}
+
 export default async function AdminPage(props: PageProps<"/admin">) {
   const params = await props.searchParams;
-  const date = typeof params.date === "string" ? params.date : undefined;
-  if (date !== undefined && !isIsoDate(date)) notFound();
-  const workerId =
-    typeof params.workerId === "string" ? params.workerId : undefined;
+  const query = normalizeAdminSearchParams(params);
+  if (!query) notFound();
+  const { date, workerId } = query;
   const dashboard = await getAdminDashboard({ date, workerId });
 
   return (

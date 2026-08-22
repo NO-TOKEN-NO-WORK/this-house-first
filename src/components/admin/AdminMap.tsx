@@ -49,6 +49,50 @@ export function cleanupKakaoMap(
   container.replaceChildren();
 }
 
+export function isValidMapCoordinate(lat: number, lng: number): boolean {
+  return (
+    Number.isFinite(lat) &&
+    Number.isFinite(lng) &&
+    lat >= -90 &&
+    lat <= 90 &&
+    lng >= -180 &&
+    lng <= 180
+  );
+}
+
+export function adminMapBuildingsSignature(
+  buildings: AdminDashboardBuilding[],
+): string {
+  return JSON.stringify(
+    buildings.map((building) => [
+      building.buildingId,
+      building.address,
+      building.lat,
+      building.lng,
+      building.grade,
+      building.score,
+      building.statusCategory,
+      building.openCount,
+      building.subjects.map((subject) => [
+        subject.subjectId,
+        subject.name,
+        subject.workerId,
+        subject.workerName,
+        subject.buildingId,
+        subject.address,
+        subject.lat,
+        subject.lng,
+        subject.grade,
+        subject.score,
+        subject.reasons,
+        subject.status,
+        subject.statusLabel,
+        subject.open,
+      ]),
+    ]),
+  );
+}
+
 export function loadKakaoSdk(mapKey: string): Promise<KakaoMaps> {
   if (window.kakao?.maps) return Promise.resolve(window.kakao.maps);
 
@@ -103,13 +147,13 @@ export function AdminMap({
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const [mapError, setMapError] = useState<string | null>(null);
   const [selectedBuildingId, setSelectedBuildingId] = useState<string | null>(null);
+  const buildingsSignature = adminMapBuildingsSignature(buildings);
   const mappedBuildings = useMemo(
     () =>
-      buildings.filter(
-        (building) =>
-          Number.isFinite(building.lat) && Number.isFinite(building.lng),
+      (JSON.parse(buildingsSignature) as AdminDashboardBuilding[]).filter(
+        (building) => isValidMapCoordinate(building.lat, building.lng),
       ),
-    [buildings],
+    [buildingsSignature],
   );
   const selectedBuilding = buildings.find(
     (building) => building.buildingId === selectedBuildingId,
