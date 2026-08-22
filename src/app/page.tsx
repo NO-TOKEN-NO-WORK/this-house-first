@@ -15,7 +15,6 @@ export default function Home() {
       </header>
 
       <nav className="flex w-full max-w-sm flex-col gap-4">
-        {/* 관리자 화면(/admin) 구현 전까지는 안내만 표시 (docs/architecture.md §7) */}
         <Link
           href="/today"
           className="rounded-2xl border border-border-default p-5 active:bg-background-subtle"
@@ -23,12 +22,13 @@ export default function Home() {
           <p className="text-label-14 text-text-tertiary">담당자 (생활지원사)</p>
           <p className="mt-1 text-heading-20">오늘의 대응 보드</p>
         </Link>
-        <div className="rounded-2xl border border-border-default p-5">
+        <Link
+          href="/admin"
+          className="rounded-2xl border border-border-default p-5 active:bg-background-subtle"
+        >
           <p className="text-label-14 text-text-tertiary">관리자 (전담사회복지사)</p>
-          <p className="mt-1 text-heading-20">
-            관제 대시보드 <span className="text-body-14 text-text-tertiary">— 준비 중</span>
-          </p>
-        </div>
+          <p className="mt-1 text-heading-20">관제 대시보드</p>
+        </Link>
       </nav>
 
       <footer className="text-body-14 text-text-tertiary">

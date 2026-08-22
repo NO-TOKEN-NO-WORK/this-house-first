@@ -44,7 +44,7 @@ src/
 │   ├── page.tsx              # 홈 (진입점 안내)
 │   ├── today/                # 담당자: 오늘의 대응 보드 + PWA 등록 + [subjectId] 상세·기록 + log(기록 탭) (F3, F4)
 │   ├── map/                  # 담당자: 담당 가구 지도 (F5)
-│   ├── admin/                # [예정] 관리자: 관제 대시보드 (F5)
+│   ├── admin/                # 관리자: 관제 대시보드 (F5) — ✅ 구현됨
 │   └── api/                  # Route Handlers (공공데이터 프록시 포함)
 ├── components/
 │   ├── ServiceWorkerRegistrar.tsx
@@ -159,7 +159,7 @@ stateDiagram-v2
 | `/today/[subjectId]` | 대상자 상세 + 원터치 전화·방문 결과 기록 (FR-4·FR-5) | ✅ 구현됨 |
 | `/today/log` | 담당자 확인 기록 목록 — 선택한 담당자의 CheckEvent (읽기 전용) | ✅ 구현됨 |
 | `/map` | 담당자 담당 가구 지도 | ✅ 구현됨 |
-| `/admin` | 관리자 지도 대시보드 (FR-6) | 예정 (D2 오전) |
+| `/admin` | 관리자 지도 대시보드·건물별 카카오 오버레이 (FR-6) | ✅ 구현됨 |
 | `/api/trigger` | `GET` 판정 미리보기 / `POST` 발령 — AlertDay + 당일 평가 + 가구 상태 생성 (FR-1·FR-3) | ✅ 연동됨 |
 | `/api/public-data/weather-warnings` | 기상청 기상특보 목록 | ✅ 연동됨 |
 | `/api/public-data/buildings` | 건축HUB 표제부 정규화 | ✅ 연동됨 |
@@ -185,7 +185,7 @@ stateDiagram-v2
 | D1 오전: 합성 데이터 + API 파이프라인 | `prisma/seed.ts` + `prisma/seed/`, `src/lib/trigger/`, `src/lib/bldg-hub/`, `src/lib/public-data/` |
 | D1 오후: 스코어링 + 상태머신 | `src/lib/scoring/` (초기화됨), `src/lib/escalation/` |
 | D1 밤: 담당자 모바일 웹 | `src/app/today/` |
-| D2 오전: 관리자 대시보드 | `src/app/admin/`, 카카오맵 컴포넌트 |
+| D2 오전: 관리자 대시보드 (완료) | `src/app/admin/`, 카카오맵 컴포넌트·건물별 오버레이 |
 | D2 오후: 출동 경로 + 리허설 | `/api/visit-queue`, 시뮬레이션 계산 |
 
 ## 10. 알려진 문제

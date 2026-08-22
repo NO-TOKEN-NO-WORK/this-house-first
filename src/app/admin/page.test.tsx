@@ -1,0 +1,172 @@
+import { readFileSync } from "node:fs";
+import { renderToStaticMarkup } from "react-dom/server";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  AlertLevel,
+  HouseholdStatus,
+  HOUSEHOLD_STATUS_LABEL,
+} from "../../lib/domain";
+
+const mocks = vi.hoisted(() => ({
+  getAdminDashboard: vi.fn(),
+  notFound: vi.fn(() => {
+    throw new Error("not found");
+  }),
+}));
+
+vi.mock("next/navigation", () => ({ notFound: mocks.notFound }));
+vi.mock("../../lib/admin/dashboard", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../lib/admin/dashboard")>()),
+  getAdminDashboard: mocks.getAdminDashboard,
+}));
+
+import AdminPage, { AdminDashboardView, PriorityList, SummaryCards } from "./page";
+
+const adminStyles = readFileSync(
+  new URL("./admin.module.css", import.meta.url),
+  "utf8",
+);
+
+describe("관리자 관제 화면", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("브랜드 링크를 한 줄로 유지하고 미실행 viewport QA를 통과로 표기하지 않는다", () => {
+    expect(adminStyles).toMatch(/\.brand\s*\{[^}]*white-space:\s*nowrap;/);
+    expect(adminStyles).toContain(
+      "responsive: implementation-pass (49; viewport QA unavailable)",
+    );
+    expect(adminStyles).toContain(
+      "mobile: implementation-pass (34, 49, 50–57; viewport QA unavailable)",
+    );
+    expect(adminStyles).not.toContain("responsive: pass");
+    expect(adminStyles).not.toContain("mobile: pass");
+    expect(adminStyles).toContain(
+      "Committed tone: utilitarian · palette anchor hue: cobalt",
+    );
+    expect(adminStyles).not.toContain(
+      "@media (prefers-reduced-motion: no-preference)",
+    );
+  });
+
+  it("반복된 날짜나 담당자 검색값은 조회 전에 404로 막는다", async () => {
+    const repeatedSearches = [
+      { date: ["2026-08-22", "2026-08-23"] },
+      { workerId: ["worker-1", "worker-2"] },
+    ];
+
+    for (const searchParams of repeatedSearches) {
+      await expect(
+        AdminPage({
+          params: Promise.resolve({}),
+          searchParams: Promise.resolve(searchParams),
+        }),
+      ).rejects.toThrow("not found");
+    }
+
+    expect(mocks.notFound).toHaveBeenCalledTimes(2);
+    expect(mocks.getAdminDashboard).not.toHaveBeenCalled();
+  });
+
+  it("핵심 위젯과 위험도 우선 대상을 텍스트로도 제공한다", () => {
+    const summary = {
+      total: 3,
+      open: 2,
+      openCritical: 1,
+      visitQueued: 1,
+      completed: 1,
+    };
+    const html = renderToStaticMarkup(
+      <>
+        <SummaryCards summary={summary} />
+        <PriorityList
+          subjects={[
+            {
+              subjectId: "subject-1",
+              name: "김○○",
+              workerId: "worker-1",
+              workerName: "이담당",
+              buildingId: "building-1",
+              address: "대구광역시 서구 비산동 1",
+              lat: 35.87,
+              lng: 128.56,
+              grade: 1,
+              score: 31.5,
+              reasons: ["1938년생 (88세)·독거"],
+              status: HouseholdStatus.UNCHECKED,
+              statusLabel: HOUSEHOLD_STATUS_LABEL[HouseholdStatus.UNCHECKED],
+              open: true,
+            },
+          ]}
+        />
+      </>,
+    );
+
+    expect(html).toContain("미확인 1등급");
+    expect(html).toContain("김○○");
+    expect(html).toContain("이담당");
+    expect(html).toContain("미확인");
+    expect(html).toContain("1938년생 (88세)·독거");
+  });
+
+  it("비경보일에는 위험도를 만들지 않고 침묵 상태를 안내한다", () => {
+    const html = renderToStaticMarkup(
+      <AdminDashboardView
+        dashboard={{
+          alerted: false,
+          date: "2026-08-22",
+          dateLabel: "8월 22일(토)",
+          selectedWorkerId: null,
+          workers: [],
+          generatedAt: "2026-08-22T08:00:00.000Z",
+          subjects: [],
+          buildings: [],
+        }}
+        mapKey=""
+      />,
+    );
+
+    expect(html).toContain("오늘은 경보가 없습니다");
+    expect(html).not.toContain("1등급 0명");
+  });
+
+  it("지도 범례와 데이터 출처를 상태·등급 텍스트로 함께 제공한다", () => {
+    const html = renderToStaticMarkup(
+      <AdminDashboardView
+        dashboard={{
+          alerted: true,
+          date: "2026-08-22",
+          dateLabel: "8월 22일(토)",
+          selectedWorkerId: null,
+          workers: [],
+          generatedAt: "2026-08-22T08:00:00.000Z",
+          level: AlertLevel.WARNING,
+          levelLabel: "경보",
+          feelsLikeMax: 35,
+          summary: {
+            total: 1,
+            open: 1,
+            openCritical: 1,
+            visitQueued: 0,
+            completed: 0,
+          },
+          subjects: [],
+          buildings: [],
+        }}
+        mapKey=""
+      />,
+    );
+
+    expect(html).toContain("등급 채움색");
+    expect(html).toContain("상태 테두리색");
+    for (const status of Object.values(HouseholdStatus) as Array<
+      (typeof HouseholdStatus)[keyof typeof HouseholdStatus]
+    >) {
+      expect(html).toContain(HOUSEHOLD_STATUS_LABEL[status]);
+    }
+    expect(html).toContain("기상청 단기예보·특보 API");
+    expect(html).toContain("국토부 건축HUB 건축물대장");
+    expect(html).toContain("카카오맵 API");
+  });
+});

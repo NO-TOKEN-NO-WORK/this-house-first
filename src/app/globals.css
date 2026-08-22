@@ -217,6 +217,12 @@
   --text-navigation-11--letter-spacing: 2px;
 }
 
+/* 좁은 화면에서 가로 스크롤이 생기지 않게 한다 (관리자 지도·표) */
+html,
+body {
+  overflow-x: clip;
+}
+
 body {
   background: var(--color-background-default);
   color: var(--color-text-primary);
