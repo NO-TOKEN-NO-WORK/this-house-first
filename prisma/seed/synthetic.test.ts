@@ -44,7 +44,7 @@ describe("합성 대상자 프로필", () => {
 
 function facts(partial: Partial<BuildingFacts> & { mgmBldrgstPk: string }): BuildingFacts {
   return {
-    address: `대구광역시 서구 비산동 ${partial.mgmBldrgstPk}`,
+    address: `경상북도 포항시 북구 죽도동 ${partial.mgmBldrgstPk}`,
     roadAddress: null,
     name: null,
     builtYear: 1975,
@@ -54,7 +54,7 @@ function facts(partial: Partial<BuildingFacts> & { mgmBldrgstPk: string }): Buil
     mainPurpose: "단독주택",
     roof: null,
     groundFloors: 1,
-    bjdongCode: "2717010100",
+    bjdongCode: "4711311600",
     ...partial,
   };
 }
