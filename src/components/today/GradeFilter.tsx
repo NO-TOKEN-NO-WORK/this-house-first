@@ -10,15 +10,15 @@ import {
 import { SubjectCard } from "./SubjectCard";
 
 const GRADE_CHIP: Record<RiskGradeValue, string> = {
-  [RiskGrade.CRITICAL]: "bg-danger text-white",
-  [RiskGrade.HIGH]: "bg-warn text-ink",
-  [RiskGrade.MODERATE]: "bg-calm text-ink",
+  [RiskGrade.CRITICAL]: "bg-status-critical text-text-inverse",
+  [RiskGrade.HIGH]: "bg-status-warning text-text-primary",
+  [RiskGrade.MODERATE]: "bg-status-neutral text-text-primary",
 };
 
 const GRADE_TEXT: Record<RiskGradeValue, string> = {
-  [RiskGrade.CRITICAL]: "text-danger-ink",
-  [RiskGrade.HIGH]: "text-warn-ink",
-  [RiskGrade.MODERATE]: "text-slate",
+  [RiskGrade.CRITICAL]: "text-status-critical-strong",
+  [RiskGrade.HIGH]: "text-status-warning-strong",
+  [RiskGrade.MODERATE]: "text-text-tertiary",
 };
 
 export function GradeFilter({
@@ -66,10 +66,10 @@ export function GradeFilter({
               type="button"
               aria-pressed={active}
               onClick={() => selectGrade(tab.grade)}
-              className={`flex min-h-12 flex-1 items-center justify-center px-3 py-2 text-base ${
+              className={`flex min-h-12 flex-1 items-center justify-center px-3 py-2 text-body-16 ${
                 active
-                  ? "border-b-2 border-brand-deep font-bold text-ink"
-                  : "border-b border-line text-ink"
+                  ? "border-b-2 border-action-primary-strong font-bold text-text-primary"
+                  : "border-b border-border-default text-text-primary"
               }`}
             >
               {tab.label}
@@ -88,12 +88,12 @@ export function GradeFilter({
             <section key={group.grade} className="flex flex-col gap-4">
               <h2 className="flex items-center gap-2">
                 <span
-                  className={`rounded-full px-3.5 py-1 text-base font-bold ${GRADE_CHIP[group.grade]}`}
+                  className={`rounded-full px-3.5 py-1 text-label-16-compact ${GRADE_CHIP[group.grade]}`}
                 >
                   {group.gradeLabel}
                 </span>
                 <span
-                  className={`text-[17px] font-bold ${GRADE_TEXT[group.grade]}`}
+                  className={`text-title-17 ${GRADE_TEXT[group.grade]}`}
                 >
                   {group.subjects.length}명 | {group.plan}
                 </span>

@@ -21,10 +21,10 @@ export default async function MapPage(props: PageProps<"/map">) {
 
   return (
     <>
-      <main className="mx-auto flex w-full max-w-[520px] flex-1 flex-col gap-5 bg-surface px-5 pt-11 pb-[100px]">
+      <main className="mx-auto flex w-full max-w-[520px] flex-1 flex-col gap-5 bg-background-subtle px-5 pt-11 pb-[100px]">
         <header>
-          <h1 className="text-2xl font-bold text-ink">담당 가구 지도</h1>
-          <p className="text-base text-ink-soft">
+          <h1 className="text-heading-24 text-text-primary">담당 가구 지도</h1>
+          <p className="text-body-16 text-text-secondary">
             {board.dateLabel}{board.dong ? ` · ${board.dong}` : ""}
           </p>
         </header>

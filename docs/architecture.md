@@ -172,7 +172,7 @@ stateDiagram-v2
 ## 8. 비기능 구현 방침
 
 - **접근성(담당자 앱)**: 기본 글자 크기 상향, 터치 타깃 최소 48px, 화면당 결정 1개, 기록 완료까지 탭 2회 이내 (PRD §9) — 공용 컴포넌트로 강제. 보드 카드 버튼(탭 1) → 상세의 결과 버튼(탭 2)이 기록 경로다
-- **담당자 화면 디자인**: Figma `junction` ①(`8:1803`)·①-b(`14:2926`)·②(`3:505`)를 따른다. 색은 `src/app/globals.css`의 `@theme` 토큰, 아이콘은 인라인 SVG(`src/components/today/icons.tsx`). **문구는 `src/lib/domain.ts` 상수를 쓰며 디자인과 의도적으로 다른 지점이 있다** — 근거와 목록은 [ADR-0014](adr/0014-figma-design-with-domain-terms.md)
+- **담당자 화면 디자인**: Figma `junction` ①(`8:1803`)·①-b(`14:2926`)·②(`3:505`)를 따른다. 색·글자는 `src/app/globals.css`의 2층 디자인 토큰(Primitive → Semantic, Figma `02 · Foundations` `16:25`)을 쓰고 화면은 Semantic 층만 만진다 ([ADR-0015](adr/0015-design-system-tokens.md)). 아이콘은 인라인 SVG(`src/components/today/icons.tsx`). **문구는 `src/lib/domain.ts` 상수를 쓰며 디자인과 의도적으로 다른 지점이 있다** — 근거와 목록은 [ADR-0014](adr/0014-figma-design-with-domain-terms.md)
 - **하단 탭(오늘·지도·기록)**: 오늘(`/today`)·지도(`/map`)·기록(`/today/log`)은 모두 활성. 탭 왕복은 `date`·`workerId` 검색 문맥을 유지한다. 기록은 PWA scope(`/today`) 안에 둔다
 - **알림 침묵 원칙**: 비경보일 알림 0건. 알림 생성은 도메인 로직, 전달은 v0 인앱([ADR-0008](adr/0008-notification-in-app-first.md))
 - **PWA**: manifest + 수제 SW([ADR-0006](adr/0006-pwa-manual-service-worker.md)). 오프라인 기록 큐잉은 데모에서 언급만

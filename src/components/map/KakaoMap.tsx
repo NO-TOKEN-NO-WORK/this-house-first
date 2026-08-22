@@ -63,14 +63,14 @@ declare global {
 }
 
 const STATUS_TONE: Record<HouseholdStatus, string> = {
-  [HouseholdStatus.UNCHECKED]: "bg-info text-ink-strong",
-  [HouseholdStatus.CALL_OK]: "bg-safe-soft text-safe-ink",
-  [HouseholdStatus.NO_ANSWER_1]: "bg-warn-soft text-warn-ink",
-  [HouseholdStatus.VISIT_QUEUED]: "bg-danger-soft text-danger-ink",
-  [HouseholdStatus.VISITING]: "bg-brand-soft text-brand-deep",
-  [HouseholdStatus.RESOLVED]: "bg-safe-soft text-safe-ink",
-  [HouseholdStatus.EMERGENCY_119]: "bg-danger text-white",
-  [HouseholdStatus.UNREACHABLE]: "bg-danger-soft text-danger-ink",
+  [HouseholdStatus.UNCHECKED]: "bg-background-subtle text-text-supporting",
+  [HouseholdStatus.CALL_OK]: "bg-status-success-subtle text-status-success-strong",
+  [HouseholdStatus.NO_ANSWER_1]: "bg-status-warning-subtle text-status-warning-strong",
+  [HouseholdStatus.VISIT_QUEUED]: "bg-status-critical-subtle text-status-critical-strong",
+  [HouseholdStatus.VISITING]: "bg-action-primary-subtle text-action-primary-strong",
+  [HouseholdStatus.RESOLVED]: "bg-status-success-subtle text-status-success-strong",
+  [HouseholdStatus.EMERGENCY_119]: "bg-status-critical text-text-inverse",
+  [HouseholdStatus.UNREACHABLE]: "bg-status-critical-subtle text-status-critical-strong",
 };
 
 function subjectHref(subjectId: string, date: string, workerId?: string): string {
@@ -101,11 +101,11 @@ export function KakaoMap({ apiKey, buildings, date, workerId }: Props) {
     const bounds = new maps.LatLngBounds();
     const css = getComputedStyle(document.documentElement);
     const fillByGrade: Record<RiskGrade, string> = {
-      [RiskGrade.CRITICAL]: css.getPropertyValue("--color-danger").trim(),
-      [RiskGrade.HIGH]: css.getPropertyValue("--color-warn").trim(),
-      [RiskGrade.MODERATE]: css.getPropertyValue("--color-calm").trim(),
+      [RiskGrade.CRITICAL]: css.getPropertyValue("--color-status-critical").trim(),
+      [RiskGrade.HIGH]: css.getPropertyValue("--color-status-warning").trim(),
+      [RiskGrade.MODERATE]: css.getPropertyValue("--color-status-neutral").trim(),
     };
-    const neutral = css.getPropertyValue("--color-slate").trim();
+    const neutral = css.getPropertyValue("--color-status-neutral").trim();
     const circles: Array<{ circle: KakaoCircle; handler: () => void }> = [];
 
     for (const building of buildings) {
@@ -180,11 +180,11 @@ export function KakaoMap({ apiKey, buildings, date, workerId }: Props) {
         ref={containerRef}
         role="img"
         aria-label="담당 가구 위험 지도"
-        className="h-80 w-full rounded-[10px] border border-line bg-info"
+        className="h-80 w-full rounded-[10px] border border-border-default bg-map-road"
       />
 
       <section aria-labelledby="building-list-heading" className="flex flex-col gap-2">
-        <h2 id="building-list-heading" className="text-base font-bold text-ink">
+        <h2 id="building-list-heading" className="text-label-16-compact text-text-primary">
           건물 선택
         </h2>
         <ul className="flex flex-col gap-2">
@@ -196,10 +196,10 @@ export function KakaoMap({ apiKey, buildings, date, workerId }: Props) {
                   type="button"
                   aria-pressed={selected}
                   onClick={() => setSelectedBuildingId(building.buildingId)}
-                  className={`flex min-h-12 w-full items-center rounded-lg border px-4 text-left text-base font-bold ${
+                  className={`flex min-h-12 w-full items-center rounded-lg border px-4 text-left text-label-16-compact ${
                     selected
-                      ? "border-brand bg-brand-soft text-brand-deep"
-                      : "border-line bg-white text-ink"
+                      ? "border-action-primary bg-action-primary-subtle text-action-primary-strong"
+                      : "border-border-default bg-surface-default text-text-primary"
                   }`}
                 >
                   {buildingAddress(building)}
@@ -212,17 +212,17 @@ export function KakaoMap({ apiKey, buildings, date, workerId }: Props) {
 
       <section
         aria-labelledby="building-detail-heading"
-        className="flex flex-col gap-4 rounded-[10px] border border-line bg-white p-5"
+        className="flex flex-col gap-4 rounded-[10px] border border-border-default bg-surface-default p-5"
       >
         <div className="flex flex-col gap-1">
-          <h2 id="building-detail-heading" className="text-lg font-bold text-ink">
+          <h2 id="building-detail-heading" className="text-heading-18 text-text-primary">
             {buildingAddress(selectedBuilding)}
           </h2>
-          <p className="text-base text-ink-soft">
+          <p className="text-body-16 text-text-secondary">
             담당 대상자 {selectedBuilding.households.length}명
           </p>
           {selectedBuilding.grade !== null && (
-            <p className="text-base font-bold text-ink">
+            <p className="text-label-16-compact text-text-primary">
               위험 등급 · {GRADE_LABEL[selectedBuilding.grade]}
             </p>
           )}
@@ -233,11 +233,11 @@ export function KakaoMap({ apiKey, buildings, date, workerId }: Props) {
             return (
               <li
                 key={household.subjectId}
-                className="flex flex-col gap-3 border-t border-line pt-4 first:border-t-0 first:pt-0"
+                className="flex flex-col gap-3 border-t border-border-default pt-4 first:border-t-0 first:pt-0"
               >
                 <p className="flex items-baseline gap-2">
-                  <span className="text-lg font-bold text-ink">{household.name}</span>
-                  <span className="text-base text-ink-soft">{household.age}세</span>
+                  <span className="text-heading-18 text-text-primary">{household.name}</span>
+                  <span className="text-body-16 text-text-secondary">{household.age}세</span>
                 </p>
 
                 {household.grade !== null &&
@@ -245,16 +245,16 @@ export function KakaoMap({ apiKey, buildings, date, workerId }: Props) {
                   household.statusLabel !== null && (
                   <div className="flex flex-col gap-3">
                     <p className="flex flex-wrap items-center gap-2">
-                      <span className="font-bold text-ink">
+                      <span className="text-label-16-compact text-text-primary">
                         {GRADE_LABEL[household.grade]}
                       </span>
                       <span
-                        className={`rounded-full px-3 py-1 text-[15px] font-bold ${STATUS_TONE[household.status]}`}
+                        className={`rounded-full px-3 py-1 text-label-15 ${STATUS_TONE[household.status]}`}
                       >
                         {household.statusLabel}
                       </span>
                     </p>
-                    <ul className="list-disc space-y-1 pl-5 text-base text-ink-soft">
+                    <ul className="list-disc space-y-1 pl-5 text-body-16 text-text-secondary">
                       {household.reasons.map((reason, index) => (
                         <li key={`${household.subjectId}-${index}`}>{reason}</li>
                       ))}
@@ -264,7 +264,7 @@ export function KakaoMap({ apiKey, buildings, date, workerId }: Props) {
 
                 <Link
                   href={subjectHref(household.subjectId, date, workerId)}
-                  className="flex min-h-12 items-center justify-center rounded-lg bg-slate px-4 text-base font-bold text-white active:bg-ink-strong"
+                  className="flex min-h-12 items-center justify-center rounded-lg bg-action-secondary px-4 text-label-16-compact text-text-inverse active:bg-text-supporting"
                 >
                   대상자 확인
                 </Link>
