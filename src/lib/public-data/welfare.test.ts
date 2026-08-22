@@ -67,4 +67,27 @@ describe("중앙부처 복지서비스 동기화", () => {
     expect(requested[0].searchParams.get("numOfRows")).toBe("500");
     expect(requested[1].searchParams.get("servId")).toBe("WLF-ENERGY");
   });
+
+  it("HTTP 403 XML의 공공데이터 인증 오류 코드를 보존한다", async () => {
+    const fetcher: PublicDataFetch = async () =>
+      new Response(
+        `
+          <OpenAPI_ServiceResponse>
+            <cmmMsgHeader>
+              <errMsg>SERVICE_KEY_IS_NOT_REGISTERED_ERROR</errMsg>
+              <returnAuthMsg>등록되지 않은 서비스키</returnAuthMsg>
+              <returnReasonCode>30</returnReasonCode>
+            </cmmMsgHeader>
+          </OpenAPI_ServiceResponse>
+        `,
+        { status: 403 },
+      );
+
+    await expect(
+      refreshWelfarePrograms({ serviceKey: "test-key", fetcher }),
+    ).rejects.toMatchObject({
+      code: "30",
+      message: "등록되지 않은 서비스키",
+    });
+  });
 });

@@ -82,14 +82,14 @@ async function fetchXml(url: URL, fetcher: PublicDataFetch): Promise<string> {
       "UPSTREAM_UNAVAILABLE",
     );
   }
+  const xml = await response.text();
+  assertSuccessfulXml(xml);
   if (!response.ok) {
     throw new PublicDataError(
       `복지서비스 API가 HTTP ${response.status}로 응답했습니다.`,
       "UPSTREAM_HTTP_ERROR",
     );
   }
-  const xml = await response.text();
-  assertSuccessfulXml(xml);
   return xml;
 }
 
