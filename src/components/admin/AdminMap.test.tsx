@@ -3,8 +3,10 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   AdminMap,
+  ClusterBuildingTray,
   adminMapBuildingsSignature,
   cleanupKakaoMap,
+  clusterMarkerText,
   isValidMapCoordinate,
   loadKakaoSdk,
 } from "./AdminMap";
@@ -60,6 +62,56 @@ afterEach(() => {
 });
 
 describe("AdminMap", () => {
+  it.each([
+    [2, "2"],
+    [3, "3"],
+    [4, "4"],
+    [5, "5+"],
+    [9, "5+"],
+    [10, "10+"],
+    [15, "10+"],
+  ])("군집 %i개는 %s 숫자 마커로 표시한다", (count, expected) => {
+    expect(clusterMarkerText(count)).toBe(expected);
+  });
+
+  it("선택한 군집의 건물을 하단 카드 목록으로 보여준다", () => {
+    const html = renderToStaticMarkup(
+      <ClusterBuildingTray
+        buildings={[
+          {
+            buildingId: "building-1",
+            address: "대구광역시 서구 비산동 1",
+            lat: 35.87,
+            lng: 128.56,
+            grade: 1,
+            score: 31.5,
+            statusCategory: "unchecked",
+            openCount: 1,
+            subjects: [],
+          },
+          {
+            buildingId: "building-2",
+            address: "대구광역시 서구 비산동 2",
+            lat: 35.871,
+            lng: 128.561,
+            grade: 2,
+            score: 18,
+            statusCategory: "visit",
+            openCount: 3,
+            subjects: [],
+          },
+        ]}
+        onSelect={() => undefined}
+        selectedBuildingId="building-2"
+      />,
+    );
+
+    expect(html).toContain('aria-label="선택한 지역의 건물 2개"');
+    expect(html).toContain("비산동 1");
+    expect(html).toContain("미처리 3명");
+    expect(html).toContain('aria-pressed="true"');
+  });
+
   it("마우스 휠은 페이지 스크롤을 가로채지 않는다", () => {
     const source = readFileSync(new URL("./AdminMap.tsx", import.meta.url), "utf8");
     expect(source).toContain("map.setZoomable(false)");
@@ -90,6 +142,32 @@ describe("AdminMap", () => {
       />,
     );
     expect(html).toContain('aria-label="건물 위험도 지도"');
+  });
+
+  it("단일 마커는 주소 카드 대신 최소 건물 아이콘으로 표시한다", () => {
+    const html = renderToStaticMarkup(
+      <AdminMap
+        mapKey=""
+        buildings={[
+          {
+            buildingId: "building-1",
+            address: "대구광역시 서구 비산동 1",
+            lat: 35.87,
+            lng: 128.56,
+            grade: 2,
+            score: 18,
+            statusCategory: "unchecked",
+            openCount: 1,
+            subjects: [],
+          },
+        ]}
+      />,
+    );
+
+    expect(html).toContain(
+      'aria-label="대구광역시 서구 비산동 1, 경계, 미처리 1명"',
+    );
+    expect(html).not.toContain("건물 위험 경계</span>");
   });
 
   it("선택한 대상자 정보는 지도 위 말풍선이 아니라 왼쪽 패널에 둔다", () => {
@@ -228,6 +306,37 @@ describe("AdminMap", () => {
     const [building] = JSON.parse(signature) as Array<Record<string, unknown>>;
 
     expect(building).toMatchObject({ lat: 35.87, lng: 128.56 });
+  });
+
+  it("카카오 SDK에 마커 군집 라이브러리를 함께 요청한다", async () => {
+    const { document, scripts } = createScriptDocument();
+    vi.stubGlobal("document", document);
+    vi.stubGlobal("window", {});
+
+    const loading = loadKakaoSdk("test-key");
+    const source = scripts[0].src;
+    scripts[0].dispatch("error");
+    await loading.catch(() => undefined);
+
+    expect(source).toContain("libraries=clusterer");
+  });
+
+  it("군집 계산용 마커가 단일 건물 오버레이 클릭을 가로채지 않는다", () => {
+    const source = readFileSync(new URL("./AdminMap.tsx", import.meta.url), "utf8");
+
+    expect(source).toContain("clickable: false,");
+    expect(source).toMatch(
+      /new maps\.CustomOverlay\(\{[\s\S]*?clickable: true,[\s\S]*?content: button/,
+    );
+  });
+
+  it("군집 초기화 도중 실패해도 addMarkers 전에 정리 함수를 등록한다", () => {
+    const source = readFileSync(new URL("./AdminMap.tsx", import.meta.url), "utf8");
+
+    expect(source.indexOf("cleanupClusterer = () => {")).toBeGreaterThan(-1);
+    expect(source.indexOf("cleanupClusterer = () => {")).toBeLessThan(
+      source.indexOf("clusterer.addMarkers(markers)"),
+    );
   });
 
   it("실패한 SDK 스크립트를 제거해 다음 로드를 다시 시도한다", async () => {

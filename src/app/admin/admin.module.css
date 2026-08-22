@@ -867,58 +867,98 @@
 
 .mapMarker {
   display: grid;
-  grid-template-columns: 1.5rem minmax(0, 1fr);
-  inline-size: 9.5rem;
-  min-block-size: 4.75rem;
-  gap: 0.25rem;
-  align-items: center;
-  padding: 0.625rem 0.75rem;
-  border: 1px solid var(--admin-rule);
-  border-inline-start: 3px solid var(--admin-accent);
-  border-radius: 0.625rem;
+  inline-size: 2.5rem;
+  block-size: 2.5rem;
+  place-items: center;
+  padding: 0.25rem;
+  border: 2px solid var(--admin-accent);
+  border-radius: 50%;
   background: var(--admin-surface);
   box-shadow: var(--admin-shadow-panel);
-  color: var(--admin-ink);
   font: inherit;
-  text-align: start;
 }
 
 .mapMarkerIcon {
-  inline-size: 1.5rem;
-  block-size: 1.5rem;
+  inline-size: 2rem;
+  block-size: 2rem;
   object-fit: contain;
 }
 
-.mapMarkerCopy {
+.mapMarker.grade1 { border-color: var(--admin-danger); }
+.mapMarker.grade2 { border-color: var(--admin-warning); }
+.mapMarker.grade3 { border-color: var(--admin-accent); }
+.mapMarker.emergency { border-color: var(--admin-danger); }
+.mapMarker.visit { outline: 2px solid var(--admin-accent-soft); }
+
+.mapClusterTray {
+  position: absolute;
+  inset-block-end: 0;
+  inset-inline: 0;
+  z-index: 4;
+  padding: 0.75rem;
+  border-block-start: 1px solid var(--admin-rule);
+  background: var(--admin-surface);
+  box-shadow: var(--admin-shadow-panel);
+}
+
+.mapClusterList {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0 0 0.25rem;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scroll-snap-type: inline mandatory;
+  list-style: none;
+}
+
+.mapClusterCard {
+  display: grid;
+  grid-template-columns: 1.5rem minmax(7rem, 1fr) auto;
+  inline-size: 13.5rem;
+  min-block-size: 4rem;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.625rem;
+  border: 1px solid var(--admin-rule);
+  border-radius: 0.5rem;
+  background: var(--admin-surface);
+  color: var(--admin-ink);
+  font: inherit;
+  text-align: start;
+  scroll-snap-align: start;
+}
+
+.mapClusterCard[aria-pressed="true"] {
+  border-color: var(--admin-accent);
+  background: var(--admin-accent-faint);
+}
+
+.mapClusterCard > span {
   display: grid;
   min-inline-size: 0;
   gap: 0.25rem;
 }
 
-.mapMarkerCopy > strong {
+.mapClusterCard strong {
   overflow: hidden;
   font-size: 0.75rem;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.mapMarkerCopy > span {
+.mapClusterCard small {
   color: var(--admin-ink-soft);
   font-size: 0.625rem;
 }
 
-.mapMarkerCopy > em {
+.mapClusterCard em {
   color: var(--admin-danger);
-  font-size: 0.75rem;
+  font-size: 0.6875rem;
   font-style: normal;
   font-weight: 800;
+  white-space: nowrap;
 }
-
-.mapMarker.grade1 { border-inline-start-color: var(--admin-danger); }
-.mapMarker.grade2 { border-inline-start-color: var(--admin-warning); }
-.mapMarker.grade3 { border-inline-start-color: var(--admin-accent); }
-.mapMarker.emergency { border-color: var(--admin-danger); }
-.mapMarker.visit { outline: 2px solid var(--admin-accent-soft); }
 
 .fallbackMarker {
   position: absolute;
