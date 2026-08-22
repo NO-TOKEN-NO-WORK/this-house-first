@@ -1,9 +1,27 @@
+import { readFileSync } from "node:fs";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { HouseholdStatus, HOUSEHOLD_STATUS_LABEL } from "../../lib/domain";
 import { AdminDashboardView, PriorityList, SummaryCards } from "./page";
 
+const adminStyles = readFileSync(
+  new URL("./admin.module.css", import.meta.url),
+  "utf8",
+);
+
 describe("관리자 관제 화면", () => {
+  it("브랜드 링크를 한 줄로 유지하고 미실행 viewport QA를 통과로 표기하지 않는다", () => {
+    expect(adminStyles).toMatch(/\.brand\s*\{[^}]*white-space:\s*nowrap;/);
+    expect(adminStyles).toContain(
+      "responsive: implementation-pass (49; viewport QA unavailable)",
+    );
+    expect(adminStyles).toContain(
+      "mobile: implementation-pass (34, 49, 50–57; viewport QA unavailable)",
+    );
+    expect(adminStyles).not.toContain("responsive: pass");
+    expect(adminStyles).not.toContain("mobile: pass");
+  });
+
   it("핵심 위젯과 위험도 우선 대상을 텍스트로도 제공한다", () => {
     const summary = {
       total: 3,
