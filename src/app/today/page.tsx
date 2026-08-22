@@ -184,12 +184,6 @@ export default async function TodayPage(props: PageProps<"/today">) {
             dong={board.dong}
           />
           <InstallPwaBanner />
-          {board.worker ? (
-            <PushNotificationManager
-              workerId={board.worker.id}
-              publicKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY?.trim() ?? ""}
-            />
-          ) : null}
           {board.alerted ? (
             <div className="flex flex-col gap-3">
               <AlertBanner board={board} />
@@ -210,6 +204,14 @@ export default async function TodayPage(props: PageProps<"/today">) {
           <SilentBoardView board={board} workerId={workerId} />
         )}
       </main>
+      {/* 알림 설정은 화면 맨 위가 아니라 아래 띠로 묻는다 — 위쪽은 오늘의 결정 자리다(PRD §9) */}
+      {board.worker ? (
+        <PushNotificationManager
+          variant="toast"
+          workerId={board.worker.id}
+          publicKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY?.trim() ?? ""}
+        />
+      ) : null}
       <BottomNav current="today" date={date} workerId={workerId} />
     </TodayWorkspace>
   );
