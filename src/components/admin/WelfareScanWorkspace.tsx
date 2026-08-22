@@ -28,9 +28,11 @@ const DATE_FORMAT = new Intl.DateTimeFormat("ko-KR", {
 });
 
 type ConnectionState = {
-  publicData: { ok: boolean; message: string };
-  ai: { ok: boolean; message: string };
+  publicData: ConnectionStatusState;
+  ai: ConnectionStatusState;
 };
+
+type ConnectionStatusState = { ok: boolean; message: string; reason?: string };
 
 type ScanPayload = {
   data?: {
@@ -62,6 +64,23 @@ function StatusBadge({ status }: { status: WelfareRecommendation["status"] }) {
   return (
     <span className={styles.statusBadge} data-status={status}>
       {RECOMMENDATION_STATUS_LABEL[status]}
+    </span>
+  );
+}
+
+export function ConnectionStatus({
+  state,
+  fallback,
+}: {
+  state?: ConnectionStatusState;
+  fallback: string;
+}) {
+  const reason = state && !state.ok ? state.reason : undefined;
+  return (
+    <span title={reason}>
+      <Image alt="" aria-hidden="true" height={12} src={state?.ok ? "/admin/status-resolved.png" : "/admin/status-unreachable.png"} width={12} />
+      {state?.message ?? fallback}
+      {reason ? <span className={styles.srOnly}> 상세 원인: {reason}</span> : null}
     </span>
   );
 }
@@ -224,14 +243,8 @@ export function WelfareScanWorkspace({
             <span>마지막 스캔: <strong>{formatTime(scannedAt)}</strong></span>
             <span>분석 대상자: <strong>{scannedCount || "-"}명</strong></span>
             <span>복지사업: <strong>{programCount || "-"}개</strong></span>
-            <span>
-              <Image alt="" aria-hidden="true" height={12} src={connections?.publicData.ok ? "/admin/status-resolved.png" : "/admin/status-unreachable.png"} width={12} />
-              {connections?.publicData.message ?? "공공데이터 확인 전"}
-            </span>
-            <span>
-              <Image alt="" aria-hidden="true" height={12} src={connections?.ai.ok ? "/admin/status-resolved.png" : "/admin/status-unreachable.png"} width={12} />
-              {connections?.ai.message ?? "AI 분석 확인 전"}
-            </span>
+            <ConnectionStatus fallback="공공데이터 확인 전" state={connections?.publicData} />
+            <ConnectionStatus fallback="AI 분석 확인 전" state={connections?.ai} />
           </section>
 
           {notice ? (

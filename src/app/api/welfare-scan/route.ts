@@ -74,10 +74,65 @@ function connectionFailureMessage(
   if (message.includes("시간")) {
     return service === "publicData" ? "공공데이터 응답 시간 초과" : "AI 분석 응답 시간 초과";
   }
-  if (code.includes("HTTP") || code.includes("UPSTREAM")) {
+  if ([
+    "UPSTREAM_HTTP_ERROR",
+    "UPSTREAM_API_ERROR",
+    "UPSTREAM_AUTH_ERROR",
+    "INVALID_UPSTREAM_RESPONSE",
+    "OPENAI_HTTP_ERROR",
+    "INVALID_OPENAI_RESPONSE",
+    "INCOMPLETE_OPENAI_RESPONSE",
+    "OPENAI_REFUSAL",
+  ].includes(code)) {
     return service === "publicData" ? "공공데이터 응답 오류" : "AI 분석 응답 오류";
   }
   return service === "publicData" ? "공공데이터 연결 실패" : "AI 분석 연결 실패";
+}
+
+function connectionFailureReason(
+  error: unknown,
+  service: "publicData" | "ai",
+  message: string,
+): string {
+  const code = error && typeof error === "object" && "code" in error
+    ? String(error.code)
+    : "";
+  if (message.endsWith("API 키 미설정")) {
+    return service === "publicData"
+      ? "PUBLIC_DATA_SERVICE_KEY 환경변수가 설정되지 않았습니다."
+      : "OPENAI_API_KEY 환경변수가 설정되지 않았습니다.";
+  }
+  if (message.endsWith("응답 시간 초과")) {
+    return service === "publicData"
+      ? "복지서비스 API 응답 시간이 초과되었습니다."
+      : "AI 분석 응답 시간이 초과되었습니다.";
+  }
+  if (["UPSTREAM_HTTP_ERROR", "OPENAI_HTTP_ERROR"].includes(code)) {
+    const status = error instanceof Error ? error.message.match(/HTTP (\d{3})/)?.[1] : null;
+    const particle = status && /[013678]$/.test(status) ? "으로" : "로";
+    return status
+      ? `${service === "publicData" ? "복지서비스 API" : "AI 분석 서비스"}가 HTTP ${status}${particle} 응답했습니다.`
+      : "외부 서비스가 오류 응답을 반환했습니다.";
+  }
+  if (["UPSTREAM_API_ERROR", "UPSTREAM_AUTH_ERROR", "INVALID_UPSTREAM_RESPONSE"].includes(code)) {
+    return "복지서비스 API 응답 형식이 올바르지 않았습니다.";
+  }
+  if (["INVALID_OPENAI_RESPONSE", "INCOMPLETE_OPENAI_RESPONSE", "OPENAI_REFUSAL"].includes(code)) {
+    return "AI 분석 결과 형식이 올바르지 않았습니다.";
+  }
+  return "외부 서비스 처리 중 예상하지 못한 오류가 발생했습니다.";
+}
+
+function connectionFailureState(
+  error: unknown,
+  service: "publicData" | "ai",
+): { ok: false; message: string; reason: string } {
+  const message = connectionFailureMessage(error, service);
+  return {
+    ok: false,
+    message,
+    reason: connectionFailureReason(error, service, message),
+  };
 }
 
 export async function GET(): Promise<Response> {
@@ -163,16 +218,10 @@ export async function POST(): Promise<Response> {
         connections: {
           publicData: programResult.status === "fulfilled"
             ? { ok: true, message: "공공데이터 연결 정상" }
-            : {
-                ok: false,
-                message: connectionFailureMessage(programResult.reason, "publicData"),
-              },
+            : connectionFailureState(programResult.reason, "publicData"),
           ai: signalResult.status === "fulfilled"
             ? { ok: true, message: "AI 분석 연결 정상" }
-            : {
-                ok: false,
-                message: connectionFailureMessage(signalResult.reason, "ai"),
-              },
+            : connectionFailureState(signalResult.reason, "ai"),
         },
       },
     });

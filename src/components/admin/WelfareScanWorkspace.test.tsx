@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { WelfareScanWorkspace } from "./WelfareScanWorkspace";
+import { ConnectionStatus, WelfareScanWorkspace } from "./WelfareScanWorkspace";
 
 describe("복지 스캔 관리자 화면", () => {
   it("스캔 현황·필터·검토표와 선택한 제안의 근거를 한 화면에 제공한다", () => {
@@ -46,5 +46,22 @@ describe("복지 스캔 관리자 화면", () => {
       /<a aria-current="page"[^>]*href="\/admin\/welfare-scan\?preview=1"[^>]*>[\s\S]*?복지 스캔[\s\S]*?<\/a>/,
     );
     expect(html).not.toContain("AI 분석 정확도");
+  });
+
+  it("연동 실패 상태에 상세 원인을 보여주는 호버 메시지를 제공한다", () => {
+    const html = renderToStaticMarkup(
+      <ConnectionStatus
+        fallback="공공데이터 확인 전"
+        state={{
+          ok: false,
+          message: "공공데이터 응답 오류",
+          reason: "복지서비스 API가 HTTP 503으로 응답했습니다.",
+        }}
+      />,
+    );
+
+    expect(html).toContain('title="복지서비스 API가 HTTP 503으로 응답했습니다."');
+    expect(html).toContain("공공데이터 응답 오류");
+    expect(html).toContain("복지서비스 API가 HTTP 503으로 응답했습니다.");
   });
 });
