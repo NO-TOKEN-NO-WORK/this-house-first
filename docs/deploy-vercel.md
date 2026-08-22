@@ -56,6 +56,8 @@ printf '%s' "$DIRECT_URL"   | vercel env add DIRECT_URL preview --sensitive
 | `DATABASE_URL` | Prisma Postgres 풀러 연결 문자열 | 서버 전용 |
 | `DIRECT_URL` | Prisma Postgres direct 연결 문자열(마이그레이션) | 서버 전용 |
 | `PUBLIC_DATA_SERVICE_KEY` | 공공데이터포털 서비스키 | 서버 전용 |
+| `KMA_GRID_NX` | 기상청 현재 날씨 조회용 5km 격자 X 좌표 | 서버 전용 |
+| `KMA_GRID_NY` | 기상청 현재 날씨 조회용 5km 격자 Y 좌표 | 서버 전용 |
 | `KAKAO_REST_KEY` | 카카오 REST API 키(지오코딩·자동차 최단 경로) | 서버 전용 |
 | `NEXT_PUBLIC_KAKAO_MAP_KEY` | 카카오맵 JS 앱 키 | 클라이언트 노출 |
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | Web Push VAPID 공개키 | 클라이언트 노출 |
@@ -75,6 +77,12 @@ curl -s "https://<프로젝트>.vercel.app/api/visit-queue?date=$(date +%F)" \
 `estimate`가 나오면 `vercel logs <배포 URL>`에서 `카카오 자동차 ... 요청에 실패했습니다`의 상태 코드와 카카오 응답 본문을 확인한다(키는 마스킹돼 찍힌다).
 
 `NEXT_PUBLIC_` 접두사는 카카오맵 JS 키와 VAPID **공개키**에만 붙인다. VAPID 비밀키를 포함한 서버 전용 키에 붙이면 번들에 그대로 실린다(AGENTS.md 금지 사항).
+
+현재 날씨 화면은 `PUBLIC_DATA_SERVICE_KEY`와 `KMA_GRID_NX`, `KMA_GRID_NY`를
+사용해 `/api/public-data/current-weather`에서 기상청 초단기실황을 조회한다.
+서버 캐시는 600초(10분)다. `T1H`와 `REH`로 계산한 현재 체감온도는 관측 시각의
+값이며, 경보 발령 때 `AlertDay.feelsLikeMax`에 저장되는 당일 최고 체감온도
+예보와는 별개다.
 
 VAPID 키 쌍은 로컬에서 한 번 생성해 같은 공개·비밀키를 Production 환경에 함께 넣는다.
 

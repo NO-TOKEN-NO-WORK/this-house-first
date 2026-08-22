@@ -12,6 +12,8 @@ import {
 
 const KMA_FORECAST_URL =
   "https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst";
+const KMA_ULTRA_SRT_NCST_URL =
+  "https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getUltraSrtNcst";
 const KMA_WARNING_URL =
   "https://apis.data.go.kr/1360000/WthrWrnInfoService/getWthrWrnList";
 const KMA_BASE_TIMES = [
@@ -52,6 +54,15 @@ interface KmaForecastItem {
   ny: number;
 }
 
+interface KmaObservationItem {
+  baseDate: string;
+  baseTime: string;
+  category: string;
+  obsrValue: string;
+  nx: number;
+  ny: number;
+}
+
 interface KmaWarningItem {
   title: string;
   stnId?: string | number;
@@ -62,6 +73,21 @@ interface KmaWarningItem {
 export interface ForecastBase {
   baseDate: string;
   baseTime: string;
+}
+
+export interface ObservationBase {
+  baseDate: string;
+  baseTime: string;
+}
+
+export interface CurrentWeather {
+  source: "기상청 초단기실황 조회서비스";
+  grid: { nx: number; ny: number };
+  observedAt: string;
+  fetchedAt: string;
+  temperature: number;
+  humidity: number;
+  feelsLikeTemperature: number;
 }
 
 export interface HourlyHeatForecast {
@@ -127,6 +153,19 @@ export function resolveForecastBase(now: Date = new Date()): ForecastBase {
   return { baseDate: formatShiftedDate(kst), baseTime: "2300" };
 }
 
+/** 초단기실황 발표 후 안정적으로 조회 가능한 10분 지연을 반영한다. */
+export function resolveObservationBase(
+  now: Date = new Date(),
+): ObservationBase {
+  const kst = new Date(now.getTime() + KST_OFFSET_MS);
+  if (kst.getUTCMinutes() < 10) kst.setUTCHours(kst.getUTCHours() - 1);
+
+  return {
+    baseDate: formatShiftedDate(kst),
+    baseTime: `${pad(kst.getUTCHours())}00`,
+  };
+}
+
 function readKmaItems<T>(payload: KmaEnvelope<T>): T[] {
   const response = payload.response;
   if (!response?.header) {
@@ -147,7 +186,8 @@ function readKmaItems<T>(payload: KmaEnvelope<T>): T[] {
   return Array.isArray(items.item) ? items.item : [items.item];
 }
 
-function finiteNumber(value: string): number | null {
+function finiteNumber(value: unknown): number | null {
+  if (typeof value !== "string" || !value.trim()) return null;
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
 }
@@ -250,6 +290,73 @@ export async function getHeatForecast(
     maxFeelsLikeTemperature,
     level: classifyHeatAlert(maxFeelsLikeTemperature, maxTemperature),
     hourly,
+  };
+}
+
+export async function getCurrentWeather(
+  params: {
+    nx: number;
+    ny: number;
+    baseDate?: string;
+    baseTime?: string;
+  },
+  options: RequestOptions = {},
+): Promise<CurrentWeather> {
+  const now = options.now ?? new Date();
+  const resolvedBase = resolveObservationBase(now);
+  const baseDate = params.baseDate ?? resolvedBase.baseDate;
+  const baseTime = params.baseTime ?? resolvedBase.baseTime;
+  const serviceKey = options.serviceKey ?? requirePublicDataServiceKey();
+
+  const url = new URL(KMA_ULTRA_SRT_NCST_URL);
+  url.searchParams.set("ServiceKey", serviceKey);
+  url.searchParams.set("pageNo", "1");
+  url.searchParams.set("numOfRows", "1000");
+  url.searchParams.set("dataType", "JSON");
+  url.searchParams.set("base_date", baseDate);
+  url.searchParams.set("base_time", baseTime);
+  url.searchParams.set("nx", String(params.nx));
+  url.searchParams.set("ny", String(params.ny));
+
+  const payload = await fetchPublicDataJson<KmaEnvelope<KmaObservationItem>>(
+    url,
+    options.fetcher,
+    { revalidateSeconds: 600 },
+  );
+  const values = new Map<string, number>();
+  for (const item of readKmaItems(payload)) {
+    if (item.category !== "T1H" && item.category !== "REH") continue;
+    const value = finiteNumber(item.obsrValue);
+    if (value != null) values.set(item.category, value);
+  }
+
+  const temperature = values.get("T1H");
+  const humidity = values.get("REH");
+  if (temperature == null || humidity == null) {
+    throw new PublicDataError(
+      "기상청 초단기실황에 현재 기온·습도가 없습니다.",
+      "INVALID_UPSTREAM_RESPONSE",
+    );
+  }
+
+  const observedAt = `${baseDate.slice(0, 4)}-${baseDate.slice(
+    4,
+    6,
+  )}-${baseDate.slice(6, 8)}T${baseTime.slice(0, 2)}:${baseTime.slice(
+    2,
+  )}:00+09:00`;
+
+  return {
+    source: "기상청 초단기실황 조회서비스",
+    grid: { nx: params.nx, ny: params.ny },
+    observedAt,
+    fetchedAt: now.toISOString(),
+    temperature,
+    humidity,
+    feelsLikeTemperature: calculateSummerFeelsLikeTemperature(
+      temperature,
+      humidity,
+    ),
   };
 }
 

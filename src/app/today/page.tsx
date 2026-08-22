@@ -5,6 +5,7 @@ import { SubjectCard } from "@/components/today/SubjectCard";
 import { TodayAppSettings } from "@/components/today/TodayAppSettings";
 import { TodayWorkspace } from "@/components/today/TodayWorkspace";
 import { AlertCircleIcon } from "@/components/today/icons";
+import { CurrentWeatherSummary } from "@/components/CurrentWeatherSummary";
 import {
   type AlertedBoard,
   getBoard,
@@ -181,6 +182,7 @@ export default async function TodayPage(props: PageProps<"/today">) {
             dateLabel={board.dateLabel}
             dong={board.dong}
           />
+          <CurrentWeatherSummary variant="today" />
           {board.alerted ? (
             <div className="flex flex-col gap-3">
               <EmergencyBanner board={board} />

@@ -62,6 +62,26 @@ GET /api/public-data/weather-warnings
 GET /api/public-data/weather-warnings?fromDate=20260822&toDate=20260822
 ```
 
+### 현재 날씨
+
+```text
+GET /api/public-data/current-weather
+```
+
+Route Handler가 기상청 초단기실황 조회서비스의
+`getUltraSrtNcst`를 호출해 현재 관측값을 반환한다. `T1H`(기온)와
+`REH`(습도)를 함께 읽어 현재 기온과 현재 체감온도를 계산하며, 체감온도는
+기존 기상청 여름철 체감온도 산식을 재사용한다. 브라우저는 이 내부 경로만
+호출하고 공공데이터 서비스키는 서버에만 둔다.
+
+기상청 응답은 서버에서 600초(10분) 동안 캐시한다. `KMA_GRID_NX`와
+`KMA_GRID_NY`는 조회할 5km 격자좌표이며 `PUBLIC_DATA_SERVICE_KEY`와 함께
+서버 전용 환경변수로 설정한다.
+
+여기서 반환하는 체감온도는 현재 관측 시각의 값이다. 경보 발령 시 저장되는
+`AlertDay.feelsLikeMax`는 단기예보의 당일 최고 체감온도이므로 서로 대체하거나
+덮어쓰지 않는다.
+
 ### 건축물대장 표제부
 
 ```text

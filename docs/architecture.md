@@ -20,7 +20,7 @@ flowchart LR
     end
     DB[("Prisma Postgres<br/>(Prisma 7 + adapter-pg)")]
     subgraph ext["외부 API"]
-        KMA["기상청<br/>단기예보·특보"]
+        KMA["기상청<br/>단기예보·초단기실황·특보"]
         HUB["국토부 건축HUB<br/>건축물대장"]
         MOIS["행안부<br/>연령별 주민등록인구"]
         KAKAO["카카오맵<br/>지도·경로"]
@@ -63,7 +63,7 @@ src/
 │   ├── escalation/           # initial(발령 시 진입) · transition(기록 전이, FR-5) — 모두 순수 함수
 │   ├── board/                # today.ts(보드 — /today·/api/subjects 공유) · subject.ts(상세) · log.ts(기록 탭 화면 모델) · log-read.ts(조회) · format.ts(날짜·나이·동)
 │   ├── http.ts               # 앱 API 공통 오류·검증 헬퍼
-│   ├── public-data/          # 공공데이터포털 공통 클라이언트 + 기상청·인구 (서버 전용)
+│   ├── public-data/          # 공공데이터포털 공통 클라이언트 + 기상청(예보·초단기실황·특보)·인구 (서버 전용)
 │   ├── bldg-hub/             # 건축HUB 건축물대장 표제부 클라이언트 + 순수 매핑 (FR-2)
 │   ├── kakao/local.ts        # 카카오 로컬 지오코딩 (서버 전용, ADR-0007)
 │   └── trigger/              # 3단계 판정(heat) · 발령 오케스트레이션(declare) · 날짜 변환
@@ -146,7 +146,7 @@ stateDiagram-v2
 
 | 연동 | 용도 | 인증 | env 키 |
 |---|---|---|---|
-| 기상청 단기예보/특보 (공공데이터포털) | F1 트리거, 기상계수 | 공공데이터포털 서비스 키 (서버 전용) | `PUBLIC_DATA_SERVICE_KEY` |
+| 기상청 단기예보·초단기실황·특보 (공공데이터포털) | F1 트리거·기상계수·현재 날씨 | 공공데이터포털 서비스 키 (서버 전용) | `PUBLIC_DATA_SERVICE_KEY`, `KMA_GRID_NX`, `KMA_GRID_NY` |
 | 국토부 건축HUB 건축물대장 | FR-2 건물 취약도 | 공공데이터포털 서비스 키 (서버 전용) | `PUBLIC_DATA_SERVICE_KEY` |
 | 행안부 행정동별 성·연령별 주민등록 인구수 | 지역 고령밀도 | 공공데이터포털 서비스 키 (서버 전용) | `PUBLIC_DATA_SERVICE_KEY` |
 | 카카오맵 JS SDK | F5 지도 | JS 앱 키 (클라이언트) | `NEXT_PUBLIC_KAKAO_MAP_KEY` |
@@ -154,6 +154,8 @@ stateDiagram-v2
 
 - 서버 전용 키는 절대 `NEXT_PUBLIC_` 접두사를 붙이지 않는다. 외부 호출은 Route Handler를 거쳐 프록시
 - 키 목록은 [.env.example](../.env.example) 참조. 실제 키는 커밋 금지
+- 현재 날씨는 `/api/public-data/current-weather`가 기상청 `getUltraSrtNcst`의 `T1H`와 `REH`를 받아 기존 여름철 체감온도 산식으로 현재 기온·현재 체감온도를 계산한다. 서버 fetch 캐시는 600초(10분)다.
+- 현재 관측 체감온도와 경보 발령 시 저장하는 `AlertDay.feelsLikeMax`(단기예보의 당일 최고 체감온도)는 별도 값이다. 이번 연동은 기존 Route Handler·공공데이터 클라이언트를 확장하며 새 의존성·Prisma 스키마·ADR을 추가하지 않는다.
 
 ## 7. 라우트 / API (계획 포함)
 
@@ -167,6 +169,7 @@ stateDiagram-v2
 | `/admin` | 관리자 지도 대시보드·건물별 카카오 오버레이 (FR-6) | ✅ 구현됨 |
 | `/api/trigger` | `GET` 판정 미리보기 / `POST` 발령 — AlertDay + 당일 평가 + 가구 상태 생성 (FR-1·FR-3) | ✅ 연동됨 |
 | `/api/public-data/weather-warnings` | 기상청 기상특보 목록 | ✅ 연동됨 |
+| `/api/public-data/current-weather` | 기상청 초단기실황 현재 기온·현재 체감온도(10분 서버 캐시) | ✅ 연동됨 |
 | `/api/public-data/buildings` | 건축HUB 표제부 정규화 | ✅ 연동됨 |
 | `/api/public-data/population` | 행정동 연령별 인구 정규화 | ✅ 연동됨 |
 | `/api/subjects` | 대상자 목록 + 당일 평가 (보드 조회, `/today`와 동일 함수) | ✅ 구현됨 |

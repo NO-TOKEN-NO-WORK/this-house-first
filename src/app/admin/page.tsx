@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 import { PushNotificationManager } from "../../components/PushNotificationManager";
+import { CurrentWeatherSummary } from "../../components/CurrentWeatherSummary";
 import {
   getAdminDashboard,
   type AdminAlertedDashboard,
@@ -573,6 +574,7 @@ function TopBar({
           <Image alt="" aria-hidden="true" className={styles.metaIcon} height={20} src="/admin/refresh.png" width={20} />
           <dt>자동 갱신</dt><dd>켜짐 <Image alt="작동 중" className={styles.liveDot} height={8} src="/admin/status-resolved.png" width={8} /></dd>
         </dl>
+        <CurrentWeatherSummary variant="admin" />
       </div>
       {controls}
     </header>
