@@ -1,6 +1,6 @@
 # ADR-0006: PWA는 Manifest + 수제 Service Worker로 구성한다
 
-- **상태**: 승인됨
+- **상태**: 부분 대체됨(서비스 워커 scope만 [ADR-0017](0017-notification-events-web-push.md))
 - **날짜**: 2026-08-22
 - **결정자**: 팀 전원
 

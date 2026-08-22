@@ -20,12 +20,14 @@ datasource db {
 
 // 담당자(생활지원사) / 관리자(전담사회복지사) — PRD §4
 model Worker {
-  id          String       @id @default(cuid())
-  name        String
-  phone       String?
-  role        String       @default("WORKER") // domain.ts WorkerRole: WORKER | MANAGER
-  subjects    Subject[]
-  checkEvents CheckEvent[]
+  id                String             @id @default(cuid())
+  name              String
+  phone             String?
+  role              String             @default("WORKER") // domain.ts WorkerRole: WORKER | MANAGER
+  subjects          Subject[]
+  checkEvents       CheckEvent[]
+  notifications     Notification[]     @relation("NotificationRecipient")
+  pushSubscriptions PushSubscription[]
 }
 
 // 건물 — 건축HUB 건축물대장 실데이터 (FR-2)
@@ -66,18 +68,20 @@ model Subject {
   assessments       RiskAssessment[]
   dayStatuses       HouseholdDayStatus[]
   checkEvents       CheckEvent[]
+  notifications     Notification[]
 }
 
 // 경보일 — F1 트리거가 생성. 비경보일에는 행이 없다 (침묵이 스펙)
 model AlertDay {
-  id           String               @id @default(cuid())
-  date         String               @unique // "YYYY-MM-DD" (KST)
-  level        String // domain.ts AlertLevel: ADVISORY | WARNING | EMERGENCY
-  feelsLikeMax Float // 당일 최고 체감온도
-  regionCode   String? // 읍면동 코드 (기상청 격자 매핑용)
-  assessments  RiskAssessment[]
-  dayStatuses  HouseholdDayStatus[]
-  checkEvents  CheckEvent[]
+  id            String               @id @default(cuid())
+  date          String               @unique // "YYYY-MM-DD" (KST)
+  level         String // domain.ts AlertLevel: ADVISORY | WARNING | EMERGENCY
+  feelsLikeMax  Float // 당일 최고 체감온도
+  regionCode    String? // 읍면동 코드 (기상청 격자 매핑용)
+  assessments   RiskAssessment[]
+  dayStatuses   HouseholdDayStatus[]
+  checkEvents   CheckEvent[]
+  notifications Notification[]
 }
 
 // 대상자별 당일 위험도 평가 — F2 스코어링 결과 스냅샷
@@ -122,4 +126,47 @@ model CheckEvent {
   result     String // domain.ts CallResult | VisitResult
   memo       String?
   createdAt  DateTime @default(now())
+}
+
+// 알림 사건 원장 — 인앱 피드와 Web Push가 같은 행을 사용한다 (ADR-0017)
+model Notification {
+  id            String    @id @default(cuid())
+  eventKey      String    @unique // 재발령·HTTP 재시도에도 한 번만 생성
+  type          String // domain.ts NotificationType
+  cause         String? // domain.ts NotificationCause (승격만)
+  alertDay      AlertDay  @relation(fields: [alertDayId], references: [id], onDelete: Cascade)
+  alertDayId    String
+  recipient     Worker    @relation("NotificationRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  recipientId   String
+  subject       Subject?  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  subjectId     String?
+  title         String
+  body          String
+  href          String
+  availableAt   DateTime // 오전 요약은 08:00 KST, 수동 데모·승격은 즉시
+  expiresAt     DateTime // 해당 경보일이 지나면 늦은 Push를 보내지 않는다
+  createdAt     DateTime  @default(now())
+  readAt        DateTime?
+  pushClaimedAt DateTime? // 동시 발송기의 중복 Push 방지용 임시 claim
+  pushSentAt    DateTime?
+  pushAttempts  Int       @default(0)
+  lastPushError String?
+
+  @@index([recipientId, availableAt])
+  @@index([pushSentAt, availableAt, expiresAt])
+}
+
+// 브라우저별 Push API 구독 — 공개 endpoint와 암호화 키, 소유 계정만 저장한다 (ADR-0017)
+model PushSubscription {
+  id        String   @id @default(cuid())
+  worker    Worker   @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  workerId  String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([workerId])
 }

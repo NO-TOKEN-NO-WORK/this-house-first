@@ -9,6 +9,7 @@ import {
 
 const mocks = vi.hoisted(() => ({
   getAdminDashboard: vi.fn(),
+  getManagerNotificationFeed: vi.fn(),
   notFound: vi.fn(() => {
     throw new Error("not found");
   }),
@@ -19,8 +20,16 @@ vi.mock("../../lib/admin/dashboard", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../lib/admin/dashboard")>()),
   getAdminDashboard: mocks.getAdminDashboard,
 }));
+vi.mock("../../lib/notifications/read", () => ({
+  getManagerNotificationFeed: mocks.getManagerNotificationFeed,
+}));
 
-import AdminPage, { AdminDashboardView, PriorityList, SummaryCards } from "./page";
+import AdminPage, {
+  AdminDashboardView,
+  NotificationFeed,
+  PriorityList,
+  SummaryCards,
+} from "./page";
 
 const adminStyles = readFileSync(
   new URL("./admin.module.css", import.meta.url),
@@ -30,6 +39,33 @@ const adminStyles = readFileSync(
 describe("관리자 관제 화면", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.getManagerNotificationFeed.mockResolvedValue({
+      recipientId: "manager-1",
+      items: [],
+    });
+  });
+
+  it("승격 사건을 관리자 인앱 피드와 상세 딥링크로 표시한다", () => {
+    const html = renderToStaticMarkup(
+      <NotificationFeed
+        feed={{
+          recipientId: "manager-1",
+          items: [
+            {
+              id: "notification-1",
+              title: "방문 확인 대상이 추가됐습니다",
+              body: "박○○ 대상자가 무응답 2회로 방문 대기 상태가 됐습니다.",
+              href: "/today/subject-1?date=2026-08-22&workerId=worker-1",
+              availableAt: "2026-08-22T01:00:00.000Z",
+            },
+          ],
+        }}
+      />,
+    );
+
+    expect(html).toContain("방문 승격 알림");
+    expect(html).toContain("박○○ 대상자");
+    expect(html).toContain("/today/subject-1?date=2026-08-22&amp;workerId=worker-1");
   });
 
   it("브랜드 링크를 한 줄로 유지하고 완료한 viewport QA를 표기한다", () => {

@@ -9,9 +9,14 @@ import {
   isCallResult,
   isCheckKind,
   isHouseholdStatus,
+  isNotificationCause,
+  isNotificationType,
   isRiskGrade,
   isVisitResult,
   nextCheckKindOf,
+  NotificationCause,
+  NOTIFICATION_CAUSE_LABEL,
+  NotificationType,
   parseHouseholdStatus,
   RiskGrade,
   VisitResult,
@@ -24,6 +29,8 @@ describe("도메인 상태값 검증", () => {
     expect(isRiskGrade(RiskGrade.CRITICAL)).toBe(true);
     expect(isRiskGrade(4)).toBe(false);
     expect(isRiskGrade("1")).toBe(false);
+    expect(isNotificationType(NotificationType.ALERT_DAY_SUMMARY)).toBe(true);
+    expect(isNotificationCause(NotificationCause.SYMPTOM)).toBe(true);
   });
 
   it("경보 단계 화면 문구는 주의·경계·심각이다", () => {
@@ -32,11 +39,19 @@ describe("도메인 상태값 검증", () => {
     expect(ALERT_LEVEL_LABEL[AlertLevel.EMERGENCY]).toBe("심각");
   });
 
+  it("재분류 승격 원인은 경보 단계와 구분해 위험 등급으로 표시한다", () => {
+    expect(NOTIFICATION_CAUSE_LABEL[NotificationCause.RISK_RECLASSIFIED]).toBe(
+      "위험 등급 상승으로",
+    );
+  });
+
   it("Object 프로토타입의 속성은 상태값으로 허용하지 않는다", () => {
     expect(isAlertLevel("toString")).toBe(false);
     expect(isAlertLevel("__proto__")).toBe(false);
     expect(isHouseholdStatus("toString")).toBe(false);
     expect(isHouseholdStatus("constructor")).toBe(false);
+    expect(isNotificationType("toString")).toBe(false);
+    expect(isNotificationCause("__proto__")).toBe(false);
     expect(() => parseHouseholdStatus("toString")).toThrow(
       "알 수 없는 가구 상태값",
     );

@@ -226,8 +226,8 @@
   display: grid;
   grid-template-columns: 13rem minmax(0, 1fr);
   min-inline-size: 0;
-  block-size: calc(100svh - 8rem);
-  min-block-size: 0;
+  block-size: auto;
+  min-block-size: calc(100svh - 8rem);
   gap: 1rem;
   padding: 0 1.5rem;
 }
@@ -574,9 +574,72 @@
 
 .dashboardContent {
   display: grid;
-  grid-template-rows: 6.5rem 20.25rem 20.5rem;
+  grid-template-rows: auto 6.5rem 20.25rem 20.5rem;
   min-inline-size: 0;
   gap: 0.75rem;
+}
+
+.notificationArea {
+  display: grid;
+  grid-template-columns: minmax(18rem, 0.8fr) minmax(0, 1.2fr);
+  gap: 0.75rem;
+  padding-inline-end: 1.5rem;
+}
+
+.notificationPanel {
+  min-inline-size: 0;
+  max-block-size: 12rem;
+  padding: 1rem;
+  overflow: auto;
+  border: 1px solid var(--admin-rule);
+  border-radius: var(--admin-radius-panel);
+  background: var(--admin-surface);
+}
+
+.notificationCount {
+  color: var(--admin-danger);
+  font-weight: 800;
+}
+
+.notificationList {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.notificationItem {
+  border-inline-start: 3px solid var(--admin-danger);
+  background: var(--admin-surface-muted);
+}
+
+.notificationLink {
+  display: flex;
+  min-block-size: 3.5rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 0.75rem;
+  color: inherit;
+  text-decoration: none;
+}
+
+.notificationBody {
+  display: grid;
+  min-inline-size: 0;
+  gap: 0.25rem;
+}
+
+.notificationBody span,
+.notificationTime {
+  color: var(--admin-ink-soft);
+  font-size: 0.8125rem;
+}
+
+.notificationTime {
+  flex: none;
+  font-variant-numeric: tabular-nums;
 }
 
 .summaryGrid {
@@ -1266,6 +1329,11 @@
 
   .dashboardContent {
     grid-template-rows: auto auto auto;
+  }
+
+  .notificationArea {
+    grid-template-columns: 1fr;
+    padding-inline-end: 0;
   }
 
   .mapGrid,

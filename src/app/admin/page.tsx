@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
+import { PushNotificationManager } from "../../components/PushNotificationManager";
 import {
   getAdminDashboard,
   type AdminAlertedDashboard,
@@ -19,6 +20,10 @@ import {
 } from "../../lib/domain";
 import { AdminMap } from "../../components/admin/AdminMap";
 import { AdminControls } from "../../components/admin/AdminControls";
+import {
+  getManagerNotificationFeed,
+  type ManagerNotificationFeed,
+} from "../../lib/notifications/read";
 import styles from "./admin.module.css";
 
 export const dynamic = "force-dynamic";
@@ -106,6 +111,13 @@ function buildingIconSrc(grade: RiskGrade): string {
   return "/admin/building-moderate.png";
 }
 
+const NOTIFICATION_TIME_FORMAT = new Intl.DateTimeFormat("ko-KR", {
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+  timeZone: "Asia/Seoul",
+});
+
 export function SummaryCards({
   summary,
 }: {
@@ -158,6 +170,45 @@ export function SummaryCards({
           </div>
         </dl>
       ))}
+    </section>
+  );
+}
+
+export function NotificationFeed({
+  feed,
+}: {
+  feed: ManagerNotificationFeed;
+}) {
+  return (
+    <section className={styles.notificationPanel} aria-labelledby="notification-title">
+      <header className={styles.panelHeader}>
+        <span className={styles.panelTitleGroup}>
+          <h2 id="notification-title" className={styles.panelTitle}>
+            방문 승격 알림
+          </h2>
+          <span className={styles.panelHint}>실시간 대응</span>
+        </span>
+        <span className={styles.notificationCount}>{feed.items.length}건</span>
+      </header>
+      {feed.items.length === 0 ? (
+        <p className={styles.emptyState}>새로 승격된 방문 대상이 없습니다.</p>
+      ) : (
+        <ol className={styles.notificationList}>
+          {feed.items.map((item) => (
+            <li key={item.id} className={styles.notificationItem}>
+              <Link href={item.href} className={styles.notificationLink}>
+                <span className={styles.notificationBody}>
+                  <strong>{item.title}</strong>
+                  <span>{item.body}</span>
+                </span>
+                <time dateTime={item.availableAt} className={styles.notificationTime}>
+                  {NOTIFICATION_TIME_FORMAT.format(new Date(item.availableAt))}
+                </time>
+              </Link>
+            </li>
+          ))}
+        </ol>
+      )}
     </section>
   );
 }
@@ -546,10 +597,14 @@ export function AdminDashboardView({
   dashboard,
   mapKey,
   controls,
+  notificationFeed,
+  pushPublicKey = "",
 }: {
   dashboard: AdminDashboard;
   mapKey: string;
   controls?: ReactNode;
+  notificationFeed?: ManagerNotificationFeed;
+  pushPublicKey?: string;
 }) {
   return (
     <div className={styles.page}>
@@ -568,6 +623,17 @@ export function AdminDashboardView({
           ) : null}
         </aside>
         <section className={styles.dashboardContent} aria-label="관리자 관제 현황">
+          {dashboard.alerted && notificationFeed ? (
+            <div className={styles.notificationArea}>
+              {notificationFeed?.recipientId ? (
+                <PushNotificationManager
+                  workerId={notificationFeed.recipientId}
+                  publicKey={pushPublicKey}
+                />
+              ) : null}
+              <NotificationFeed feed={notificationFeed} />
+            </div>
+          ) : null}
           {dashboard.alerted ? (
             <>
               <SummaryCards summary={dashboard.summary} />
@@ -610,13 +676,18 @@ export default async function AdminPage(props: PageProps<"/admin">) {
   const query = normalizeAdminSearchParams(params);
   if (!query) notFound();
   const { date, workerId } = query;
-  const dashboard = await getAdminDashboard({ date, workerId });
+  const [dashboard, notificationFeed] = await Promise.all([
+    getAdminDashboard({ date, workerId }),
+    getManagerNotificationFeed({ date, workerId }),
+  ]);
 
   return (
     <AdminDashboardView
       controls={<AdminControls date={dashboard.date} />}
       dashboard={dashboard}
       mapKey={process.env.NEXT_PUBLIC_KAKAO_MAP_KEY?.trim() ?? ""}
+      notificationFeed={notificationFeed}
+      pushPublicKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY?.trim() ?? ""}
     />
   );
 }

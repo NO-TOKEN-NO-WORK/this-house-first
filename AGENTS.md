@@ -24,6 +24,7 @@ npm test             # Vitest (스코어링·상태머신 단위 테스트)
 npm run db:migrate   # 스키마 변경 → 마이그레이션 생성·적용 (Prisma Postgres, ADR-0013)
 npm run db:deploy    # 기존 마이그레이션만 적용 (배포·팀원 세팅)
 npm run db:seed      # 시드 — 건축HUB·카카오 실호출로 건물 10동 + 합성 대상자 15명 (키 필요, ADR-0012)
+npm run push:keys    # Web Push VAPID 공개키·비밀키 생성 (ADR-0017)
 npx prisma studio    # DB 브라우저
 ```
 
@@ -33,7 +34,7 @@ npx prisma studio    # DB 브라우저
 
 ## 기술 스택 (근거는 각 ADR)
 
-Next.js 16 App Router 모놀리스([ADR-0001](docs/adr/0001-nextjs-fullstack-monolith.md)) · TypeScript strict([0002](docs/adr/0002-typescript-strict.md)) · Tailwind 4([0003](docs/adr/0003-tailwind-css.md)) · Prisma Postgres([0013](docs/adr/0013-prisma-postgres.md), [0004](docs/adr/0004-sqlite-prisma.md) 대체) · 규칙 기반 스코어링([0005](docs/adr/0005-rule-based-risk-model.md)) · 수제 SW PWA([0006](docs/adr/0006-pwa-manual-service-worker.md)) · 카카오맵([0007](docs/adr/0007-kakao-map.md)) · 인앱 알림([0008](docs/adr/0008-notification-in-app-first.md)) · Vitest([0009](docs/adr/0009-vitest.md)) · npm+Node20([0010](docs/adr/0010-npm-node20.md)) · 로컬 데모 우선([0011](docs/adr/0011-deploy-local-demo-first.md)) · 시드 tsx+건축HUB 실호출([0012](docs/adr/0012-seed-runner-tsx.md)) · Prisma Postgres+Vercel([0013](docs/adr/0013-prisma-postgres.md)) · Figma 2층 디자인 토큰([0015](docs/adr/0015-design-system-tokens.md))
+Next.js 16 App Router 모놀리스([ADR-0001](docs/adr/0001-nextjs-fullstack-monolith.md)) · TypeScript strict([0002](docs/adr/0002-typescript-strict.md)) · Tailwind 4([0003](docs/adr/0003-tailwind-css.md)) · Prisma Postgres([0013](docs/adr/0013-prisma-postgres.md), [0004](docs/adr/0004-sqlite-prisma.md) 대체) · 규칙 기반 스코어링([0005](docs/adr/0005-rule-based-risk-model.md)) · 수제 SW PWA([0006](docs/adr/0006-pwa-manual-service-worker.md)) · 카카오맵([0007](docs/adr/0007-kakao-map.md)) · 알림 이벤트+Web Push([0017](docs/adr/0017-notification-events-web-push.md), [0008](docs/adr/0008-notification-in-app-first.md) 대체) · Vitest([0009](docs/adr/0009-vitest.md)) · npm+Node20([0010](docs/adr/0010-npm-node20.md)) · 로컬 데모 우선([0011](docs/adr/0011-deploy-local-demo-first.md)) · 시드 tsx+건축HUB 실호출([0012](docs/adr/0012-seed-runner-tsx.md)) · Prisma Postgres+Vercel([0013](docs/adr/0013-prisma-postgres.md)) · Figma 2층 디자인 토큰([0015](docs/adr/0015-design-system-tokens.md))
 
 ## 도메인 규칙 (어기면 리뷰 반려)
 

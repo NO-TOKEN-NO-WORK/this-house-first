@@ -84,6 +84,46 @@ export const WorkerRole = {
 } as const;
 export type WorkerRole = (typeof WorkerRole)[keyof typeof WorkerRole];
 
+/** 사용자에게 전달하는 알림 사건 — 비경보일에는 어떤 값도 생성하지 않는다 (PRD §9, ADR-0017) */
+export const NotificationType = {
+  /** 경보일 오전 8시 담당자별 요약 1건 */
+  ALERT_DAY_SUMMARY: "ALERT_DAY_SUMMARY",
+  /** 무응답 2회·이상 징후·당일 위험 등급 상승에 따른 방문 큐 승격 */
+  VISIT_PROMOTED: "VISIT_PROMOTED",
+} as const;
+export type NotificationType =
+  (typeof NotificationType)[keyof typeof NotificationType];
+
+export function isNotificationType(value: unknown): value is NotificationType {
+  return (
+    value === NotificationType.ALERT_DAY_SUMMARY ||
+    value === NotificationType.VISIT_PROMOTED
+  );
+}
+
+/** 방문 큐 승격 원인 — 알림 문구가 상태 전이와 다른 말을 하지 않게 하는 단일 원본 */
+export const NotificationCause = {
+  NO_ANSWER_2: "NO_ANSWER_2",
+  SYMPTOM: "SYMPTOM",
+  RISK_RECLASSIFIED: "RISK_RECLASSIFIED",
+} as const;
+export type NotificationCause =
+  (typeof NotificationCause)[keyof typeof NotificationCause];
+
+export function isNotificationCause(value: unknown): value is NotificationCause {
+  return (
+    value === NotificationCause.NO_ANSWER_2 ||
+    value === NotificationCause.SYMPTOM ||
+    value === NotificationCause.RISK_RECLASSIFIED
+  );
+}
+
+export const NOTIFICATION_CAUSE_LABEL: Record<NotificationCause, string> = {
+  NO_ANSWER_2: "무응답 2회로",
+  SYMPTOM: "이상 징후로",
+  RISK_RECLASSIFIED: "위험 등급 상승으로",
+};
+
 /** 가구별·경보일별 상태머신 (PRD F4·F5, docs/architecture.md §4) */
 export const HouseholdStatus = {
   /** 미확인 */

@@ -8,6 +8,7 @@ import {
   isVisitResult,
   parseHouseholdStatus,
   type VisitResult,
+  WorkerRole,
 } from "@/lib/domain";
 import { todayInKst } from "@/lib/board/today";
 import {
@@ -21,6 +22,9 @@ import {
   toErrorResponse,
 } from "@/lib/http";
 import { transition, TransitionError } from "@/lib/escalation/transition";
+import { visitPromotedDraft } from "@/lib/notifications/message";
+import { promotedCallCause } from "@/lib/notifications/policy";
+import { dispatchDueNotifications } from "@/lib/notifications/push";
 
 /**
  * 확인 기록 (FR-5) — 전화·방문 결과 원터치 기록.
@@ -94,7 +98,7 @@ export async function POST(request: Request): Promise<Response> {
       };
       const statusRow = await tx.householdDayStatus.findUnique({
         where: key,
-        include: { subject: { select: { workerId: true } } },
+        include: { subject: { select: { name: true, workerId: true } } },
       });
       if (!statusRow) {
         throw notFound(
@@ -175,8 +179,40 @@ export async function POST(request: Request): Promise<Response> {
         });
       }
 
+      if (next.promoted && check.kind === CheckKind.CALL) {
+        const managers = await tx.worker.findMany({
+          where: { role: WorkerRole.MANAGER },
+          select: { id: true },
+        });
+        const cause = promotedCallCause(check.result);
+        if (cause && managers.length > 0) {
+          await tx.notification.createMany({
+            data: managers.map(({ id }) =>
+              visitPromotedDraft({
+                alertDayId: alertDay.id,
+                date,
+                recipientId: id,
+                subjectId,
+                subjectName: statusRow.subject.name,
+                workerId: statusRow.subject.workerId,
+                cause,
+                availableAt: now,
+              }),
+            ),
+            skipDuplicates: true,
+          });
+        }
+      }
+
       return next;
     });
+
+    // 상태와 알림 원장은 이미 커밋됐다. 외부 Push 실패가 확인 기록을 되돌리지 않게 분리한다.
+    if (outcome.promoted) {
+      await dispatchDueNotifications().catch((error: unknown) => {
+        console.error("[notifications] 승격 Push 전달 실패", error);
+      });
+    }
 
     return Response.json({
       data: {
