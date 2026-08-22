@@ -12,10 +12,11 @@ function urlBase64ToUint8Array(value: string): Uint8Array<ArrayBuffer> {
 }
 
 async function registration(): Promise<ServiceWorkerRegistration> {
-  return navigator.serviceWorker.register("/sw.js", {
+  await navigator.serviceWorker.register("/sw.js", {
     scope: "/",
     updateViaCache: "none",
   });
+  return navigator.serviceWorker.ready;
 }
 
 export function PushNotificationManager({
@@ -109,7 +110,7 @@ export function PushNotificationManager({
         throw new Error("구독 저장 실패");
       }
       setState("on");
-      setMessage("이 기기로 긴급 알림을 받습니다.");
+      setMessage("이 기기로 푸시 알림을 받습니다.");
     } catch {
       setMessage("푸시 알림을 켜지 못했습니다. 잠시 후 다시 시도해 주세요.");
     } finally {
@@ -124,11 +125,12 @@ export function PushNotificationManager({
       const registered = await registration();
       const subscription = await registered.pushManager.getSubscription();
       if (subscription) {
-        await fetch("/api/push-subscriptions", {
+        const response = await fetch("/api/push-subscriptions", {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ workerId, endpoint: subscription.endpoint }),
         });
+        if (!response.ok) throw new Error("구독 삭제 실패");
         await subscription.unsubscribe();
       }
       setState("off");
@@ -141,7 +143,7 @@ export function PushNotificationManager({
   }
 
   return (
-    <section className="flex flex-wrap items-center gap-3 rounded-[10px] border border-border-default bg-surface-default p-4 text-text-primary">
+    <section className="flex flex-wrap items-center gap-3 rounded-lg border border-border-default bg-surface-default p-4 text-text-primary">
       <div className="min-w-0 flex-1">
         <p className="text-label-15">
           {state === "on" ? "푸시 알림 켜짐" : "푸시 알림"}
@@ -157,7 +159,7 @@ export function PushNotificationManager({
           type="button"
           disabled={pending}
           onClick={state === "on" ? unsubscribe : subscribe}
-          className="min-h-12 shrink-0 rounded-[10px] bg-action-primary px-4 text-label-15 text-text-inverse disabled:bg-action-disabled"
+          className="min-h-12 shrink-0 rounded-lg bg-action-primary px-4 text-label-15 text-text-inverse disabled:bg-action-disabled"
         >
           {pending ? "처리 중" : state === "on" ? "끄기" : "알림 받기"}
         </button>

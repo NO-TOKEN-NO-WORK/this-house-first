@@ -226,8 +226,8 @@
   display: grid;
   grid-template-columns: 13rem minmax(0, 1fr);
   min-inline-size: 0;
-  block-size: calc(100svh - 8rem);
-  min-block-size: 0;
+  block-size: auto;
+  min-block-size: calc(100svh - 8rem);
   gap: 1rem;
   padding: 0 1.5rem;
 }
@@ -588,9 +588,11 @@
 
 .notificationPanel {
   min-inline-size: 0;
+  max-block-size: 12rem;
   padding: 1rem;
+  overflow: auto;
   border: 1px solid var(--admin-rule);
-  border-radius: 0.5rem;
+  border-radius: var(--admin-radius-panel);
   background: var(--admin-surface);
 }
 

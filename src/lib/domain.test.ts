@@ -15,6 +15,7 @@ import {
   isVisitResult,
   nextCheckKindOf,
   NotificationCause,
+  NOTIFICATION_CAUSE_LABEL,
   NotificationType,
   parseHouseholdStatus,
   RiskGrade,
@@ -36,6 +37,12 @@ describe("도메인 상태값 검증", () => {
     expect(ALERT_LEVEL_LABEL[AlertLevel.ADVISORY]).toBe("주의");
     expect(ALERT_LEVEL_LABEL[AlertLevel.WARNING]).toBe("경계");
     expect(ALERT_LEVEL_LABEL[AlertLevel.EMERGENCY]).toBe("심각");
+  });
+
+  it("재분류 승격 원인은 경보 단계와 구분해 위험 등급으로 표시한다", () => {
+    expect(NOTIFICATION_CAUSE_LABEL[NotificationCause.RISK_RECLASSIFIED]).toBe(
+      "위험 등급 상승으로",
+    );
   });
 
   it("Object 프로토타입의 속성은 상태값으로 허용하지 않는다", () => {

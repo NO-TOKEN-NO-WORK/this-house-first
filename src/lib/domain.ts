@@ -88,7 +88,7 @@ export type WorkerRole = (typeof WorkerRole)[keyof typeof WorkerRole];
 export const NotificationType = {
   /** 경보일 오전 8시 담당자별 요약 1건 */
   ALERT_DAY_SUMMARY: "ALERT_DAY_SUMMARY",
-  /** 무응답 2회·이상 징후·당일 위험 단계 상승에 따른 방문 큐 승격 */
+  /** 무응답 2회·이상 징후·당일 위험 등급 상승에 따른 방문 큐 승격 */
   VISIT_PROMOTED: "VISIT_PROMOTED",
 } as const;
 export type NotificationType =
@@ -121,7 +121,7 @@ export function isNotificationCause(value: unknown): value is NotificationCause 
 export const NOTIFICATION_CAUSE_LABEL: Record<NotificationCause, string> = {
   NO_ANSWER_2: "무응답 2회로",
   SYMPTOM: "이상 징후로",
-  RISK_RECLASSIFIED: "위험 단계 상승으로",
+  RISK_RECLASSIFIED: "위험 등급 상승으로",
 };
 
 /** 가구별·경보일별 상태머신 (PRD F4·F5, docs/architecture.md §4) */

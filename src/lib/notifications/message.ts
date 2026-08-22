@@ -1,9 +1,11 @@
 import {
   type AlertLevel,
   ALERT_LEVEL_LABEL,
+  GRADE_LABEL,
   type NotificationCause,
   NOTIFICATION_CAUSE_LABEL,
   NotificationType,
+  RiskGrade,
 } from "../domain";
 
 /** Prisma createMany가 받는 알림 사건의 공통 필드. DB와 무관한 순수 빌더의 출력이다. */
@@ -64,11 +66,12 @@ export function morningSummaryDraft(input: {
   availableAt: Date;
 }): NotificationDraft {
   const callCount = Math.max(0, input.totalCount - input.criticalCount);
+  const criticalGradeLabel = GRADE_LABEL[RiskGrade.CRITICAL];
   const body =
     input.criticalCount > 0 && callCount > 0
-      ? `1등급 ${input.criticalCount}명은 오전 방문, 나머지 ${callCount}명은 전화 확인이 필요합니다.`
+      ? `${criticalGradeLabel} ${input.criticalCount}명은 오전 방문, 나머지 ${callCount}명은 전화 확인이 필요합니다.`
       : input.criticalCount > 0
-        ? `1등급 ${input.criticalCount}명은 오전 방문이 필요합니다.`
+        ? `${criticalGradeLabel} ${input.criticalCount}명은 오전 방문이 필요합니다.`
         : `${callCount}명은 오늘 전화 확인이 필요합니다.`;
 
   return {
