@@ -239,7 +239,112 @@
 }
 
 .map {
+  display: grid;
+  min-inline-size: 0;
   min-block-size: 24rem;
+  gap: var(--admin-space-3);
+}
+
+.mapCanvas {
+  min-block-size: 24rem;
+  border: 1px solid var(--admin-rule);
+  background: var(--admin-surface);
+}
+
+.mapMessage {
+  margin: 0;
+  padding: var(--admin-space-3);
+  border: 1px solid var(--admin-rule);
+  background: var(--admin-surface);
+  color: var(--admin-ink-soft);
+  line-height: 1.6;
+}
+
+.mapMarker {
+  display: grid;
+  min-inline-size: 2.75rem;
+  min-block-size: 2.75rem;
+  place-items: center;
+  padding: 0;
+  border: 3px solid var(--admin-ink);
+  border-radius: 50%;
+  background: var(--admin-surface);
+  color: var(--admin-ink);
+  font: inherit;
+  font-weight: 700;
+}
+
+.mapMarker:focus-visible {
+  outline: 3px solid var(--admin-focus);
+  outline-offset: 2px;
+}
+
+.mapMarker.grade1 {
+  background: var(--admin-grade-critical);
+  color: var(--admin-accent-ink);
+}
+
+.mapMarker.grade2 {
+  background: var(--admin-grade-high);
+}
+
+.mapMarker.grade3 {
+  background: var(--admin-grade-moderate);
+}
+
+.mapMarker.emergency {
+  border-color: var(--admin-grade-critical);
+}
+
+.mapMarker.visit {
+  border-color: var(--admin-accent);
+}
+
+.mapMarker.unchecked {
+  border-color: var(--admin-ink);
+}
+
+.mapMarker.unreachable {
+  border-color: var(--admin-ink-soft);
+}
+
+.mapMarker.called {
+  border-color: var(--admin-grade-high);
+}
+
+.mapMarker.resolved {
+  border-color: var(--admin-grade-moderate);
+}
+
+.mapDetail {
+  display: grid;
+  gap: var(--admin-space-2);
+  min-inline-size: 0;
+  padding: var(--admin-space-3);
+  border: 1px solid var(--admin-rule);
+  background: var(--admin-surface);
+}
+
+.mapDetailTitle,
+.mapSubject p {
+  margin: 0;
+}
+
+.mapDetailTitle {
+  font-size: 1rem;
+}
+
+.mapSubjectList {
+  display: grid;
+  gap: var(--admin-space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mapSubject {
+  display: grid;
+  gap: var(--admin-space-2);
 }
 
 .priorityPanel {
@@ -404,9 +509,6 @@
     min-block-size: 36rem;
   }
 
-  .priorityPanel {
-    grid-column: 1 / -1;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {

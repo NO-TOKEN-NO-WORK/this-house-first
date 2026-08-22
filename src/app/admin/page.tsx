@@ -13,6 +13,7 @@ import {
   HOUSEHOLD_STATUS_LABEL,
   RiskGrade,
 } from "../../lib/domain";
+import { AdminMap } from "../../components/admin/AdminMap";
 import styles from "./admin.module.css";
 
 export const dynamic = "force-dynamic";
@@ -175,6 +176,7 @@ function SituationHeader({ dashboard }: { dashboard: AdminDashboard }) {
 
 export function AdminDashboardView({
   dashboard,
+  mapKey,
 }: {
   dashboard: AdminDashboard;
   mapKey: string;
@@ -198,7 +200,8 @@ export function AdminDashboardView({
         {dashboard.alerted ? (
           <>
             <SummaryCards summary={dashboard.summary} />
-            <section className={styles.dashboardGrid} aria-label="관제 대상자 목록">
+            <section className={styles.dashboardGrid} aria-label="관제 지도와 대상자 목록">
+              <AdminMap buildings={dashboard.buildings} mapKey={mapKey} />
               <PriorityList
                 subjects={dashboard.subjects}
                 date={dashboard.date}
