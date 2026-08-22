@@ -21,6 +21,7 @@ describe("today service worker activate", () => {
             "thf-today-v0",
             "thf-today-v1",
             "thf-today-v2",
+            "thf-today-v3",
           ]),
         delete: remove,
       },
@@ -50,6 +51,7 @@ describe("today service worker activate", () => {
       "thf-v1",
       "thf-today-v0",
       "thf-today-v1",
+      "thf-today-v2",
     ]);
     expect(claim).toHaveBeenCalledOnce();
   });

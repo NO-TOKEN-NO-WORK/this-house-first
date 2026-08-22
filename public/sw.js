@@ -4,7 +4,7 @@
  * - 정적 자원: cache-first
  * - 캐시를 갱신하려면 CACHE_VERSION을 올린다 (자동 precache 없음 — ADR-0006 트레이드오프)
  */
-const CACHE_VERSION = "thf-today-v2";
+const CACHE_VERSION = "thf-today-v3";
 
 self.addEventListener("install", () => {
   self.skipWaiting();
