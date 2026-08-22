@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useMemo, useState } from "react";
+import { CurrentWeatherSummary } from "@/components/CurrentWeatherSummary";
 import {
   RecommendationStatus,
   RECOMMENDATION_STATUS_LABEL,
@@ -217,10 +218,10 @@ export function WelfareScanWorkspace({
         items={[
           { icon: "/admin/calendar.png", label: "날짜", value: previewMode ? "2026.08.22" : DATE_FORMAT.format(new Date()) },
           { icon: "/admin/location.png", label: "담당 지역", value: "전체 담당 지역" },
-          { icon: "/admin/thermometer.png", label: "최고 체감온도", tone: "danger", value: "38.4°C" },
           { icon: "/admin/clock.png", label: "마지막 스캔", value: formatTime(scannedAt) },
           { icon: "/admin/refresh.png", label: "분석 방식", value: "수동 실행" },
         ]}
+        metaTail={<CurrentWeatherSummary valuesOnly variant="admin" />}
         title="복지 스캔"
       />}
       pageClassName={styles.page}
