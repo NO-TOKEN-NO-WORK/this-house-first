@@ -187,7 +187,7 @@ interface AdminDashboardBase {
 - `src/app/admin/actions.ts`의 물리 삭제를 보관 처리로 변경
 - `/today`, 상세, 발령, 알림의 활성 원장 필터
 - 관련 Vitest 테스트
-- `docs/architecture.md`, 새 ADR, `docs/adr/README.md`
+- `docs/architecture.md`, ADR-0022, `docs/adr/README.md`
 
 ## 테스트와 완료 조건
 
@@ -214,4 +214,3 @@ interface AdminDashboardBase {
 - `npm test`
 - `npm run lint`
 - `npm run build`
-

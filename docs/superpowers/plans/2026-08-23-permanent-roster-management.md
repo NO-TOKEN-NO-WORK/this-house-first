@@ -27,7 +27,7 @@
 **Files:**
 - Modify: `prisma/schema.prisma`
 - Create: `prisma/migrations/20260823090000_add_roster_archiving/migration.sql`
-- Create: `docs/adr/0021-permanent-roster-alert-snapshot-separation.md`
+- Create: `docs/adr/0022-permanent-roster-alert-snapshot-separation.md`
 - Modify: `docs/adr/README.md`
 
 **Interfaces:**
@@ -61,7 +61,7 @@ CREATE INDEX "Subject_workerId_archivedAt_idx" ON "Subject"("workerId", "archive
 
 - [ ] **Step 3: Record the architecture decision**
 
-Document the permanent-roster/alert-snapshot boundary, soft archive behavior, rejected `CareDay` option, and non-destructive migration in ADR-0021; add it to the ADR index.
+Document the permanent-roster/alert-snapshot boundary, soft archive behavior, rejected `CareDay` option, and non-destructive migration in ADR-0022; add it to the ADR index.
 
 - [ ] **Step 4: Validate and generate**
 
@@ -77,7 +77,7 @@ Expected: both commands exit 0 without changing existing migrations.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add prisma/schema.prisma prisma/migrations/20260823090000_add_roster_archiving docs/adr/0021-permanent-roster-alert-snapshot-separation.md docs/adr/README.md
+git add prisma/schema.prisma prisma/migrations/20260823090000_add_roster_archiving docs/adr/0022-permanent-roster-alert-snapshot-separation.md docs/adr/README.md
 git commit -m "feat: 상시 원장 보관 필드를 추가한다"
 ```
 
@@ -368,4 +368,3 @@ gh pr merge --squash --delete-branch
 ```
 
 Expected: PR reports `MERGED`, required checks pass, and remote `main` contains the squash commit.
-
