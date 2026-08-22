@@ -20,18 +20,18 @@ import {
 import { ReasonCategory } from "@/lib/scoring/reasons";
 
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
+  useRouter: () => ({ replace: vi.fn(), refresh: vi.fn() }),
 }));
 
 import { VisitDetailView } from "./VisitDetailView";
 
 const detail: SubjectDetail = {
   subjectId: "subject-1",
-  name: "김덕화",
+  name: "김○○",
   age: 88,
   birthYear: 1938,
   livesAlone: true,
-  phone: "010-2345-1938",
+  phone: "010-0000-0199",
   address: "행복동 중앙로 12-3",
   roadAddress: null,
   dong: "행복동",
@@ -88,7 +88,6 @@ const detail: SubjectDetail = {
   gradeChange: {
     previousGrade: RiskGrade.HIGH,
     currentGrade: RiskGrade.CRITICAL,
-    reason: "최근 방문에서 에어컨 없음·고장이 확인돼",
   },
 };
 
@@ -103,7 +102,7 @@ describe("VisitDetailView", () => {
     expect(html).toContain("위험 사유");
     expect(html).toContain("방문 체크리스트");
     expect(html).toContain("방문 히스토리");
-    expect(html).toContain("방문 상황을 기록하세요");
+    expect(html).toContain("방문 결과를 눌러 기록하세요");
     expect(html).toContain("메모 (선택)");
   });
 
@@ -120,7 +119,7 @@ describe("VisitDetailView", () => {
     }
   });
 
-  it("방문 결과 문구는 도메인 상수만 쓰고 빈 결과 저장은 막는다", () => {
+  it("방문 결과 문구는 도메인 상수만 쓰고 결과 버튼이 바로 저장한다", () => {
     const html = renderToStaticMarkup(
       <VisitDetailView detail={detail} backHref="/today" />,
     );
@@ -128,15 +127,19 @@ describe("VisitDetailView", () => {
     for (const label of Object.values(VISIT_RESULT_LABEL)) {
       expect(html).toContain(label);
     }
-    expect(html).toMatch(/<button[^>]*disabled[^>]*>저장하기<\/button>/);
+    expect(html).not.toContain("저장하기");
+    expect(html).not.toMatch(
+      /<button[^>]* disabled=""[^>]*>.*정상.*<\/button>/,
+    );
   });
 
-  it("최근 기록은 메모를 우선하고 없으면 결과 라벨을 보여 준다", () => {
+  it("최근 기록은 결과 라벨을 항상 보여 주고 메모를 함께 표시한다", () => {
     const html = renderToStaticMarkup(
       <VisitDetailView detail={detail} backHref="/today" />,
     );
 
     expect(html).toContain("에어컨 고장 확인");
+    expect(html).toContain(VISIT_RESULT_LABEL[VisitResult.AIRCON_ISSUE]);
     expect(html).toContain(CALL_RESULT_LABEL[CallResult.OK]);
   });
 });

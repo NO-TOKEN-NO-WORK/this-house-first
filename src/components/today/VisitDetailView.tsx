@@ -31,6 +31,7 @@ const BACK_BUTTON =
 function GradeChangeNotice({ detail }: { detail: SubjectDetail }) {
   if (!detail.gradeChange) return null;
 
+  // 상승 사실만 알린다. 원인을 임의로 단정하지 않고 바로 아래의 스코어링 reasons를 그대로 보여 준다.
   return (
     <section className="flex min-h-[90px] items-center gap-2.5 rounded-xl border border-status-critical bg-status-critical-subtle p-3">
       <span className="flex size-8 shrink-0 items-center justify-center rounded-[10px] bg-surface-default">
@@ -46,8 +47,6 @@ function GradeChangeNotice({ detail }: { detail: SubjectDetail }) {
           오늘 위험 단계가 올라갔어요
         </h2>
         <p className="mt-1 text-text-secondary">
-          {detail.gradeChange.reason}
-          <br />
           {GRADE_LABEL[detail.gradeChange.previousGrade]} →{" "}
           {GRADE_LABEL[detail.gradeChange.currentGrade]}으로 상향됐어요
         </p>
@@ -109,9 +108,12 @@ function VisitHistory({ items }: { items: SubjectHistoryItem[] }) {
                       {item.kindLabel}
                     </span>
                   </p>
-                  <p className="mt-1.5 break-words">
-                    {item.memo ?? item.resultLabel}
-                  </p>
+                  <p className="mt-1.5 break-words">{item.resultLabel}</p>
+                  {item.memo && (
+                    <p className="mt-1 break-words text-text-secondary">
+                      {item.memo}
+                    </p>
+                  )}
                 </div>
               </li>
             );
@@ -159,6 +161,7 @@ const VISIT_OPTIONS: VisitOption[] = [
   },
 ];
 
+/** 카드의 방문하기(탭 1) → 결과 버튼(탭 2)에서 바로 저장해 PRD §9를 지킨다. */
 function VisitRecordForm({
   detail,
   backHref,
@@ -173,8 +176,9 @@ function VisitRecordForm({
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
 
-  async function save() {
-    if (result === null || pending) return;
+  async function save(selectedResult: VisitResult) {
+    if (pending) return;
+    setResult(selectedResult);
     setPending(true);
     setError("");
 
@@ -185,7 +189,7 @@ function VisitRecordForm({
         body: JSON.stringify({
           subjectId: detail.subjectId,
           kind: CheckKind.VISIT,
-          result,
+          result: selectedResult,
           date: detail.date,
           ...(memo.trim() ? { memo: memo.trim() } : {}),
         }),
@@ -196,7 +200,9 @@ function VisitRecordForm({
         return;
       }
 
-      router.push(backHref);
+      // 완료된 방문 폼을 히스토리에 남기지 않는다. 브라우저 뒤로 가기로 이미 종결된 결과를
+      // 다시 제출하면 상태머신이 거절하고 담당자에게 불필요한 오류만 보인다.
+      router.replace(backHref);
       router.refresh();
     } catch {
       setError("연결이 끊겨 기록하지 못했습니다. 다시 눌러 주세요.");
@@ -208,8 +214,24 @@ function VisitRecordForm({
   return (
     <div className="flex flex-col gap-8 pt-3">
       <section className="flex flex-col gap-5">
+        <label htmlFor={memoId} className="text-heading-18 text-text-subtle">
+          메모 (선택)
+        </label>
+        <input
+          id={memoId}
+          type="text"
+          value={memo}
+          maxLength={500}
+          disabled={pending}
+          onChange={(event) => setMemo(event.target.value)}
+          placeholder="필요할 때만 메모를 먼저 남겨 주세요"
+          className="h-12 w-full rounded-lg border border-border-soft bg-surface-default px-4 text-body-15 text-text-primary placeholder:text-text-tertiary"
+        />
+      </section>
+
+      <section className="flex flex-col gap-5">
         <h2 className="text-heading-18 text-text-subtle">
-          방문 상황을 기록하세요
+          방문 결과를 눌러 기록하세요
         </h2>
         <div className="grid grid-cols-2 gap-2.5">
           {VISIT_OPTIONS.map((option) => {
@@ -220,7 +242,7 @@ function VisitRecordForm({
                 type="button"
                 aria-pressed={selected}
                 disabled={pending}
-                onClick={() => setResult(option.value)}
+                onClick={() => save(option.value)}
                 className={`flex h-[86px] flex-col items-center justify-center gap-[5px] rounded-lg border text-title-17 disabled:opacity-60 ${
                   selected
                     ? "border-action-primary bg-action-primary text-text-inverse"
@@ -230,49 +252,22 @@ function VisitRecordForm({
                 <span className={selected ? "text-text-inverse" : option.tone}>
                   {option.icon}
                 </span>
-                {VISIT_RESULT_LABEL[option.value]}
+                {pending && selected
+                  ? "저장 중…"
+                  : VISIT_RESULT_LABEL[option.value]}
               </button>
             );
           })}
         </div>
+        {error && (
+          <p
+            role="alert"
+            className="rounded-[10px] border border-status-critical bg-status-critical-subtle px-4 py-3 text-body-15-relaxed text-status-critical-strong"
+          >
+            {error}
+          </p>
+        )}
       </section>
-
-      <section className="flex flex-col gap-5">
-        <label htmlFor={memoId} className="text-heading-18 text-text-subtle">
-          메모 (선택)
-        </label>
-        <input
-          id={memoId}
-          type="text"
-          value={memo}
-          disabled={pending}
-          onChange={(event) => setMemo(event.target.value)}
-          placeholder="목소리가 기운 없으심"
-          className="h-12 w-full rounded-lg border border-border-soft bg-surface-default px-4 text-body-15 text-text-primary placeholder:text-text-tertiary"
-        />
-      </section>
-
-      <button
-        type="button"
-        disabled={result === null || pending}
-        onClick={save}
-        className={`flex h-14 w-full items-center justify-center rounded-lg text-heading-19 ${
-          result === null || pending
-            ? "bg-surface-soft text-text-secondary"
-            : "bg-action-primary text-text-inverse active:bg-action-primary-strong"
-        }`}
-      >
-        {pending ? "저장 중…" : "저장하기"}
-      </button>
-
-      {error && (
-        <p
-          role="alert"
-          className="rounded-[10px] border border-status-critical bg-status-critical-subtle px-4 py-3 text-body-15-relaxed text-status-critical-strong"
-        >
-          {error}
-        </p>
-      )}
     </div>
   );
 }

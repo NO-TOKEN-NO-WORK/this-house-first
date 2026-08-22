@@ -18,8 +18,7 @@ import {
   nextCheckKindOf,
   parseHouseholdStatus,
   RiskGrade,
-  VisitResult,
-  VISIT_GRADE_CHANGE_REASON,
+  type VisitResult,
   VISIT_RESULT_LABEL,
 } from "../domain";
 import { labelReasons, type LabeledReason } from "../scoring/reasons";
@@ -79,7 +78,7 @@ export interface SubjectDetail {
   lastResult: string | null;
   /** 최근 전화·방문 기록 — 방문 전 맥락을 빠르게 읽는 타임라인 (Figma 25:347) */
   recentHistory: SubjectHistoryItem[];
-  /** 직전 경보일부터 위험 단계가 올라갔고 원인을 확인할 수 있을 때만 보여 주는 안내 */
+  /** 직전 경보일부터 위험 단계가 올라갔을 때만 보여 주는 안내 */
   gradeChange: SubjectGradeChange | null;
 }
 
@@ -97,7 +96,6 @@ export interface SubjectHistoryItem {
 export interface SubjectGradeChange {
   previousGrade: RiskGrade;
   currentGrade: RiskGrade;
-  reason: string;
 }
 
 function parseReasons(raw: string): string[] {
@@ -163,10 +161,17 @@ export async function getSubjectDetail(options: {
   const key = {
     alertDayId_subjectId: { alertDayId: alertDay.id, subjectId: subject.id },
   };
-  const [assessmentRow, statusRow, recentChecks, previousAssessment, airconIssue] =
+  const [assessmentRow, statusRow, lastCheck, recentChecks, previousAssessment] =
     await Promise.all([
       prisma.riskAssessment.findUnique({ where: key }),
       prisma.householdDayStatus.findUnique({ where: key }),
+      // 최근 히스토리 3건과 별개로 당일 마지막 결과를 읽는다. 과거 기록이 나중에 입력돼도
+      // 상세의 "선택됨" 표시가 당일 결과를 놓치지 않아야 한다.
+      prisma.checkEvent.findFirst({
+        where: { alertDayId: alertDay.id, subjectId: subject.id },
+        orderBy: { createdAt: "desc" },
+        select: { result: true },
+      }),
       prisma.checkEvent.findMany({
         // 과거 날짜를 열었을 때 미래의 확인 기록을 보여 주지 않는다.
         where: {
@@ -183,15 +188,7 @@ export async function getSubjectDetail(options: {
           alertDay: { date: { lt: date } },
         },
         orderBy: { alertDay: { date: "desc" } },
-      }),
-      prisma.checkEvent.findFirst({
-        where: {
-          subjectId: subject.id,
-          kind: CheckKind.VISIT,
-          result: VisitResult.AIRCON_ISSUE,
-          alertDay: { date: { lt: date } },
-        },
-        orderBy: { createdAt: "desc" },
+        select: { grade: true },
       }),
     ]);
 
@@ -236,18 +233,11 @@ export async function getSubjectDetail(options: {
     previousAssessment && isRiskGrade(previousAssessment.grade)
       ? previousAssessment.grade
       : null;
-  const gradeChangeReason = airconIssue
-    ? VISIT_GRADE_CHANGE_REASON[VisitResult.AIRCON_ISSUE]
-    : null;
   const gradeChange =
-    grade &&
-    previousGrade &&
-    grade < previousGrade &&
-    gradeChangeReason
+    grade && previousGrade && grade < previousGrade
       ? {
           previousGrade,
           currentGrade: grade,
-          reason: gradeChangeReason,
         }
       : null;
 
@@ -272,8 +262,7 @@ export async function getSubjectDetail(options: {
     open,
     // 방문 큐에 오른 가구는 전화가 아니라 방문 기록을 받는다 (escalation/transition.ts CALLABLE·VISITABLE)
     nextCheckKind: status ? nextCheckKindOf(status) : null,
-    lastResult:
-      recentChecks.find((row) => row.alertDayId === alertDay.id)?.result ?? null,
+    lastResult: lastCheck?.result ?? null,
     recentHistory,
     gradeChange,
   };

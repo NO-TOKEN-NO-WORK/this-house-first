@@ -12,11 +12,11 @@ import { SubjectCard } from "./SubjectCard";
 const subject: BoardSubject = {
   subjectId: "subject-visit",
   buildingId: "building-1",
-  name: "김덕화",
+  name: "김○○",
   age: 88,
   birthYear: 1938,
   livesAlone: true,
-  phone: "010-2345-1938",
+  phone: "010-0000-0199",
   address: "행복동 중앙로 12-3",
   roadAddress: null,
   lat: 35.8,

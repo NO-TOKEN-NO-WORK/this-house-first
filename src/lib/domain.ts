@@ -304,12 +304,6 @@ export const VISIT_CHECKLIST: readonly string[] = [
   "선풍기나 에어컨이 작동하는지 확인해 주세요",
 ];
 
-/** 위험 단계 상승 안내의 원인 문구 — 결과 코드와 화면 설명이 다른 말을 하지 않게 한다. */
-export const VISIT_GRADE_CHANGE_REASON: Partial<Record<VisitResult, string>> = {
-  [VisitResult.AIRCON_ISSUE]:
-    "최근 방문에서 에어컨 없음·고장이 확인돼",
-};
-
 export function isVisitResult(value: unknown): value is VisitResult {
   return (
     typeof value === "string" &&
