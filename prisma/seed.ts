@@ -4,6 +4,7 @@ import { toBuildingFacts, type BuildingFacts } from "../src/lib/bldg-hub/mapping
 import { prisma } from "../src/lib/db";
 import { AlertLevel, ALERT_LEVEL_LABEL, GRADE_LABEL, RiskGrade } from "../src/lib/domain";
 import { geocodeAddress, resolveRegionCodes } from "../src/lib/kakao/local";
+import { simulateWeightedExposure } from "../src/lib/scoring/exposure";
 import { assessRisk } from "../src/lib/scoring/score";
 import { BUILDING_SLOTS, REGION, SELECTION_SEED } from "./seed/config";
 import { hasEnoughCandidates, isSeedCandidate, rankCandidatesForSlots } from "./seed/select";
@@ -210,6 +211,10 @@ async function main(): Promise<void> {
     console.log(`\n  [${ALERT_LEVEL_LABEL[level]}] ${GRADE_LABEL[RiskGrade.CRITICAL]} ${counts[1]}명 · ${GRADE_LABEL[RiskGrade.HIGH]} ${counts[2]}명 · ${GRADE_LABEL[RiskGrade.MODERATE]} ${counts[3]}명`);
     if (level === AlertLevel.EMERGENCY) {
       for (const r of rows) console.log(`    ${String(r.score).padStart(5)}  ${GRADE_LABEL[r.grade]}  ${r.name}  ${r.reasons}`);
+      const exposure = simulateWeightedExposure(rows.map((r) => r.score));
+      console.log(
+        `    위험가중 미확인 노출: 무작위 기대 ${exposure.randomExpected.toFixed(1)} → 위험순 ${exposure.prioritized.toFixed(1)} (${(exposure.reductionRate * 100).toFixed(1)}% 감소)`,
+      );
     }
   }
 
