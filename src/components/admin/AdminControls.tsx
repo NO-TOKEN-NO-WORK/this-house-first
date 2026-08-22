@@ -21,6 +21,10 @@ export interface PushDispatchResult {
   sent: number;
   failed: number;
   partialFailures?: number;
+  attemptedDevices?: number;
+  sentDevices?: number;
+  failedDevices?: number;
+  recipientsWithoutSubscriptions?: number;
 }
 
 function isCount(value: unknown): value is number {
@@ -75,7 +79,12 @@ export async function requestDemoTrigger(
     !isCount(push.sent) ||
     !("failed" in push) ||
     !isCount(push.failed) ||
-    ("partialFailures" in push && !isCount(push.partialFailures))
+    ("partialFailures" in push && !isCount(push.partialFailures)) ||
+    ("attemptedDevices" in push && !isCount(push.attemptedDevices)) ||
+    ("sentDevices" in push && !isCount(push.sentDevices)) ||
+    ("failedDevices" in push && !isCount(push.failedDevices)) ||
+    ("recipientsWithoutSubscriptions" in push &&
+      !isCount(push.recipientsWithoutSubscriptions))
   ) {
     return null;
   }
@@ -91,6 +100,25 @@ export function pushDispatchMessage(result: PushDispatchResult | null): string {
   }
   if (result.claimed === 0) {
     return "경보를 발령했습니다. 전송할 Push 알림이 없습니다.";
+  }
+  if (
+    result.attemptedDevices !== undefined &&
+    result.sentDevices !== undefined &&
+    result.failedDevices !== undefined
+  ) {
+    if (result.attemptedDevices === 0) {
+      return (result.recipientsWithoutSubscriptions ?? 0) > 0
+        ? `경보 발령 · 구독된 기기 없음 · 미구독 담당자 ${result.recipientsWithoutSubscriptions}명`
+        : "경보는 발령됐지만 구독된 기기가 없습니다.";
+    }
+    const details = [
+      `경보 발령 · 기기 ${result.attemptedDevices}대 중 ${result.sentDevices}대 전송`,
+      result.failedDevices > 0 ? `${result.failedDevices}대 실패` : null,
+      (result.recipientsWithoutSubscriptions ?? 0) > 0
+        ? `미구독 담당자 ${result.recipientsWithoutSubscriptions}명`
+        : null,
+    ].filter((message): message is string => message !== null);
+    return details.join(" · ");
   }
   if (result.sent === 0 && result.failed === 0) {
     return "경보는 발령됐지만 구독된 기기가 없습니다.";

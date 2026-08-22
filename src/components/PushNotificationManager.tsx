@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 /**
  * 이 기기의 Web Push 구독을 켜고 끈다 (ADR-0017).
@@ -13,7 +13,35 @@ import { useEffect, useState } from "react";
  * 호출하면 거부되므로 처음 권한을 묻거나 자동 복구가 막힌 때는 "알림 받기"를 눌러야 한다.
  */
 
-type PushState = "checking" | "unsupported" | "off" | "on" | "denied";
+type PushState =
+  | "checking"
+  | "unsupported"
+  | "install"
+  | "off"
+  | "on"
+  | "denied";
+
+class PushSetupError extends Error {
+  constructor(readonly stage: "subscribe" | "save") {
+    super(stage);
+  }
+}
+
+export function isIosDevice(
+  device: Pick<Navigator, "userAgent" | "platform" | "maxTouchPoints">,
+): boolean {
+  return (
+    /iPhone|iPad|iPod/i.test(device.userAgent) ||
+    (device.platform === "MacIntel" && device.maxTouchPoints > 1)
+  );
+}
+
+function needsIosHomeScreenInstall(): boolean {
+  const standalone =
+    window.matchMedia("(display-mode: standalone)").matches ||
+    Boolean((navigator as Navigator & { standalone?: boolean }).standalone);
+  return isIosDevice(navigator) && !standalone;
+}
 
 function urlBase64ToUint8Array(value: string): Uint8Array<ArrayBuffer> {
   const padding = "=".repeat((4 - (value.length % 4)) % 4);
@@ -33,9 +61,16 @@ async function registration(): Promise<ServiceWorkerRegistration> {
 export async function renewPushSubscription(
   pushManager: Pick<PushManager, "getSubscription" | "subscribe">,
   applicationServerKey: Uint8Array<ArrayBuffer>,
-): Promise<PushSubscription> {
-  await (await pushManager.getSubscription())?.unsubscribe();
-  return pushManager.subscribe({ userVisibleOnly: true, applicationServerKey });
+): Promise<{ subscription: PushSubscription; created: boolean }> {
+  const existing = await pushManager.getSubscription();
+  if (existing) return { subscription: existing, created: false };
+  return {
+    subscription: await pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey,
+    }),
+    created: true,
+  };
 }
 
 function subscribedOf(payload: unknown): boolean {
@@ -57,10 +92,10 @@ type SubscriptionStatus = "subscribed" | "missing" | "unknown";
  * 조회 장애를 `missing`으로 오인하면 정상 구독을 불필요하게 교체하므로 따로 구분한다.
  */
 async function readSubscriptionStatus(
+  registered: ServiceWorkerRegistration,
   workerId: string,
 ): Promise<SubscriptionStatus> {
   try {
-    const registered = await registration();
     const subscription = await registered.pushManager.getSubscription();
     if (!subscription) return "missing";
     const query = new URLSearchParams({
@@ -80,19 +115,27 @@ async function readSubscriptionStatus(
  * 서버에 없는 endpoint를 새로 만든 뒤 저장한다. 구독 직후 발송기가 endpoint를
  * 만료로 판정해 지웠다면 서버 응답의 `subscribed`도 false이므로 브라우저 구독을 되돌린다.
  */
-async function createSubscription(
+export async function createSubscription(
+  registered: ServiceWorkerRegistration,
   workerId: string,
   publicKey: string,
+  fetcher: typeof fetch = fetch,
 ): Promise<void> {
-  const registered = await registration();
-  const subscription = await renewPushSubscription(
-    registered.pushManager,
-    urlBase64ToUint8Array(publicKey),
-  );
+  let subscription: PushSubscription;
+  let created: boolean;
+  try {
+    ({ subscription, created } = await renewPushSubscription(
+      registered.pushManager,
+      urlBase64ToUint8Array(publicKey),
+    ));
+  } catch {
+    throw new PushSetupError("subscribe");
+  }
 
+  let unsubscribeAfterFailure = created;
   try {
     const serialized = subscription.toJSON();
-    const response = await fetch("/api/push-subscriptions", {
+    const response = await fetcher("/api/push-subscriptions", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -102,12 +145,18 @@ async function createSubscription(
       }),
     });
     const payload: unknown = await response.json().catch(() => null);
-    if (!response.ok || !subscribedOf(payload)) {
+    if (!response.ok) {
       throw new Error("구독 저장 실패");
     }
+    if (!subscribedOf(payload)) {
+      unsubscribeAfterFailure = true;
+      throw new Error("구독 검증 실패");
+    }
   } catch (error) {
-    await subscription.unsubscribe().catch(() => false);
-    throw error;
+    if (unsubscribeAfterFailure) {
+      await subscription.unsubscribe().catch(() => false);
+    }
+    throw error instanceof PushSetupError ? error : new PushSetupError("save");
   }
 }
 
@@ -134,6 +183,7 @@ export function PushNotificationManager({
   const [state, setState] = useState<PushState>("checking");
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const registrationRef = useRef<ServiceWorkerRegistration | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -149,12 +199,31 @@ export function PushNotificationManager({
         if (!cancelled) setState("unsupported");
         return;
       }
+      if (needsIosHomeScreenInstall()) {
+        if (!cancelled) setState("install");
+        return;
+      }
       if (Notification.permission === "denied") {
         if (!cancelled) setState("denied");
         return;
       }
 
-      const subscriptionStatus = await readSubscriptionStatus(workerId);
+      let registered: ServiceWorkerRegistration;
+      try {
+        registered = await registration();
+        registrationRef.current = registered;
+      } catch {
+        if (!cancelled) {
+          setMessage("서비스 워커를 준비하지 못했습니다. 앱을 다시 열어 주세요.");
+          setState("off");
+        }
+        return;
+      }
+
+      const subscriptionStatus = await readSubscriptionStatus(
+        registered,
+        workerId,
+      );
       if (cancelled) return;
       if (subscriptionStatus === "subscribed") {
         setState("on");
@@ -167,7 +236,7 @@ export function PushNotificationManager({
         Notification.permission === "granted"
       ) {
         try {
-          await createSubscription(workerId, publicKey);
+          await createSubscription(registered, workerId, publicKey);
           if (!cancelled) setState("on");
           return;
         } catch {
@@ -203,11 +272,22 @@ export function PushNotificationManager({
         );
         return;
       }
-      await createSubscription(workerId, publicKey);
+      const registered = registrationRef.current;
+      if (!registered) {
+        setMessage("서비스 워커를 준비하지 못했습니다. 앱을 다시 열어 주세요.");
+        return;
+      }
+      await createSubscription(registered, workerId, publicKey);
       setState("on");
       setMessage("이 기기로 푸시 알림을 받습니다.");
-    } catch {
-      setMessage("푸시 알림을 켜지 못했습니다. 잠시 후 다시 시도해 주세요.");
+    } catch (error) {
+      setMessage(
+        error instanceof PushSetupError && error.stage === "subscribe"
+          ? "이 기기에서 Push 구독을 만들지 못했습니다. 앱을 다시 열어 주세요."
+          : error instanceof PushSetupError && error.stage === "save"
+            ? "Push 구독을 서버에 저장하지 못했습니다. 잠시 후 다시 시도해 주세요."
+            : "푸시 알림을 켜지 못했습니다. 잠시 후 다시 시도해 주세요.",
+      );
     } finally {
       setPending(false);
     }
@@ -232,6 +312,8 @@ export function PushNotificationManager({
     message ??
     (state === "denied"
       ? "브라우저 설정에서 알림 권한을 허용해 주세요."
+      : state === "install"
+        ? "iPhone에서는 먼저 공유 메뉴에서 홈 화면에 추가한 뒤 앱으로 열어 주세요."
       : "경보일 요약과 방문 승격만 알려 드립니다.");
 
   return (
@@ -242,7 +324,7 @@ export function PushNotificationManager({
           {description}
         </p>
       </div>
-      {state !== "denied" ? (
+      {state !== "denied" && state !== "install" ? (
         <button
           type="button"
           disabled={pending}

@@ -6,6 +6,7 @@ import {
   GRADE_LABEL,
   HouseholdStatus,
   NotificationCause,
+  NotificationType,
   parseHouseholdStatus,
   RiskGrade,
   WorkerRole,
@@ -309,8 +310,8 @@ async function declareAlertDay(
       await tx.notification.upsert({
         where: { eventKey: draft.eventKey },
         create: draft,
-        // 오전 8시 발송 전 재예보라면 한 건인 채 최신 단계·인원으로 고친다.
-        // 이미 발송된 행의 pushSentAt은 건드리지 않으므로 재발령 Push는 생기지 않는다.
+        // 자동 재예보는 한 건인 채 최신 내용만 고친다. 관제 센터의 수동 발령은 명시적인
+        // 재전송 요청이므로 담당자 요약만 Push 상태를 초기화하고, 승격 알림은 중복하지 않는다.
         update: {
           cause: draft.cause,
           title: draft.title,
@@ -318,6 +319,15 @@ async function declareAlertDay(
           href: draft.href,
           availableAt: draft.availableAt,
           expiresAt: draft.expiresAt,
+          ...(source === "manual" &&
+          draft.type === NotificationType.ALERT_DAY_SUMMARY
+            ? {
+                pushClaimedAt: null,
+                pushSentAt: null,
+                pushAttempts: 0,
+                lastPushError: null,
+              }
+            : {}),
         },
       });
     }

@@ -87,7 +87,7 @@ self.addEventListener("push", (event) => {
     icon: typeof data.icon === "string" ? data.icon : "/icons/icon.svg",
     badge: typeof data.badge === "string" ? data.badge : "/icons/icon.svg",
     tag: typeof data.tag === "string" ? data.tag : undefined,
-    renotify: Boolean(data.urgent),
+    renotify: Boolean(data.renotify || data.urgent),
     data: { href: typeof data.href === "string" ? data.href : "/today" },
   };
   event.waitUntil(self.registration.showNotification(data.title, options));

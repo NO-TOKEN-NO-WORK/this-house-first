@@ -31,6 +31,7 @@ describe("dispatchDueNotifications", () => {
     const now = new Date("2026-08-22T01:00:00.000Z");
     const notification = {
       id: "notification-1",
+      recipientId: "worker-1",
       eventKey: "ALERT_DAY_SUMMARY:alert-1:worker-1",
       type: NotificationType.ALERT_DAY_SUMMARY,
       title: "오늘은 폭염 심각 단계입니다",
@@ -56,7 +57,10 @@ describe("dispatchDueNotifications", () => {
       .mockResolvedValueOnce(undefined)
       .mockRejectedValueOnce(new Error("push unavailable"));
 
-    const result = await dispatchDueNotifications({ now }, client);
+    const result = await dispatchDueNotifications(
+      { now, alertDayId: "alert-1" },
+      client,
+    );
 
     expect(result).toEqual({
       configured: true,
@@ -64,6 +68,50 @@ describe("dispatchDueNotifications", () => {
       sent: 1,
       failed: 0,
       partialFailures: 1,
+      attemptedDevices: 2,
+      sentDevices: 1,
+      failedDevices: 1,
+      recipientsWithoutSubscriptions: 0,
+    });
+    expect(client.notification.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ alertDayId: "alert-1" }),
+      }),
+    );
+  });
+
+  it("구독 기기가 없는 담당자를 별도로 집계한다", async () => {
+    const now = new Date("2026-08-22T01:00:00.000Z");
+    const notification = {
+      id: "notification-1",
+      recipientId: "worker-1",
+      eventKey: "ALERT_DAY_SUMMARY:alert-1:worker-1",
+      type: NotificationType.ALERT_DAY_SUMMARY,
+      title: "오늘은 폭염 비상 단계입니다",
+      body: "2명은 오늘 확인이 필요합니다.",
+      href: "/today?date=2026-08-22&workerId=worker-1",
+      expiresAt: new Date("2026-08-22T14:59:59.999Z"),
+      recipient: { pushSubscriptions: [] },
+    };
+    const client = {
+      notification: {
+        findMany: vi.fn().mockResolvedValue([notification]),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+        update: vi.fn().mockResolvedValue(notification),
+      },
+      pushSubscription: { deleteMany: vi.fn() },
+    } as unknown as PrismaClient;
+
+    await expect(dispatchDueNotifications({ now }, client)).resolves.toEqual({
+      configured: true,
+      claimed: 1,
+      sent: 0,
+      failed: 0,
+      partialFailures: 0,
+      attemptedDevices: 0,
+      sentDevices: 0,
+      failedDevices: 0,
+      recipientsWithoutSubscriptions: 1,
     });
   });
 });

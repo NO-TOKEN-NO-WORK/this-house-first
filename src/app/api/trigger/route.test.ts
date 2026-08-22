@@ -60,6 +60,9 @@ describe("POST /api/trigger", () => {
 
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ data: outcome, push });
+    expect(mocks.dispatchDueNotifications).toHaveBeenCalledWith({
+      alertDayId: "alert-1",
+    });
   });
 
   it("Push 호출이 실패해도 완료된 경보 발령과 실패 상태를 반환한다", async () => {

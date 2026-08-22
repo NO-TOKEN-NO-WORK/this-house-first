@@ -17,6 +17,7 @@ export function pushPayload(input: PushPayloadInput): string {
     badge: "/icons/icon.svg",
     tag: input.eventKey,
     href: input.href,
+    renotify: true,
     urgent: input.type === NotificationType.VISIT_PROMOTED,
   });
 }

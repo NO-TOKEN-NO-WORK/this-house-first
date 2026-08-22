@@ -1,42 +1,67 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import * as pushNotifications from "./PushNotificationManager";
 
-type RenewPushSubscription = (
-  pushManager: Pick<PushManager, "getSubscription" | "subscribe">,
-  applicationServerKey: Uint8Array<ArrayBuffer>,
-) => Promise<PushSubscription>;
-
 describe("renewPushSubscription", () => {
-  it("서버에 없는 기존 endpoint를 해지한 뒤 새로 구독한다", async () => {
+  it("브라우저에 남은 기존 endpoint는 해지하지 않고 서버에 다시 저장할 수 있게 재사용한다", async () => {
     const calls: string[] = [];
-    const fresh = { endpoint: "https://push.example.com/fresh" } as PushSubscription;
+    const existing = { endpoint: "https://push.example.com/existing" } as PushSubscription;
     const pushManager = {
       getSubscription: async () => {
         calls.push("get");
-        return {
-          unsubscribe: async () => {
-            calls.push("unsubscribe");
-            return true;
-          },
-        } as PushSubscription;
+        return existing;
       },
       subscribe: async () => {
         calls.push("subscribe");
-        return fresh;
+        return existing;
       },
     };
-    const renewPushSubscription = (
-      pushNotifications as typeof pushNotifications & {
-        renewPushSubscription?: RenewPushSubscription;
-      }
-    ).renewPushSubscription;
+    await expect(
+      pushNotifications.renewPushSubscription(
+        pushManager,
+        new Uint8Array([1, 2, 3]),
+      ),
+    ).resolves.toEqual({ subscription: existing, created: false });
+    expect(calls).toEqual(["get"]);
+  });
+});
 
-    expect(renewPushSubscription).toBeTypeOf("function");
-    if (!renewPushSubscription) return;
+describe("iOS PWA 구독 준비", () => {
+  it("데스크톱 UA와 터치 화면을 쓰는 iPadOS도 iOS 기기로 판별한다", () => {
+    expect(
+      pushNotifications.isIosDevice({
+        userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15)",
+        platform: "MacIntel",
+        maxTouchPoints: 5,
+      }),
+    ).toBe(true);
+  });
+
+  it("기존 브라우저 구독의 서버 저장이 일시 실패해도 구독을 해지하지 않는다", async () => {
+    const unsubscribe = vi.fn().mockResolvedValue(true);
+    const existing = {
+      endpoint: "https://push.example.com/existing",
+      toJSON: () => ({ keys: { p256dh: "p", auth: "a" } }),
+      unsubscribe,
+    } as unknown as PushSubscription;
+    const registered = {
+      pushManager: {
+        getSubscription: vi.fn().mockResolvedValue(existing),
+        subscribe: vi.fn(),
+      },
+    } as unknown as ServiceWorkerRegistration;
+    const originalWindow = globalThis.window;
+    vi.stubGlobal("window", { atob: () => "key" });
 
     await expect(
-      renewPushSubscription(pushManager, new Uint8Array([1, 2, 3])),
-    ).resolves.toBe(fresh);
-    expect(calls).toEqual(["get", "unsubscribe", "subscribe"]);
+      pushNotifications.createSubscription(
+        registered,
+        "worker-1",
+        "a2V5",
+        vi.fn().mockRejectedValue(new Error("network unavailable")),
+      ),
+    ).rejects.toThrow();
+    expect(unsubscribe).not.toHaveBeenCalled();
+
+    vi.stubGlobal("window", originalWindow);
   });
 });

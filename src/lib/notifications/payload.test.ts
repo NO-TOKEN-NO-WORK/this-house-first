@@ -17,7 +17,25 @@ describe("pushPayload", () => {
     ).toMatchObject({
       tag: "VISIT_PROMOTED:a:s:m",
       urgent: true,
+      renotify: true,
       href: "/today/s?date=2026-08-22&workerId=w",
+    });
+  });
+
+  it("같은 경보일 요약을 수동 재전송해도 기기에 다시 알리도록 표시한다", () => {
+    expect(
+      JSON.parse(
+        pushPayload({
+          eventKey: "ALERT_DAY_SUMMARY:a:w",
+          type: NotificationType.ALERT_DAY_SUMMARY,
+          title: "오늘은 폭염 비상 단계입니다",
+          body: "오늘 확인이 필요합니다.",
+          href: "/today?date=2026-08-22&workerId=w",
+        }),
+      ),
+    ).toMatchObject({
+      tag: "ALERT_DAY_SUMMARY:a:w",
+      renotify: true,
     });
   });
 });

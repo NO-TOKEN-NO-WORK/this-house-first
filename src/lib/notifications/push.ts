@@ -10,6 +10,7 @@ const MAX_PUSH_ATTEMPTS = 5;
 const CLAIM_TIMEOUT_MS = 5 * 60 * 1_000;
 
 interface DispatchOptions {
+  alertDayId?: string;
   recipientId?: string;
   now?: Date;
   limit?: number;
@@ -21,6 +22,10 @@ export interface DispatchResult {
   sent: number;
   failed: number;
   partialFailures: number;
+  attemptedDevices: number;
+  sentDevices: number;
+  failedDevices: number;
+  recipientsWithoutSubscriptions: number;
 }
 
 function vapidDetails(): {
@@ -58,7 +63,17 @@ export async function dispatchDueNotifications(
 ): Promise<DispatchResult> {
   const details = vapidDetails();
   if (!details) {
-    return { configured: false, claimed: 0, sent: 0, failed: 0, partialFailures: 0 };
+    return {
+      configured: false,
+      claimed: 0,
+      sent: 0,
+      failed: 0,
+      partialFailures: 0,
+      attemptedDevices: 0,
+      sentDevices: 0,
+      failedDevices: 0,
+      recipientsWithoutSubscriptions: 0,
+    };
   }
 
   const now = options.now ?? new Date();
@@ -69,6 +84,7 @@ export async function dispatchDueNotifications(
       expiresAt: { gt: now },
       pushSentAt: null,
       pushAttempts: { lt: MAX_PUSH_ATTEMPTS },
+      ...(options.alertDayId ? { alertDayId: options.alertDayId } : {}),
       ...(options.recipientId ? { recipientId: options.recipientId } : {}),
       OR: [
         { pushClaimedAt: null },
@@ -84,6 +100,10 @@ export async function dispatchDueNotifications(
   let sent = 0;
   let failed = 0;
   let partialFailures = 0;
+  let attemptedDevices = 0;
+  let sentDevices = 0;
+  let failedDevices = 0;
+  const recipientsWithoutSubscriptions = new Set<string>();
 
   for (const notification of notifications) {
     const claim = await client.notification.updateMany({
@@ -102,6 +122,7 @@ export async function dispatchDueNotifications(
 
     const subscriptions = notification.recipient.pushSubscriptions;
     if (subscriptions.length === 0) {
+      recipientsWithoutSubscriptions.add(notification.recipientId);
       await client.notification.update({
         where: { id: notification.id },
         data: { pushClaimedAt: null },
@@ -151,6 +172,9 @@ export async function dispatchDueNotifications(
         }
       }),
     );
+    attemptedDevices += results.length;
+    sentDevices += results.filter((result) => result.ok).length;
+    failedDevices += results.filter((result) => !result.ok).length;
 
     const expiredIds = results
       .filter((result) => !result.ok && result.expired)
@@ -188,5 +212,15 @@ export async function dispatchDueNotifications(
     failed += 1;
   }
 
-  return { configured: true, claimed, sent, failed, partialFailures };
+  return {
+    configured: true,
+    claimed,
+    sent,
+    failed,
+    partialFailures,
+    attemptedDevices,
+    sentDevices,
+    failedDevices,
+    recipientsWithoutSubscriptions: recipientsWithoutSubscriptions.size,
+  };
 }
