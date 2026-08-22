@@ -11,9 +11,9 @@ import { XIcon } from "@/components/today/icons";
  *  - `toast` — 담당자 `/today`. 화면 아래에 잠깐 뜨는 띠. 오늘 할 일 위에 알림 설정이 먼저 오면
  *    "화면당 결정 1개"(PRD §9)가 깨진다. 결정은 대상자 카드에 두고, 알림은 아래에서 물어본다.
  *
- * 권한을 이미 허용한 기기에서는 아무것도 묻지 않고 바로 구독한다 — 그런 기기에 띠는 뜨지 않는다.
- * 권한을 처음 묻는 것만 사용자 동작이 필요하다. `Notification.requestPermission()`은
- * Safari·Firefox에서 사용자 동작 없이 호출하면 거부되므로 "알림 받기"를 눌러야만 부를 수 있다.
+ * 권한을 이미 허용한 기기에서는 먼저 자동 구독하고, 브라우저가 막으면 띠에서 수동 재시도한다.
+ * `Notification.requestPermission()`과 일부 브라우저의 `PushManager.subscribe()`는 사용자 동작 없이
+ * 호출하면 거부되므로 처음 권한을 묻거나 자동 복구가 막힌 때는 "알림 받기"를 눌러야 한다.
  */
 
 type PushState = "checking" | "unsupported" | "off" | "on" | "denied";
@@ -39,61 +39,84 @@ async function registration(): Promise<ServiceWorkerRegistration> {
   return navigator.serviceWorker.ready;
 }
 
-/** 이 기기의 구독이 서버에도 살아 있는지 확인한다 — 브라우저에만 남은 구독은 꺼진 것으로 본다 */
-async function readSubscribed(workerId: string): Promise<boolean> {
+export async function renewPushSubscription(
+  pushManager: Pick<PushManager, "getSubscription" | "subscribe">,
+  applicationServerKey: Uint8Array<ArrayBuffer>,
+): Promise<PushSubscription> {
+  await (await pushManager.getSubscription())?.unsubscribe();
+  return pushManager.subscribe({ userVisibleOnly: true, applicationServerKey });
+}
+
+function subscribedOf(payload: unknown): boolean {
+  return Boolean(
+    payload &&
+      typeof payload === "object" &&
+      "data" in payload &&
+      payload.data &&
+      typeof payload.data === "object" &&
+      "subscribed" in payload.data &&
+      payload.data.subscribed === true,
+  );
+}
+
+type SubscriptionStatus = "subscribed" | "missing" | "unknown";
+
+/**
+ * 이 기기의 endpoint가 서버에도 살아 있는지 확인한다.
+ * 조회 장애를 `missing`으로 오인하면 정상 구독을 불필요하게 교체하므로 따로 구분한다.
+ */
+async function readSubscriptionStatus(
+  workerId: string,
+): Promise<SubscriptionStatus> {
   try {
     const registered = await registration();
     const subscription = await registered.pushManager.getSubscription();
-    if (!subscription) return false;
+    if (!subscription) return "missing";
     const query = new URLSearchParams({
       workerId,
       endpoint: subscription.endpoint,
     });
     const response = await fetch(`/api/push-subscriptions?${query}`);
-    if (!response.ok) return false;
+    if (!response.ok) return "unknown";
     const payload: unknown = await response.json();
-    return Boolean(
-      payload &&
-        typeof payload === "object" &&
-        "data" in payload &&
-        payload.data &&
-        typeof payload.data === "object" &&
-        "subscribed" in payload.data &&
-        payload.data.subscribed,
-    );
+    return subscribedOf(payload) ? "subscribed" : "missing";
   } catch {
-    return false;
+    return "unknown";
   }
 }
 
-/** 구독 생성 + 서버 저장. 권한(`granted`)은 부르는 쪽이 확인한다. 실패하면 던진다 */
+/**
+ * 서버에 없는 endpoint를 새로 만든 뒤 저장한다. 구독 직후 발송기가 endpoint를
+ * 만료로 판정해 지웠다면 서버 응답의 `subscribed`도 false이므로 브라우저 구독을 되돌린다.
+ */
 async function createSubscription(
   workerId: string,
   publicKey: string,
 ): Promise<void> {
   const registered = await registration();
-  // 브라우저에만 남아 있던 구독은 그대로 다시 서버에 올린다 — 새로 만들면 옛 endpoint가 유령으로 남는다
-  const existing = await registered.pushManager.getSubscription();
-  const subscription =
-    existing ??
-    (await registered.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(publicKey),
-    }));
-  const serialized = subscription.toJSON();
-  const response = await fetch("/api/push-subscriptions", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      workerId,
-      endpoint: subscription.endpoint,
-      keys: serialized.keys,
-    }),
-  });
-  if (!response.ok) {
-    // 방금 만든 것만 되돌린다. 원래 있던 구독까지 지우면 다른 화면의 구독이 끊긴다
-    if (!existing) await subscription.unsubscribe();
-    throw new Error("구독 저장 실패");
+  const subscription = await renewPushSubscription(
+    registered.pushManager,
+    urlBase64ToUint8Array(publicKey),
+  );
+
+  try {
+    const serialized = subscription.toJSON();
+    const response = await fetch("/api/push-subscriptions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        workerId,
+        endpoint: subscription.endpoint,
+        keys: serialized.keys,
+      }),
+    });
+    const payload: unknown = await response.json().catch(() => null);
+    if (!response.ok || !subscribedOf(payload)) {
+      throw new Error("구독 저장 실패");
+    }
+  } catch (error) {
+    await subscription.unsubscribe().catch(() => false);
+    throw error;
   }
 }
 
@@ -143,22 +166,26 @@ export function PushNotificationManager({
         return;
       }
 
-      const subscribed = await readSubscribed(workerId);
+      const subscriptionStatus = await readSubscriptionStatus(workerId);
       if (cancelled) return;
-      if (subscribed) {
+      if (subscriptionStatus === "subscribed") {
         setState("on");
         return;
       }
 
-      // 권한이 이미 있으면 묻지 않고 켠다 — 담당자가 할 일이 없다
-      if (Notification.permission === "granted") {
+      // 서버가 endpoint를 잃은 것이 확실하고 권한이 남아 있으면 묻지 않고 복구한다.
+      if (
+        subscriptionStatus === "missing" &&
+        Notification.permission === "granted"
+      ) {
         try {
           await createSubscription(workerId, publicKey);
           if (!cancelled) setState("on");
           return;
         } catch {
-          if (!cancelled) setState("off");
-          return;
+          if (cancelled) return;
+          // 일부 브라우저는 이미 허용된 권한이어도 사용자 동작 없는 subscribe를 막는다.
+          // 아래의 닫힘 상태를 복원한 뒤 수동 재시도 띠로 폴백한다.
         }
       }
 
