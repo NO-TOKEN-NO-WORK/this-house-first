@@ -111,6 +111,10 @@ describe("declareTrigger", () => {
         update: expect.objectContaining({ isDemo: true }),
       }),
     );
+    expect(client.$transaction).toHaveBeenCalledWith(expect.any(Function), {
+      isolationLevel: "Serializable",
+      timeout: 15_000,
+    });
   });
 
   it("관제 센터 수동 재발령은 같은 날의 담당자 요약 Push를 다시 보낼 수 있게 연다", async () => {
@@ -189,7 +193,10 @@ describe("declareTrigger", () => {
     ]);
     const workerFindMany = vi.fn().mockResolvedValue([]);
     const tx = {
-      alertDay: { upsert: vi.fn().mockResolvedValue({ id: "alert-1" }) },
+      alertDay: {
+        findUnique: vi.fn().mockResolvedValue(null),
+        upsert: vi.fn().mockResolvedValue({ id: "alert-1" }),
+      },
       worker: { findMany: workerFindMany },
       riskAssessment: { upsert: vi.fn().mockResolvedValue({}) },
       householdDayStatus: {
@@ -232,6 +239,64 @@ describe("declareTrigger", () => {
 });
 
 describe("resetDemoTrigger", () => {
+  it("직렬화 충돌은 최대 세 번 안에서 다시 시도한다", async () => {
+    const tx = {
+      alertDay: { findUnique: vi.fn().mockResolvedValue(null) },
+    };
+    const client = {
+      $transaction: vi
+        .fn()
+        .mockRejectedValueOnce({ code: "P2034" })
+        .mockImplementationOnce(async (callback) => callback(tx)),
+    } as unknown as PrismaClient;
+
+    await expect(
+      resetDemoTrigger("20260822", { client }),
+    ).resolves.toEqual({ reset: false, targetDate: "2026-08-22" });
+    expect(client.$transaction).toHaveBeenCalledTimes(2);
+    expect(client.$transaction).toHaveBeenLastCalledWith(expect.any(Function), {
+      isolationLevel: "Serializable",
+      timeout: 15_000,
+    });
+  });
+
+  it("PostgreSQL 데드락도 직렬화 충돌처럼 다시 시도한다", async () => {
+    const tx = {
+      alertDay: { findUnique: vi.fn().mockResolvedValue(null) },
+    };
+    const deadlock = {
+      code: "P2039",
+      meta: {
+        driverAdapterError: {
+          cause: { code: "40P01", originalCode: "40P01" },
+        },
+      },
+    };
+    const client = {
+      $transaction: vi
+        .fn()
+        .mockRejectedValueOnce(deadlock)
+        .mockImplementationOnce(async (callback) => callback(tx)),
+    } as unknown as PrismaClient;
+
+    await expect(
+      resetDemoTrigger("20260822", { client }),
+    ).resolves.toEqual({ reset: false, targetDate: "2026-08-22" });
+    expect(client.$transaction).toHaveBeenCalledTimes(2);
+  });
+
+  it("직렬화 충돌이 세 번 이어지면 숨기지 않고 반환한다", async () => {
+    const conflict = { code: "P2034" };
+    const client = {
+      $transaction: vi.fn().mockRejectedValue(conflict),
+    } as unknown as PrismaClient;
+
+    await expect(
+      resetDemoTrigger("20260822", { client }),
+    ).rejects.toBe(conflict);
+    expect(client.$transaction).toHaveBeenCalledTimes(3);
+  });
+
   it("이미 꺼진 날짜는 삭제 없이 같은 평상시 결과를 반환한다", async () => {
     const tx = {
       alertDay: { findUnique: vi.fn().mockResolvedValue(null), delete: vi.fn() },

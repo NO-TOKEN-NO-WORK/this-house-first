@@ -293,6 +293,7 @@ describe("관리자 관제 화면", () => {
       <AdminDashboardView
         dashboard={{
           alerted: true,
+          isDemo: false,
           date: "2026-08-22",
           dateLabel: "8월 22일(토)",
           selectedWorkerId: null,
@@ -377,6 +378,7 @@ describe("관리자 관제 화면", () => {
       <AdminDashboardView
         dashboard={{
           alerted: true,
+          isDemo: false,
           date: "2026-08-22",
           dateLabel: "8월 22일(토)",
           selectedWorkerId: null,

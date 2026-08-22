@@ -1,5 +1,5 @@
 import {
-  type AlertLevel,
+  AlertLevel,
   ALERT_LEVEL_LABEL,
   DEMO_HEAT_TEMPERATURE,
   isAlertLevel,
@@ -153,7 +153,7 @@ export async function POST(request: Request): Promise<Response> {
       targetDate: optionalDate(asString(field("targetDate")), "targetDate"),
       baseDate,
       baseTime,
-      level: optionalLevel(field("level")),
+      level: demo ? AlertLevel.EMERGENCY : optionalLevel(field("level")),
       feelsLikeMax: demo
         ? DEMO_HEAT_TEMPERATURE
         : optionalTemperature(field("feelsLikeMax"), "feelsLikeMax"),

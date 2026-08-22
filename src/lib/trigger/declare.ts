@@ -1,4 +1,4 @@
-import type { PrismaClient } from "@/generated/prisma/client";
+import { Prisma, type PrismaClient } from "@/generated/prisma/client";
 import { prisma } from "../db";
 import {
   AlertLevel,
@@ -40,6 +40,44 @@ import { classifyHeatAlert } from "./heat";
  */
 
 export type TriggerSource = "forecast" | "manual";
+
+const TRANSACTION_ATTEMPTS = 3;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function isTransactionConflict(error: unknown): boolean {
+  if (!isRecord(error)) return false;
+  if (error.code === "P2034") return true;
+  if (error.code !== "P2039" || !isRecord(error.meta)) return false;
+
+  const adapterError = error.meta.driverAdapterError;
+  if (!isRecord(adapterError) || !isRecord(adapterError.cause)) return false;
+
+  return (
+    adapterError.cause.code === "40P01" ||
+    adapterError.cause.originalCode === "40P01"
+  );
+}
+
+async function serializableTransaction<T>(
+  client: PrismaClient,
+  operation: (tx: Prisma.TransactionClient) => Promise<T>,
+): Promise<T> {
+  for (let attempt = 1; ; attempt += 1) {
+    try {
+      return await client.$transaction(operation, {
+        isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+        timeout: 15_000,
+      });
+    } catch (error) {
+      if (!isTransactionConflict(error) || attempt === TRANSACTION_ATTEMPTS) {
+        throw error;
+      }
+    }
+  }
+}
 
 export class TriggerError extends Error {
   constructor(
@@ -109,7 +147,7 @@ export async function resetDemoTrigger(
   const date = toIsoDate(targetDate);
   const client = deps.client ?? prisma;
 
-  return client.$transaction(async (tx) => {
+  return serializableTransaction(client, async (tx) => {
     const alertDay = await tx.alertDay.findUnique({ where: { date } });
     if (!alertDay) return { reset: false, targetDate: date };
     if (!alertDay.isDemo) {
@@ -234,7 +272,7 @@ async function declareAlertDay(
     );
   }
 
-  return client.$transaction(async (tx) => {
+  return serializableTransaction(client, async (tx) => {
     const existing = await tx.alertDay.findUnique({ where: { date } });
     if (isDemo && existing && !existing.isDemo) {
       throw new TriggerError(
@@ -407,5 +445,5 @@ async function declareAlertDay(
       visitQueued,
       preserved,
     };
-  }, { timeout: 15_000 });
+  });
 }

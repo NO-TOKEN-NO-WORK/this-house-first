@@ -52,6 +52,7 @@ describe("POST /api/trigger", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.declareTrigger.mockResolvedValue(outcome);
+    mocks.dispatchDueNotifications.mockResolvedValue(null);
   });
 
   it("발령 결과와 Push 발송 결과를 함께 반환한다", async () => {
@@ -81,7 +82,11 @@ describe("POST /api/trigger", () => {
       new Request("http://localhost/api/trigger", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ targetDate: "20260822", demo: true }),
+        body: JSON.stringify({
+          targetDate: "20260822",
+          demo: true,
+          level: AlertLevel.ADVISORY,
+        }),
       }),
     );
 
@@ -90,6 +95,7 @@ describe("POST /api/trigger", () => {
       expect.objectContaining({
         targetDate: "20260822",
         feelsLikeMax: 38,
+        level: AlertLevel.EMERGENCY,
         demo: true,
       }),
     );

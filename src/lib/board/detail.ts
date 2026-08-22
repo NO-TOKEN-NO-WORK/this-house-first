@@ -8,7 +8,7 @@ import {
 import { labelReasons } from "../scoring/reasons";
 import { dongOf } from "./format";
 import type { SubjectDetail } from "./subject";
-import type { AlertedBoard, BoardSubject } from "./today";
+import type { AlertedBoard, Board, BoardSubject } from "./today";
 
 /** POST /api/checks 성공 응답 + 방금 누른 결과값 */
 export interface CheckOutcome {
@@ -86,4 +86,17 @@ export function findBoardSubject(
     if (found) return found;
   }
   return null;
+}
+
+/** 서버 보드가 평상시로 바뀌면 클라이언트에 남은 데모 상세를 즉시 닫는다. */
+export function resolveWorkspaceDetail(
+  board: Board,
+  selectedId: string | null,
+  override: SubjectDetail | null,
+): SubjectDetail | null {
+  if (!board.alerted) return null;
+  if (override) return override;
+  if (!selectedId) return null;
+  const subject = findBoardSubject(board, selectedId);
+  return subject ? detailFromBoard(subject, board) : null;
 }

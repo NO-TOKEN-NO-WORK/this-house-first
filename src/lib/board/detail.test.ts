@@ -14,6 +14,7 @@ import {
   applyCheckOutcome,
   detailFromBoard,
   findBoardSubject,
+  resolveWorkspaceDetail,
   type CheckOutcome,
 } from "./detail";
 import type { AlertedBoard, BoardSubject } from "./today";
@@ -137,6 +138,23 @@ describe("findBoardSubject", () => {
     const found = findBoardSubject(board(row), "s-critical");
     expect(found?.name).toBe("김○○");
     expect(findBoardSubject(board(row), "missing")).toBeNull();
+  });
+});
+
+describe("resolveWorkspaceDetail", () => {
+  it("데모 OFF로 비경보 보드가 오면 남아 있던 상세 상태를 숨긴다", () => {
+    const alerted = board();
+    const override = detailFromBoard(alerted.groups[0]!.subjects[0]!, alerted);
+    const silent = {
+      alerted: false as const,
+      date: alerted.date,
+      dateLabel: alerted.dateLabel,
+      worker: alerted.worker,
+      dong: alerted.dong,
+      subjects: [],
+    };
+
+    expect(resolveWorkspaceDetail(silent, "s1", override)).toBeNull();
   });
 });
 
