@@ -15,6 +15,7 @@ import {
   WorkerRole,
 } from "../domain";
 import { formatKstDate } from "../public-data/kma";
+import { findActiveAlertDay } from "../trigger/active-alert-day";
 import { toIsoDate } from "../trigger/alert-date";
 import {
   ageOf,
@@ -179,7 +180,7 @@ export async function getBoard(
   // 요청한 담당자를 못 찾았으면 남의 명단을 대신 보여주지 않는다 — 빈 명단이 맞다
   const workerId = worker?.id ?? null;
 
-  const alertDay = await prisma.alertDay.findUnique({ where: { date } });
+  const alertDay = await findActiveAlertDay(prisma, date);
 
   // 비경보일에는 AlertDay 행이 없다 — 위험 단계도 상태도 없이 담당 가구만 보여준다 (Figma ①-b)
   if (!alertDay) {

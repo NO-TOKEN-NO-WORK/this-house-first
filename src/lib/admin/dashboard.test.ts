@@ -2,14 +2,18 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { HouseholdStatus, WorkerRole } from "../domain";
 
 const mocks = vi.hoisted(() => ({
-  alertDayFindUnique: vi.fn(),
+  alertDayFindFirst: vi.fn(),
+  householdDayStatusFindMany: vi.fn(),
+  riskAssessmentFindMany: vi.fn(),
   subjectFindMany: vi.fn(),
   workerFindMany: vi.fn(),
 }));
 
 vi.mock("../db", () => ({
   prisma: {
-    alertDay: { findUnique: mocks.alertDayFindUnique },
+    alertDay: { findFirst: mocks.alertDayFindFirst },
+    householdDayStatus: { findMany: mocks.householdDayStatusFindMany },
+    riskAssessment: { findMany: mocks.riskAssessmentFindMany },
     subject: { findMany: mocks.subjectFindMany },
     worker: { findMany: mocks.workerFindMany },
   },
@@ -246,7 +250,9 @@ describe("getAdminDashboard", () => {
     vi.clearAllMocks();
     mocks.workerFindMany.mockResolvedValue(rosterWorkers);
     mocks.subjectFindMany.mockResolvedValue(rosterSubjects);
-    mocks.alertDayFindUnique.mockResolvedValue(null);
+    mocks.alertDayFindFirst.mockResolvedValue(null);
+    mocks.householdDayStatusFindMany.mockResolvedValue([]);
+    mocks.riskAssessmentFindMany.mockResolvedValue([]);
   });
 
   it("비경보일에도 활성 원장을 반환하고 보관 행을 조회에서 제외한다", async () => {
@@ -274,5 +280,27 @@ describe("getAdminDashboard", () => {
       archivedAt: null,
       worker: { archivedAt: null },
     });
+  });
+
+  it("데모 경보가 있으면 같은 날짜의 실제 경보보다 우선 조회한다", async () => {
+    mocks.alertDayFindFirst.mockResolvedValue({
+      id: "demo-alert",
+      isDemo: true,
+      level: "EMERGENCY",
+      feelsLikeMax: 38,
+    });
+
+    const dashboard = await getAdminDashboard({ date: "2026-08-23" });
+
+    expect(dashboard).toMatchObject({
+      alerted: true,
+      isDemo: true,
+      feelsLikeMax: 38,
+    });
+    expect(mocks.riskAssessmentFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ alertDayId: "demo-alert" }),
+      }),
+    );
   });
 });

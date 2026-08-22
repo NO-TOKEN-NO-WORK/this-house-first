@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AlertLevel, WorkerRole } from "../domain";
 
 const mocks = vi.hoisted(() => ({
-  alertDayFindUnique: vi.fn(),
+  alertDayFindFirst: vi.fn(),
   householdDayStatusFindMany: vi.fn(),
   riskAssessmentFindMany: vi.fn(),
   subjectFindMany: vi.fn(),
@@ -11,7 +11,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("../db", () => ({
   prisma: {
-    alertDay: { findUnique: mocks.alertDayFindUnique },
+    alertDay: { findFirst: mocks.alertDayFindFirst },
     householdDayStatus: { findMany: mocks.householdDayStatusFindMany },
     riskAssessment: { findMany: mocks.riskAssessmentFindMany },
     subject: { findMany: mocks.subjectFindMany },
@@ -24,11 +24,37 @@ import { getBoard } from "./today";
 describe("getBoard", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.alertDayFindUnique.mockResolvedValue(null);
+    mocks.alertDayFindFirst.mockResolvedValue(null);
     mocks.householdDayStatusFindMany.mockResolvedValue([]);
     mocks.riskAssessmentFindMany.mockResolvedValue([]);
     mocks.workerFindFirst.mockResolvedValue({ id: "worker-1", name: "박○○" });
     mocks.subjectFindMany.mockResolvedValue([]);
+  });
+
+  it("같은 날짜에 실제 경보와 데모가 있으면 데모 보드를 연다", async () => {
+    mocks.alertDayFindFirst.mockResolvedValue({
+      id: "demo-alert",
+      isDemo: true,
+      level: AlertLevel.EMERGENCY,
+      feelsLikeMax: 38,
+    });
+
+    const board = await getBoard({ date: "2026-08-23" });
+
+    expect(board).toMatchObject({
+      alerted: true,
+      isDemo: true,
+      feelsLikeMax: 38,
+    });
+    expect(mocks.riskAssessmentFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ alertDayId: "demo-alert" }),
+      }),
+    );
+    expect(mocks.alertDayFindFirst).toHaveBeenCalledWith({
+      where: { date: "2026-08-23" },
+      orderBy: { isDemo: "desc" },
+    });
   });
 
   it("비경보일 현재 명단은 활성 생활지원사와 활성 대상자만 조회한다", async () => {
@@ -63,7 +89,7 @@ describe("getBoard", () => {
   });
 
   it("보관된 담당자로 경보 보드를 요청해도 그 ID의 경보 스냅샷은 조회하지 않는다", async () => {
-    mocks.alertDayFindUnique.mockResolvedValueOnce({
+    mocks.alertDayFindFirst.mockResolvedValueOnce({
       id: "alert-1",
       level: AlertLevel.ADVISORY,
       feelsLikeMax: 33,

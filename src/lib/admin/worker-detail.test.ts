@@ -9,11 +9,15 @@ import {
 } from "../domain";
 
 const mocks = vi.hoisted(() => ({
+  alertDayFindFirst: vi.fn(),
   workerFindUnique: vi.fn(),
 }));
 
 vi.mock("../db", () => ({
-  prisma: { worker: { findUnique: mocks.workerFindUnique } },
+  prisma: {
+    alertDay: { findFirst: mocks.alertDayFindFirst },
+    worker: { findUnique: mocks.workerFindUnique },
+  },
 }));
 vi.mock("../board/today", () => ({ todayInKst: vi.fn() }));
 
@@ -22,6 +26,7 @@ import { buildAdminWorkerDetail, getAdminWorkerDetail } from "./worker-detail";
 describe("관리자 생활지원사 상세", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.alertDayFindFirst.mockResolvedValue({ id: "demo-alert" });
   });
 
   it("보관된 생활지원사의 과거 상세는 ID로 열고 현재 배정 대상자만 포함한다", async () => {
@@ -33,7 +38,17 @@ describe("관리자 생활지원사 상세", () => {
       expect.objectContaining({
         where: { id: "archived-worker" },
         include: expect.objectContaining({
-          subjects: expect.objectContaining({ where: { archivedAt: null } }),
+          subjects: expect.objectContaining({
+            where: { archivedAt: null },
+            include: expect.objectContaining({
+              assessments: expect.objectContaining({
+                where: { alertDayId: "demo-alert" },
+              }),
+              dayStatuses: expect.objectContaining({
+                where: { alertDayId: "demo-alert" },
+              }),
+            }),
+          }),
         }),
       }),
     );

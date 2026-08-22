@@ -15,6 +15,7 @@ import {
   WorkerRole,
 } from "../domain";
 import { parseAdminReasons } from "./dashboard";
+import { findActiveAlertDay } from "../trigger/active-alert-day";
 
 const DATE_TIME = new Intl.DateTimeFormat("ko-KR", {
   year: "numeric",
@@ -46,6 +47,10 @@ export async function getAdminSubjectOptions() {
 }
 
 export async function getAdminSubjectDetail(subjectId: string, date = todayInKst()) {
+  const alertDay = await findActiveAlertDay(prisma, date);
+  const currentAlertWhere = alertDay
+    ? { alertDayId: alertDay.id }
+    : { alertDayId: { in: [] as string[] } };
   const [subject, { workers, buildings }] = await Promise.all([
     prisma.subject.findUnique({
       where: { id: subjectId },
@@ -53,12 +58,12 @@ export async function getAdminSubjectDetail(subjectId: string, date = todayInKst
         worker: true,
         building: true,
         assessments: {
-          where: { alertDay: { date } },
+          where: currentAlertWhere,
           include: { alertDay: true },
           take: 1,
         },
         dayStatuses: {
-          where: { alertDay: { date } },
+          where: currentAlertWhere,
           take: 1,
         },
         checkEvents: {

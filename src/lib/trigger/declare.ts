@@ -139,7 +139,7 @@ export interface AlertedOutcome extends OutcomeBase {
 
 export type TriggerOutcome = SilentOutcome | AlertedOutcome;
 
-/** 데모 토글 OFF — 실제 경보는 건드리지 않고 데모 날짜의 원장만 함께 초기화한다. */
+/** 데모 토글 OFF — 같은 날짜의 실제 경보는 건드리지 않고 데모 기록만 초기화한다. */
 export async function resetDemoTrigger(
   targetDate: string,
   deps: { client?: PrismaClient } = {},
@@ -148,15 +148,10 @@ export async function resetDemoTrigger(
   const client = deps.client ?? prisma;
 
   return serializableTransaction(client, async (tx) => {
-    const alertDay = await tx.alertDay.findUnique({ where: { date } });
+    const alertDay = await tx.alertDay.findUnique({
+      where: { date_isDemo: { date, isDemo: true } },
+    });
     if (!alertDay) return { reset: false, targetDate: date };
-    if (!alertDay.isDemo) {
-      throw new TriggerError(
-        "실제 경보일은 데모 토글로 초기화할 수 없습니다.",
-        "NOT_DEMO_ALERT",
-        409,
-      );
-    }
 
     const where = { alertDayId: alertDay.id };
     await Promise.all([
@@ -273,17 +268,8 @@ async function declareAlertDay(
   }
 
   return serializableTransaction(client, async (tx) => {
-    const existing = await tx.alertDay.findUnique({ where: { date } });
-    if (isDemo && existing && !existing.isDemo) {
-      throw new TriggerError(
-        "이미 실제 경보가 있는 날짜에는 데모를 시작할 수 없습니다.",
-        "DEMO_CONFLICT",
-        409,
-      );
-    }
-
     const alertDay = await tx.alertDay.upsert({
-      where: { date },
+      where: { date_isDemo: { date, isDemo } },
       create: {
         date,
         level,
