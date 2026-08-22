@@ -153,4 +153,20 @@ describe("POST /api/welfare-scan", () => {
       },
     });
   });
+
+  it("알 수 없는 외부 오류 메시지는 상세 원인에서 숨긴다", async () => {
+    mocks.refreshWelfarePrograms.mockRejectedValue(
+      Object.assign(new Error("token=server-secret"), {
+        code: "UNKNOWN_UPSTREAM_CODE",
+      }),
+    );
+
+    const response = await POST();
+    const payload = await response.json();
+
+    expect(payload.data.connections.publicData.reason).toBe(
+      "외부 서비스 처리 중 예상하지 못한 오류가 발생했습니다.",
+    );
+    expect(JSON.stringify(payload)).not.toContain("server-secret");
+  });
 });
