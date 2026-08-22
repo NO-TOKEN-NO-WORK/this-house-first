@@ -1,8 +1,26 @@
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { AlertLevel } from "../../lib/domain";
-import { requestDemoTrigger } from "./AdminControls";
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ refresh: vi.fn() }),
+}));
+
+import { AdminControls, requestDemoTrigger } from "./AdminControls";
 
 describe("requestDemoTrigger", () => {
+  it("경보 단계 세 개를 즉시 발령하는 버튼으로 제공한다", () => {
+    const html = renderToStaticMarkup(
+      createElement(AdminControls, { date: "2026-08-22" }),
+    );
+
+    expect(html).toContain('aria-label="주의 단계 발령"');
+    expect(html).toContain('aria-label="경보 단계 발령"');
+    expect(html).toContain('aria-label="비상 단계 발령"');
+    expect(html).not.toContain("<select");
+  });
+
   it("선택 날짜와 도메인 경보 단계를 기존 트리거 API로 보낸다", async () => {
     const fetcher = vi.fn(async () =>
       Response.json({ data: { alerted: true, targetDate: "2026-08-22" } }),

@@ -23,13 +23,18 @@ export type AdminStatusCategory =
 export interface AdminDashboardWorker {
   id: string;
   name: string;
+  phone?: string | null;
+  subjectCount?: number;
 }
 
 export interface AdminDashboardSubject {
   subjectId: string;
   name: string;
+  phone: string | null;
+  birthYear: number;
   workerId: string;
   workerName: string;
+  workerPhone: string | null;
   buildingId: string;
   address: string;
   lat: number;
@@ -96,8 +101,10 @@ export interface AdminAssessmentRow {
   subject: {
     id: string;
     name: string;
+    phone: string | null;
+    birthYear: number;
     workerId: string;
-    worker: { name: string };
+    worker: { name: string; phone: string | null };
     building: {
       id: string;
       address: string;
@@ -173,8 +180,11 @@ export function buildAdminSnapshot({
       return {
         subjectId: row.subjectId,
         name: row.subject.name,
+        phone: row.subject.phone,
+        birthYear: row.subject.birthYear,
         workerId: row.subject.workerId,
         workerName: row.subject.worker.name,
+        workerPhone: row.subject.worker.phone,
         buildingId: row.subject.building.id,
         address: row.subject.building.roadAddress ?? row.subject.building.address,
         lat: row.subject.building.lat,
@@ -259,6 +269,7 @@ export async function getAdminDashboard(
     prisma.worker.findMany({
       where: { role: WorkerRole.WORKER },
       orderBy: [{ name: "asc" }, { id: "asc" }],
+      include: { _count: { select: { subjects: true } } },
     }),
     prisma.alertDay.findUnique({ where: { date } }),
   ]);
@@ -266,7 +277,12 @@ export async function getAdminDashboard(
     date,
     dateLabel: formatBoardDate(date),
     selectedWorkerId: options.workerId ?? null,
-    workers: workers.map((worker) => ({ id: worker.id, name: worker.name })),
+    workers: workers.map((worker) => ({
+      id: worker.id,
+      name: worker.name,
+      phone: worker.phone,
+      subjectCount: worker._count.subjects,
+    })),
     generatedAt: now.toISOString(),
   };
 

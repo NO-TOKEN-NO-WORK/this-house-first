@@ -32,16 +32,10 @@ describe("관리자 관제 화면", () => {
     vi.clearAllMocks();
   });
 
-  it("브랜드 링크를 한 줄로 유지하고 미실행 viewport QA를 통과로 표기하지 않는다", () => {
+  it("브랜드 링크를 한 줄로 유지하고 완료한 viewport QA를 표기한다", () => {
     expect(adminStyles).toMatch(/\.brand\s*\{[^}]*white-space:\s*nowrap;/);
-    expect(adminStyles).toContain(
-      "responsive: implementation-pass (49; viewport QA unavailable)",
-    );
-    expect(adminStyles).toContain(
-      "mobile: implementation-pass (34, 49, 50–57; viewport QA unavailable)",
-    );
-    expect(adminStyles).not.toContain("responsive: pass");
-    expect(adminStyles).not.toContain("mobile: pass");
+    expect(adminStyles).toContain("responsive: pass (49)");
+    expect(adminStyles).toContain("mobile: pass (34, 49, 50–57)");
     expect(adminStyles).toContain(
       "Committed tone: utilitarian · palette anchor hue: cobalt",
     );
@@ -85,8 +79,11 @@ describe("관리자 관제 화면", () => {
             {
               subjectId: "subject-1",
               name: "김○○",
+              phone: "010-0000-0101",
+              birthYear: 1938,
               workerId: "worker-1",
               workerName: "이담당",
+              workerPhone: "010-0000-0001",
               buildingId: "building-1",
               address: "대구광역시 서구 비산동 1",
               lat: 35.87,
@@ -131,7 +128,86 @@ describe("관리자 관제 화면", () => {
     expect(html).not.toContain("1등급 0명");
   });
 
-  it("지도 범례와 데이터 출처를 상태·등급 텍스트로 함께 제공한다", () => {
+  it("레퍼런스의 관제 패널을 실제 도메인 데이터로 제공한다", () => {
+    const html = renderToStaticMarkup(
+      <AdminDashboardView
+        dashboard={{
+          alerted: true,
+          date: "2026-08-22",
+          dateLabel: "8월 22일(토)",
+          selectedWorkerId: null,
+          workers: [{ id: "worker-1", name: "이담당" }],
+          generatedAt: "2026-08-22T05:32:00.000Z",
+          level: AlertLevel.EMERGENCY,
+          levelLabel: "비상",
+          feelsLikeMax: 38.4,
+          summary: {
+            total: 1,
+            open: 1,
+            openCritical: 1,
+            visitQueued: 1,
+            completed: 0,
+          },
+          subjects: [
+            {
+              subjectId: "subject-1",
+              name: "김○○",
+              phone: "010-0000-0101",
+              birthYear: 1938,
+              workerId: "worker-1",
+              workerName: "이담당",
+              workerPhone: "010-0000-0001",
+              buildingId: "building-1",
+              address: "대구광역시 서구 비산동 1",
+              lat: 35.87,
+              lng: 128.56,
+              grade: 1,
+              score: 31.5,
+              reasons: ["1938년생 (88세)·독거", "오늘 비상 단계"],
+              status: HouseholdStatus.VISIT_QUEUED,
+              statusLabel:
+                HOUSEHOLD_STATUS_LABEL[HouseholdStatus.VISIT_QUEUED],
+              open: true,
+            },
+          ],
+          buildings: [
+            {
+              buildingId: "building-1",
+              address: "대구광역시 서구 비산동 1",
+              lat: 35.87,
+              lng: 128.56,
+              grade: 1,
+              score: 31.5,
+              statusCategory: "visit",
+              openCount: 1,
+              subjects: [],
+            },
+          ],
+        }}
+        mapKey=""
+      />,
+    );
+
+    expect(html).toContain("건물별 미처리 현황");
+    expect(html).toContain("생활지원사 관리");
+    expect(html).toContain("대상자 등록");
+    expect(html).toContain("생활지원사 등록");
+    expect(html).toContain("대상자 상세");
+    expect(html).toContain("010-0000-0101");
+    expect(html).toContain("010-****-0001");
+    expect(html).toContain('aria-label="대상자 검색"');
+    expect(html).toContain('aria-label="대상자 상태"');
+    expect(html).toContain("담당자 검색");
+    expect(html).toContain("calendar.png");
+    expect(html).toContain("location.png");
+    expect(html).toContain("thermometer.png");
+    expect(html).toContain("clock.png");
+    expect(html).toContain("refresh.png");
+    expect(html).toContain("person.png");
+    expect(html).toContain("phone.png");
+  });
+
+  it("상태 범례와 데이터 출처를 텍스트로 함께 제공한다", () => {
     const html = renderToStaticMarkup(
       <AdminDashboardView
         dashboard={{
@@ -158,11 +234,15 @@ describe("관리자 관제 화면", () => {
       />,
     );
 
-    expect(html).toContain("등급 채움색");
-    expect(html).toContain("상태 테두리색");
-    for (const status of Object.values(HouseholdStatus) as Array<
-      (typeof HouseholdStatus)[keyof typeof HouseholdStatus]
-    >) {
+    expect(html).toContain("상태");
+    for (const status of [
+      HouseholdStatus.UNCHECKED,
+      HouseholdStatus.CALL_OK,
+      HouseholdStatus.NO_ANSWER_1,
+      HouseholdStatus.VISIT_QUEUED,
+      HouseholdStatus.VISITING,
+      HouseholdStatus.RESOLVED,
+    ]) {
       expect(html).toContain(HOUSEHOLD_STATUS_LABEL[status]);
     }
     expect(html).toContain("기상청 단기예보·특보 API");

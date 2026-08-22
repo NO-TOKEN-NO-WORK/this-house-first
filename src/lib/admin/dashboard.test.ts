@@ -15,8 +15,10 @@ const assessments: AdminAssessmentRow[] = [
     subject: {
       id: "subject-critical",
       name: "김○○",
+      phone: "010-0000-0101",
+      birthYear: 1938,
       workerId: "worker-a",
-      worker: { name: "이담당" },
+      worker: { name: "이담당", phone: "010-0000-0001" },
       building: {
         id: "building-a",
         address: "대구광역시 서구 비산동 1",
@@ -34,8 +36,10 @@ const assessments: AdminAssessmentRow[] = [
     subject: {
       id: "subject-visit",
       name: "박○○",
+      phone: "010-0000-0102",
+      birthYear: 1948,
       workerId: "worker-a",
-      worker: { name: "이담당" },
+      worker: { name: "이담당", phone: "010-0000-0001" },
       building: {
         id: "building-a",
         address: "대구광역시 서구 비산동 1",
@@ -53,8 +57,10 @@ const assessments: AdminAssessmentRow[] = [
     subject: {
       id: "subject-closed",
       name: "최○○",
+      phone: null,
+      birthYear: 1945,
       workerId: "worker-b",
-      worker: { name: "박담당" },
+      worker: { name: "박담당", phone: null },
       building: {
         id: "building-b",
         address: "대구광역시 서구 비산동 2",
@@ -88,6 +94,11 @@ describe("buildAdminSnapshot", () => {
       "subject-closed",
     ]);
     expect(result.subjects[0]?.status).toBe(HouseholdStatus.UNCHECKED);
+    expect(result.subjects[0]).toMatchObject({
+      phone: "010-0000-0101",
+      birthYear: 1938,
+      workerPhone: "010-0000-0001",
+    });
     expect(result.subjects[2]?.reasons).toEqual([
       "위험 사유를 불러오지 못했습니다",
     ]);
