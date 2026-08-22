@@ -27,7 +27,7 @@ import {
  *  - 화면당 결정 1개 — 카드마다 결정은 "이 가구를 지금 어떻게 할 것인가" 하나뿐
  *  - 어떤 기록도 탭 2회 이내 — 카드 버튼(1) → 상세의 결과 버튼(2)
  *
- * 경보가 없는 날에는 등급도 순서도 없이 담당 가구만 보여준다. 알림은 여전히 0건이다(PRD §9).
+ * 경보가 없는 날에는 위험 단계도 순서도 없이 담당 가구만 보여준다. 알림은 여전히 0건이다(PRD §9).
  */
 export const dynamic = "force-dynamic";
 
@@ -38,7 +38,7 @@ const LEVEL_BANNER: Record<AlertLevel, string> = {
   [AlertLevel.EMERGENCY]: "bg-status-critical",
 };
 
-/** 등급 요약 글자색 (Figma ① 8:1833) */
+/** 위험 단계 요약 글자색 (Figma ① 8:1833) */
 const GRADE_TEXT: Record<RiskGrade, string> = {
   [RiskGrade.CRITICAL]: "text-status-critical-strong",
   [RiskGrade.HIGH]: "text-status-warning-strong",
@@ -96,7 +96,7 @@ function AlertBanner({ board }: { board: AlertedBoard }) {
   );
 }
 
-/** 요약 카드 — 왼쪽은 "오늘 남은 일", 오른쪽은 등급별 미처리 수 (Figma ① 8:1833) */
+/** 요약 카드 — 왼쪽은 "오늘 남은 일", 오른쪽은 위험 단계별 미처리 수 (Figma ① 8:1833) */
 function SummaryCard({ board }: { board: AlertedBoard }) {
   return (
     <div className="flex w-full items-center rounded-[10px] border border-border-default bg-surface-default px-8 py-4.5">
@@ -124,7 +124,7 @@ function SummaryCard({ board }: { board: AlertedBoard }) {
   );
 }
 
-/** 비경보일 (Figma ①-b) — 등급도 순서도 없이 담당 가구만 */
+/** 비경보일 (Figma ①-b) — 위험 단계도 순서도 없이 담당 가구만 */
 function SilentBoardView({
   board,
   workerId,

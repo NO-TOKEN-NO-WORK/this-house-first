@@ -61,21 +61,21 @@ const board: AlertedBoard = {
   groups: [
     {
       grade: RiskGrade.CRITICAL,
-      gradeLabel: "1등급",
+      gradeLabel: "심각",
       plan: "전화 생략 · 오전 방문",
-      subjects: [subject("1등급 대상자", RiskGrade.CRITICAL)],
+      subjects: [subject("심각 대상자", RiskGrade.CRITICAL)],
     },
     {
       grade: RiskGrade.HIGH,
-      gradeLabel: "2등급",
+      gradeLabel: "경계",
       plan: "오전 중 전화",
-      subjects: [subject("2등급 대상자", RiskGrade.HIGH)],
+      subjects: [subject("경계 대상자", RiskGrade.HIGH)],
     },
     {
       grade: RiskGrade.MODERATE,
-      gradeLabel: "3등급",
+      gradeLabel: "주의",
       plan: "15시 이전 전화",
-      subjects: [subject("3등급 대상자", RiskGrade.MODERATE)],
+      subjects: [subject("주의 대상자", RiskGrade.MODERATE)],
     },
   ],
   summary: {
@@ -122,8 +122,8 @@ function findGradeFilter(node: ReactNode): ReactElement | null {
   return findGradeFilter(node.props.children);
 }
 
-describe("TodayPage 등급 필터", () => {
-  it("등급 메뉴를 버튼으로 렌더링해 서버 페이지 이동을 만들지 않는다", async () => {
+describe("TodayPage 위험 단계 필터", () => {
+  it("위험 단계 메뉴를 버튼으로 렌더링해 서버 페이지 이동을 만들지 않는다", async () => {
     getBoard.mockResolvedValue(board);
 
     const html = renderToStaticMarkup(
@@ -133,14 +133,14 @@ describe("TodayPage 등급 필터", () => {
       }),
     );
     const tabs = html.match(
-      /<nav aria-label="등급 필터"[^>]*>(.*?)<\/nav>/,
+      /<nav aria-label="위험 단계 필터"[^>]*>(.*?)<\/nav>/,
     )?.[1];
 
     expect(tabs).toContain("<button");
     expect(tabs).not.toContain("<a ");
   });
 
-  it("서버에서 받은 등급이 바뀌면 필터를 새 상태로 마운트한다", async () => {
+  it("서버에서 받은 위험 단계가 바뀌면 필터를 새 상태로 마운트한다", async () => {
     getBoard.mockResolvedValue(board);
 
     const page = await TodayPage({
@@ -151,7 +151,7 @@ describe("TodayPage 등급 필터", () => {
     expect(findGradeFilter(page)?.key).toBe("2");
   });
 
-  it("비경보일에는 등급 필터 없이 담당 가구를 표시한다", async () => {
+  it("비경보일에는 위험 단계 필터 없이 담당 가구를 표시한다", async () => {
     getBoard.mockResolvedValue(silentBoard);
 
     const html = renderToStaticMarkup(
@@ -163,6 +163,6 @@ describe("TodayPage 등급 필터", () => {
 
     expect(html).toContain("오늘은 경보가 없습니다");
     expect(html).toContain("비경보일 대상자");
-    expect(html).not.toContain('aria-label="등급 필터"');
+    expect(html).not.toContain('aria-label="위험 단계 필터"');
   });
 });

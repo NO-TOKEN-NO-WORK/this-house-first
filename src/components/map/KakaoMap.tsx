@@ -223,7 +223,7 @@ export function KakaoMap({ apiKey, buildings, date, workerId }: Props) {
           </p>
           {selectedBuilding.grade !== null && (
             <p className="text-label-16-compact text-text-primary">
-              위험 등급 · {GRADE_LABEL[selectedBuilding.grade]}
+              위험 단계 · {GRADE_LABEL[selectedBuilding.grade]}
             </p>
           )}
         </div>

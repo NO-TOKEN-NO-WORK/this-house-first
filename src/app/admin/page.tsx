@@ -285,7 +285,7 @@ export function PriorityList({
               <tr>
                 <th scope="col">순위</th>
                 <th scope="col">대상자 이름</th>
-                <th scope="col">등급</th>
+                <th scope="col">위험 단계</th>
                 <th scope="col">상태</th>
                 <th scope="col">담당자</th>
                 <th scope="col">주소</th>

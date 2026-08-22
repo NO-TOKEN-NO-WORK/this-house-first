@@ -3,6 +3,6 @@
   "framework": "Next.js 16.3.2 App Router",
   "styling": "Tailwind CSS 4",
   "fontStack": "한국어 시스템 폰트 (Pretendard Variable, Apple SD Gothic Neo, Noto Sans KR, Malgun Gothic)",
-  "palette": "기존 위험등급 팔레트 (--color-danger, --color-warn, --color-calm)",
+  "palette": "기존 위험 단계 팔레트 (--color-danger, --color-warn, --color-calm)",
   "motion": "motion-cut"
 }

@@ -63,7 +63,7 @@ export class TransitionError extends Error {
   }
 }
 
-/** 전화를 받을 수 있는 상태 — 1등급·승격 가구는 전화가 아니라 방문 대상이다 (PRD F3) */
+/** 전화를 받을 수 있는 상태 — 심각·승격 가구는 전화가 아니라 방문 대상이다 (PRD F3) */
 const CALLABLE: readonly HouseholdStatus[] = [
   HouseholdStatus.UNCHECKED,
   HouseholdStatus.NO_ANSWER_1,

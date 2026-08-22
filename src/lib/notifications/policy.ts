@@ -44,7 +44,7 @@ export function morningSummaryDrafts(input: {
   );
 }
 
-/** 새 경보일의 초기 1등급은 요약만, 당일 재분류된 미확인 가구만 승격 알림을 받는다. */
+/** 새 경보일의 초기 심각 대상자는 요약만, 당일 재분류된 미확인 가구만 승격 알림을 받는다. */
 export function reclassificationRecipientIds(input: {
   current: HouseholdStatus | null;
   next: HouseholdStatus;

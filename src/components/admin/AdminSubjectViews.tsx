@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { AdminSubjectDetail } from "../../lib/admin/subject-detail";
-import { GRADE_LABEL, HOUSEHOLD_STATUS_LABEL, HouseholdStatus, RiskGrade } from "../../lib/domain";
+import { AlertLevel, ALERT_LEVEL_LABEL, GRADE_LABEL, HOUSEHOLD_STATUS_LABEL, HouseholdStatus, RiskGrade } from "../../lib/domain";
 import styles from "./admin-subject.module.css";
 
 type SubjectAction = (form: FormData) => void | Promise<void>;
@@ -36,7 +36,7 @@ export function AdminManagementHeader({ detail, label }: { detail: AdminSubjectD
         <dl><Image alt="" aria-hidden="true" height={20} src="/admin/refresh.png" width={20} /><dt>자동 갱신</dt><dd>켜짐</dd></dl>
       </div>
       <div className={styles.alertSteps} aria-label="경보 단계">
-        <span>주의</span><span>경보</span><strong>비상</strong>
+        <span>{ALERT_LEVEL_LABEL[AlertLevel.ADVISORY]}</span><span>{ALERT_LEVEL_LABEL[AlertLevel.WARNING]}</span><strong>{ALERT_LEVEL_LABEL[AlertLevel.EMERGENCY]}</strong>
       </div>
     </header>
   );
@@ -130,7 +130,7 @@ export function AdminSubjectDetailView({
             <section className={styles.infoCard}>
               <h2>위험 정보</h2>
               <dl>
-                <div><dt>위험 등급</dt><dd><GradeBadge detail={detail} /></dd></div>
+                <div><dt>위험 단계</dt><dd><GradeBadge detail={detail} /></dd></div>
                 <div><dt>상태</dt><dd><StatusBadge detail={detail} /></dd></div>
                 <div><dt>최근 상태 변경</dt><dd>{detail.checks[0]?.createdAt ?? "기록 없음"}</dd></div>
                 <div><dt>위험 사유</dt><dd>{detail.reasons.join(" / ") || "평가 전"}</dd></div>
@@ -250,7 +250,7 @@ export function AdminSubjectFormView({
               </section>
               <section className={styles.formCard}>
                 <h1>② 위험/관제 정보</h1>
-                <fieldset className={styles.readonlyGrades}><legend>위험 등급 · 자동 계산</legend>{Object.values(RiskGrade).map((grade) => <label key={grade}><input checked={detail?.grade === grade} disabled readOnly type="radio" />{GRADE_LABEL[grade]}</label>)}</fieldset>
+                <fieldset className={styles.readonlyGrades}><legend>위험 단계 · 자동 계산</legend>{Object.values(RiskGrade).map((grade) => <label key={grade}><input checked={detail?.grade === grade} disabled readOnly type="radio" />{GRADE_LABEL[grade]}</label>)}</fieldset>
                 <label><span>상태 · 점검 기록에 따라 변경</span><select disabled value={detail?.status ?? HouseholdStatus.UNCHECKED}>{Object.values(HouseholdStatus).map((status) => <option key={status} value={status}>{HOUSEHOLD_STATUS_LABEL[status]}</option>)}</select></label>
                 <label><span>담당자 *</span><select defaultValue={detail?.workerId ?? ""} name="workerId" required><option disabled value="">담당자 선택</option>{workers.map((worker) => <option key={worker.id} value={worker.id}>{worker.name}</option>)}</select></label>
                 <label><span>위험 사유 · 스코어링 결과</span><textarea readOnly rows={3} value={detail?.reasons.join(" / ") ?? "대상자 등록 후 경보 발령 시 계산됩니다."} /></label>

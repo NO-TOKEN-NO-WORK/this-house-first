@@ -4,6 +4,8 @@ import {
   ALERT_LEVEL_LABEL,
   CallResult,
   CheckKind,
+  GRADE_LABEL,
+  GRADE_SEVERITY_LABEL,
   HouseholdStatus,
   isAlertLevel,
   isCallResult,
@@ -39,9 +41,18 @@ describe("도메인 상태값 검증", () => {
     expect(ALERT_LEVEL_LABEL[AlertLevel.EMERGENCY]).toBe("심각");
   });
 
-  it("재분류 승격 원인은 경보 단계와 구분해 위험 등급으로 표시한다", () => {
+  it("대상자 위험 단계 화면 문구는 심각·경계·주의이다", () => {
+    expect(GRADE_LABEL[RiskGrade.CRITICAL]).toBe("심각");
+    expect(GRADE_LABEL[RiskGrade.HIGH]).toBe("경계");
+    expect(GRADE_LABEL[RiskGrade.MODERATE]).toBe("주의");
+    expect(GRADE_SEVERITY_LABEL[RiskGrade.CRITICAL]).toBe("심각 초고위험");
+    expect(GRADE_SEVERITY_LABEL[RiskGrade.HIGH]).toBe("경계 고위험");
+    expect(GRADE_SEVERITY_LABEL[RiskGrade.MODERATE]).toBe("주의 중위험");
+  });
+
+  it("재분류 승격 원인은 경보 단계와 구분해 위험 단계로 표시한다", () => {
     expect(NOTIFICATION_CAUSE_LABEL[NotificationCause.RISK_RECLASSIFIED]).toBe(
-      "위험 등급 상승으로",
+      "위험 단계 상승으로",
     );
   });
 

@@ -197,7 +197,7 @@ export function AdminMap({
                 button.append(icon, copy);
                 button.setAttribute(
                   "aria-label",
-                  `${building.address}, ${building.grade}등급, 미처리 ${building.openCount}명`,
+                  `${building.address}, ${GRADE_LABEL[building.grade]}, 미처리 ${building.openCount}명`,
                 );
                 const statusLabels = [
                   ...new Set(building.subjects.map((subject) => subject.statusLabel)),

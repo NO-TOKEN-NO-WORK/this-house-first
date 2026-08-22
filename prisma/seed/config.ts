@@ -38,8 +38,8 @@ const APARTMENT_MULTI_FLOOR = { detached: false, minFloors: 3 };
 
 /**
  * 10개 건물: 1980년 이전 단독 5 · 1980~99 단독 2 · 2000년 이후 단독 1 · 공동주택 2.
- * 비율 근거: 비산동 현황(노후 단독 다수)을 반영하면서 등급 분포가 한쪽으로 쏠리지 않게
- * 최신·공동주택을 섞는다 — 등급 컷오프 캘리브레이션(ADR-0005)에 점수 범위가 넓어야 함.
+ * 비율 근거: 비산동 현황(노후 단독 다수)을 반영하면서 위험 단계 분포가 한쪽으로 쏠리지 않게
+ * 최신·공동주택을 섞는다 — 위험 단계 컷오프 캘리브레이션(ADR-0005)에 점수 범위가 넓어야 함.
  */
 export const BUILDING_SLOTS: readonly SlotSpec[] = [
   { label: "1980년 이전 단독주택 A", prefer: [OLD_DETACHED, ANY_DETACHED] },

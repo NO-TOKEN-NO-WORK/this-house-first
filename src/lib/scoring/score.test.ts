@@ -6,7 +6,7 @@ import { assessRisk } from "./score";
 const YEAR = 2026;
 
 describe("assessRisk", () => {
-  it("80세+·독거·1980년 이전 단독주택·심각일 → 1등급 (PRD F3의 전형적 1등급)", () => {
+  it("80세+·독거·1980년 이전 단독주택·심각일 → 심각 위험 (PRD F3의 전형적 방문 대상)", () => {
     const r = assessRisk({
       subject: { birthYear: 1938, livesAlone: true },
       building: { isDetached: true, builtYear: 1972, structure: "슬레이트" },
@@ -19,7 +19,7 @@ describe("assessRisk", () => {
     expect(r.grade).toBe(RiskGrade.CRITICAL);
   });
 
-  it("65~74세·비독거·2000년 이후 공동주택·주의일 → 3등급", () => {
+  it("65~74세·비독거·2000년 이후 공동주택·주의일 → 주의 위험", () => {
     const r = assessRisk({
       subject: { birthYear: 1958, livesAlone: false },
       building: { isDetached: false, builtYear: 2010 },

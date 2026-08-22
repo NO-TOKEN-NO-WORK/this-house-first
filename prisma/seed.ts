@@ -2,7 +2,7 @@ import "dotenv/config";
 import { fetchBuildingTitles } from "../src/lib/bldg-hub/client";
 import { toBuildingFacts, type BuildingFacts } from "../src/lib/bldg-hub/mapping";
 import { prisma } from "../src/lib/db";
-import { AlertLevel, ALERT_LEVEL_LABEL, RiskGrade } from "../src/lib/domain";
+import { AlertLevel, ALERT_LEVEL_LABEL, GRADE_LABEL, RiskGrade } from "../src/lib/domain";
 import { geocodeAddress, resolveRegionCodes } from "../src/lib/kakao/local";
 import { assessRisk } from "../src/lib/scoring/score";
 import { BUILDING_SLOTS, REGION, SELECTION_SEED } from "./seed/config";
@@ -16,7 +16,7 @@ import { SUBJECTS, TOP_FLOOR_SLOTS, WORKERS } from "./seed/synthetic";
  * 2. 건축HUB 표제부를 법정동 단위로 받아 주거용·연도 있는 건물을 후보로 모음
  * 3. 슬롯 계획(config.ts)대로 건물 10동 선별 + 카카오 지오코딩으로 좌표 확보
  * 4. 합성 담당자·대상자 15명(synthetic.ts)을 건물에 배정
- * 5. 점수 분포 출력 — 등급 컷오프 캘리브레이션(ADR-0005)용
+ * 5. 점수 분포 출력 — 위험 단계 컷오프 캘리브레이션(ADR-0005)용
  *
  * 키가 없거나 API가 실패하면 가짜 건물로 폴백하지 않고 실패한다 (공공데이터 실사용 요건).
  * 실행: npm run db:seed  (기존 시드 데이터는 모두 지우고 다시 만든다 — dev 전용)
@@ -207,9 +207,9 @@ async function main(): Promise<void> {
       counts[r.grade]++;
       return { name: s.name, score: r.score, grade: r.grade, reasons: r.reasons.join(" / ") };
     }).sort((a, b) => b.score - a.score);
-    console.log(`\n  [${ALERT_LEVEL_LABEL[level]}] 1등급 ${counts[1]}명 · 2등급 ${counts[2]}명 · 3등급 ${counts[3]}명`);
+    console.log(`\n  [${ALERT_LEVEL_LABEL[level]}] ${GRADE_LABEL[RiskGrade.CRITICAL]} ${counts[1]}명 · ${GRADE_LABEL[RiskGrade.HIGH]} ${counts[2]}명 · ${GRADE_LABEL[RiskGrade.MODERATE]} ${counts[3]}명`);
     if (level === AlertLevel.EMERGENCY) {
-      for (const r of rows) console.log(`    ${String(r.score).padStart(5)}  ${r.grade}등급  ${r.name}  ${r.reasons}`);
+      for (const r of rows) console.log(`    ${String(r.score).padStart(5)}  ${GRADE_LABEL[r.grade]}  ${r.name}  ${r.reasons}`);
     }
   }
 

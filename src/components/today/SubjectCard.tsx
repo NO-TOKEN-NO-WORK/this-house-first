@@ -14,7 +14,7 @@ import { MapPinIcon, PhoneIcon } from "./icons";
  * 거기서 한 번 더 누르면 기록이 끝난다(탭 2회 이내).
  */
 
-/** 등급별 테두리 — 색 의미는 요약 카드·등급 칩과 같아야 한다 (Figma ① 8:1861 계열) */
+/** 위험 단계별 테두리 — 색 의미는 요약 카드·위험 단계 칩과 같아야 한다 (Figma ① 8:1861 계열) */
 const GRADE_BORDER: Record<RiskGrade, string> = {
   [RiskGrade.CRITICAL]: "border-status-critical",
   [RiskGrade.HIGH]: "border-status-warning",
@@ -23,12 +23,12 @@ const GRADE_BORDER: Record<RiskGrade, string> = {
 
 interface Props {
   subject: RosterSubject;
-  /** 경보일에만 준다 — 없으면 등급 없는 명단 카드 (①-b) */
+  /** 경보일에만 준다 — 없으면 위험 단계 없는 명단 카드 (①-b) */
   grade?: RiskGrade;
   /** 오늘 처리가 끝난 가구의 상태 배지 (HOUSEHOLD_STATUS_LABEL) */
   statusLabel?: string;
   /**
-   * 지금 받을 수 있는 기록 종류. 1등급·승격 가구는 VISIT, 그 외는 CALL,
+   * 지금 받을 수 있는 기록 종류. 심각·승격 가구는 VISIT, 그 외는 CALL,
    * 오늘 할 일이 끝났거나 비경보일이면 null — 해당하지 않는 버튼은 눌리지 않는다.
    */
   nextCheckKind: CheckKind | null;
@@ -41,7 +41,7 @@ interface Props {
   date: string;
   /** 로그인 없는 v0에서 선택한 담당자 문맥을 상세→보드 왕복 동안 보존한다. */
   workerId?: string;
-  /** 등급 필터를 적용한 채 상세에 들어갔다면 뒤로 갈 때 같은 필터로 돌아간다. */
+  /** 위험 단계 필터를 적용한 채 상세에 들어갔다면 뒤로 갈 때 같은 필터로 돌아간다. */
   returnGrade?: RiskGrade;
 }
 
@@ -129,7 +129,7 @@ function CardAction({
 
   if (!enabled) {
     return (
-      // 지금 누를 수 없다는 사실도 정보다 — 1등급은 전화를 건너뛴다(PRD F3)
+      // 지금 누를 수 없다는 사실도 정보다 — 심각 단계는 전화를 건너뛴다(PRD F3)
       <span
         aria-disabled="true"
         className={`${shape} bg-surface-soft text-text-secondary`}

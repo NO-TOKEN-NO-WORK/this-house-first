@@ -18,7 +18,7 @@ PRD §8의 대상자 15명은 합성 데이터지만 **건물은 실제 건축�
 ## 근거 (Rationale)
 
 - `tsx`는 설정 없이 `tsconfig.json`의 `paths`(`@/*`)를 인식하므로 `src/lib/db.ts`·`scoring/`을 그대로 import 가능. Prisma 공식 문서의 권장 조합
-- 법정동 단위 조회는 "진짜 건물"을 보장하면서도 연도·구조 분포를 코드로 제어할 수 있어 등급 컷오프 캘리브레이션([ADR-0005](0005-rule-based-risk-model.md))에 유리
+- 법정동 단위 조회는 "진짜 건물"을 보장하면서도 연도·구조 분포를 코드로 제어할 수 있어 위험 단계 컷오프 캘리브레이션([ADR-0005](0005-rule-based-risk-model.md))에 유리
 
 ## 검토한 대안 (Alternatives)
 

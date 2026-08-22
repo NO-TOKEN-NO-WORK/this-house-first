@@ -136,7 +136,7 @@ describe("관리자 관제 화면", () => {
       </>,
     );
 
-    expect(html).toContain("미확인 1등급");
+    expect(html).toContain("미확인 심각");
     expect(html).toContain("김○○");
     expect(html).toContain("이담당");
     expect(html).toContain("미확인");
@@ -163,7 +163,7 @@ describe("관리자 관제 화면", () => {
     );
 
     expect(html).toContain("오늘은 경보가 없습니다");
-    expect(html).not.toContain("1등급 0명");
+    expect(html).not.toContain("심각 0명");
   });
 
   it("레퍼런스의 관제 패널을 실제 도메인 데이터로 제공한다", () => {

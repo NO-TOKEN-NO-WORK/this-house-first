@@ -31,7 +31,7 @@ export function isAlertLevel(value: unknown): value is AlertLevel {
   );
 }
 
-/** 위험 등급 (PRD F2) — 1: 초고위험(전화 생략, 오전 방문) / 2: 고위험(오전 전화) / 3: 중위험(15시 이전 전화) */
+/** 위험 단계 (PRD F2) — 심각: 초고위험(전화 생략, 오전 방문) / 경계: 고위험(오전 전화) / 주의: 중위험(15시 이전 전화) */
 export const RiskGrade = {
   CRITICAL: 1,
   HIGH: 2,
@@ -40,9 +40,9 @@ export const RiskGrade = {
 export type RiskGrade = (typeof RiskGrade)[keyof typeof RiskGrade];
 
 export const GRADE_LABEL: Record<RiskGrade, string> = {
-  1: "1등급",
-  2: "2등급",
-  3: "3등급",
+  1: "심각",
+  2: "경계",
+  3: "주의",
 };
 
 export function isRiskGrade(value: unknown): value is RiskGrade {
@@ -54,8 +54,8 @@ export function isRiskGrade(value: unknown): value is RiskGrade {
 }
 
 /**
- * 등급별 대응 지시 (PRD F3) — 담당자 화면이 그대로 표시한다.
- * 1등급에 전화가 없는 것은 누락이 아니라 설계다: 전화로 '괜찮다'를 신뢰할 수 없는 군이라
+ * 위험 단계별 대응 지시 (PRD F3) — 담당자 화면이 그대로 표시한다.
+ * 심각 단계에 전화가 없는 것은 누락이 아니라 설계다: 전화로 '괜찮다'를 신뢰할 수 없는 군이라
  * 허위 안심을 원천 차단한다 (PRD §12 리스크 대응).
  */
 export const GRADE_PLAN: Record<RiskGrade, string> = {
@@ -65,14 +65,13 @@ export const GRADE_PLAN: Record<RiskGrade, string> = {
 };
 
 /**
- * 등급 + 위험도 한 줄 표기 — 대상자 상세 화면의 배지에 그대로 쓴다 (Figma ② 3:529).
- * 위험도 문구는 RiskGrade 주석의 정의(1: 초고위험 / 2: 고위험 / 3: 중위험)와 같은 값이다.
- * 등급 숫자만 보면 "1등급이 제일 위험한가?"를 담당자가 매번 되묻게 되므로 배지에서 함께 읽힌다.
+ * 위험 단계 + 위험도 한 줄 표기 — 대상자 상세 화면의 배지에 그대로 쓴다 (Figma ② 3:529).
+ * 위험도 문구는 RiskGrade 주석의 정의(심각: 초고위험 / 경계: 고위험 / 주의: 중위험)와 같은 값이다.
  */
 export const GRADE_SEVERITY_LABEL: Record<RiskGrade, string> = {
-  1: "1등급 초고위험",
-  2: "2등급 고위험",
-  3: "3등급 중위험",
+  1: "심각 초고위험",
+  2: "경계 고위험",
+  3: "주의 중위험",
 };
 
 /** 담당자 역할 (PRD §4) */
@@ -88,7 +87,7 @@ export type WorkerRole = (typeof WorkerRole)[keyof typeof WorkerRole];
 export const NotificationType = {
   /** 경보일 오전 8시 담당자별 요약 1건 */
   ALERT_DAY_SUMMARY: "ALERT_DAY_SUMMARY",
-  /** 무응답 2회·이상 징후·당일 위험 등급 상승에 따른 방문 큐 승격 */
+  /** 무응답 2회·이상 징후·당일 위험 단계 상승에 따른 방문 큐 승격 */
   VISIT_PROMOTED: "VISIT_PROMOTED",
 } as const;
 export type NotificationType =
@@ -121,7 +120,7 @@ export function isNotificationCause(value: unknown): value is NotificationCause 
 export const NOTIFICATION_CAUSE_LABEL: Record<NotificationCause, string> = {
   NO_ANSWER_2: "무응답 2회로",
   SYMPTOM: "이상 징후로",
-  RISK_RECLASSIFIED: "위험 등급 상승으로",
+  RISK_RECLASSIFIED: "위험 단계 상승으로",
 };
 
 /** 가구별·경보일별 상태머신 (PRD F4·F5, docs/architecture.md §4) */
@@ -132,7 +131,7 @@ export const HouseholdStatus = {
   CALL_OK: "CALL_OK",
   /** 무응답 1회 — 30분 후 재전화 */
   NO_ANSWER_1: "NO_ANSWER_1",
-  /** 방문 큐 승격 (무응답 2회 / 이상 징후 / 1등급 즉시) */
+  /** 방문 큐 승격 (무응답 2회 / 이상 징후 / 심각 단계 즉시) */
   VISIT_QUEUED: "VISIT_QUEUED",
   /** 방문 중 */
   VISITING: "VISITING",
@@ -204,7 +203,7 @@ export function isCheckKind(value: unknown): value is CheckKind {
 
 /**
  * 이 상태에서 담당자가 남길 기록 종류.
- * 1등급·승격 가구는 방문, 미확인·무응답 1회는 전화, 끝난 가구는 null (PRD F3·F4).
+ * 심각·승격 가구는 방문, 미확인·무응답 1회는 전화, 끝난 가구는 null (PRD F3·F4).
  */
 export function nextCheckKindOf(status: HouseholdStatus): CheckKind | null {
   if (!isOpenHouseholdStatus(status)) return null;

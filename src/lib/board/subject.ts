@@ -25,9 +25,9 @@ import { todayInKst } from "./today";
 
 export interface SubjectAssessment {
   grade: RiskGrade;
-  /** "1등급 초고위험" */
+  /** "심각 초고위험" */
   severityLabel: string;
-  /** 등급별 대응 지시 (PRD F3) */
+  /** 위험 단계별 대응 지시 (PRD F3) */
   plan: string;
   score: number;
   /** 스코어링 엔진 문장 그대로 + 개인/건물/기상 분류만 덧붙인 것 */
@@ -47,7 +47,7 @@ export interface SubjectDetail {
   /** "YYYY-MM-DD" (KST) */
   date: string;
   dateLabel: string;
-  /** 경보일이 아니면 아래 값은 모두 null — 등급·상태는 경보일에만 존재한다 */
+  /** 경보일이 아니면 아래 값은 모두 null — 위험 단계·상태는 경보일에만 존재한다 */
   alerted: boolean;
   levelLabel: string | null;
   feelsLikeMax: number | null;

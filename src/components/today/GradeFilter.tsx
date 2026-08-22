@@ -44,7 +44,7 @@ export function GradeFilter({
 
   return (
     <>
-      <nav aria-label="등급 필터" className="flex w-full">
+      <nav aria-label="위험 단계 필터" className="flex w-full">
         {[
           { key: "all", label: "전체", grade: null },
           ...groups.map((group) => ({
@@ -87,8 +87,8 @@ export function GradeFilter({
                   {group.gradeLabel}
                 </span>
                 {/*
-                  등급 색은 칩이 전달한다. 설명까지 등급색으로 쓰면 새 background/subtle에서
-                  2등급 4.45:1, 3등급 4.23:1로 WCAG AA(일반 텍스트 4.5:1)에 못 미친다.
+                  위험 단계 색은 칩이 전달한다. 설명까지 단계색으로 쓰면 새 background/subtle에서
+                  경계 4.45:1, 주의 4.23:1로 WCAG AA(일반 텍스트 4.5:1)에 못 미친다.
                 */}
                 <span className="text-title-17 text-text-primary">
                   {group.subjects.length}명 | {group.plan}

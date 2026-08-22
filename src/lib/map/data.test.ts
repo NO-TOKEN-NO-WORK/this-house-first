@@ -4,7 +4,7 @@ import type { Board } from "../board/today";
 import { toMapBuildings } from "./data";
 
 describe("toMapBuildings", () => {
-  it("같은 건물을 합치고 가장 높은 위험 등급과 원본 사유를 보존한다", () => {
+  it("같은 건물을 합치고 가장 높은 위험 단계와 원본 사유를 보존한다", () => {
     const board: Board = {
       alerted: true,
       date: "2026-08-21",
@@ -17,7 +17,7 @@ describe("toMapBuildings", () => {
       groups: [
         {
           grade: RiskGrade.CRITICAL,
-          gradeLabel: "1등급",
+          gradeLabel: "심각",
           plan: "전화 생략 · 오전 방문",
           subjects: [
             {
@@ -46,7 +46,7 @@ describe("toMapBuildings", () => {
         },
         {
           grade: RiskGrade.HIGH,
-          gradeLabel: "2등급",
+          gradeLabel: "경계",
           plan: "오전 중 전화",
           subjects: [
             {
@@ -96,7 +96,7 @@ describe("toMapBuildings", () => {
     ]);
   });
 
-  it("비경보일 가구에는 등급·상태·사유를 만들지 않는다", () => {
+  it("비경보일 가구에는 위험 단계·상태·사유를 만들지 않는다", () => {
     const board: Board = {
       alerted: false,
       date: "2026-08-22",

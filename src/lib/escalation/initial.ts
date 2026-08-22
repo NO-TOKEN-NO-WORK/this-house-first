@@ -9,7 +9,7 @@ import { HouseholdStatus, RiskGrade } from "../domain";
 
 /**
  * 새 가구의 초기 상태.
- * 1등급은 전화를 생략하고 곧바로 방문 대상이다 — 전화로 '괜찮다'를 신뢰할 수 없는 군이기
+ * 심각 단계는 전화를 생략하고 곧바로 방문 대상이다 — 전화로 '괜찮다'를 신뢰할 수 없는 군이기
  * 때문 (PRD F3, 질병청 "고령자는 초기 증상 자기 인지 어려움").
  */
 export function initialHouseholdStatus(grade: RiskGrade): HouseholdStatus {
@@ -33,7 +33,7 @@ export function resolveStatusOnDeclare(
 ): HouseholdStatus | null {
   if (current === null) return initialHouseholdStatus(grade);
 
-  // 재발령으로 1등급이 된 미확인 가구는 방문 큐로 승격한다
+  // 재발령으로 심각 단계가 된 미확인 가구는 방문 큐로 승격한다
   if (current === HouseholdStatus.UNCHECKED && grade === RiskGrade.CRITICAL) {
     return HouseholdStatus.VISIT_QUEUED;
   }

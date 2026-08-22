@@ -101,7 +101,7 @@ export function assessRisk(input: RiskInput): RiskResult {
   return { score, grade: classifyGrade(score), reasons };
 }
 
-/** 등급 분류 — 컷오프는 weights.ts에서만 관리 (잠정치, D1 캘리브레이션 예정) */
+/** 위험 단계 분류 — 컷오프는 weights.ts에서만 관리 (잠정치, D1 캘리브레이션 예정) */
 export function classifyGrade(score: number): RiskGrade {
   if (score >= GRADE_CUTOFF.CRITICAL) return RiskGrade.CRITICAL;
   if (score >= GRADE_CUTOFF.HIGH) return RiskGrade.HIGH;

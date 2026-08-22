@@ -3,13 +3,13 @@ import { HouseholdStatus, RiskGrade } from "../domain";
 import { initialHouseholdStatus, resolveStatusOnDeclare } from "./initial";
 
 describe("initialHouseholdStatus", () => {
-  it("1등급은 전화를 생략하고 즉시 방문 대상이다 (PRD F3)", () => {
+  it("심각 단계는 전화를 생략하고 즉시 방문 대상이다 (PRD F3)", () => {
     expect(initialHouseholdStatus(RiskGrade.CRITICAL)).toBe(
       HouseholdStatus.VISIT_QUEUED,
     );
   });
 
-  it("2·3등급은 미확인으로 시작해 전화 확인을 거친다", () => {
+  it("경계·주의 단계는 미확인으로 시작해 전화 확인을 거친다", () => {
     expect(initialHouseholdStatus(RiskGrade.HIGH)).toBe(HouseholdStatus.UNCHECKED);
     expect(initialHouseholdStatus(RiskGrade.MODERATE)).toBe(
       HouseholdStatus.UNCHECKED,
@@ -27,13 +27,13 @@ describe("resolveStatusOnDeclare", () => {
     );
   });
 
-  it("재발령으로 1등급이 된 미확인 가구는 방문 큐로 승격한다 (주의→심각 상승)", () => {
+  it("재발령으로 심각 단계가 된 미확인 가구는 방문 큐로 승격한다 (주의→심각 상승)", () => {
     expect(
       resolveStatusOnDeclare(HouseholdStatus.UNCHECKED, RiskGrade.CRITICAL),
     ).toBe(HouseholdStatus.VISIT_QUEUED);
   });
 
-  it("미확인 + 2·3등급은 그대로 둔다", () => {
+  it("미확인 + 경계·주의 단계는 그대로 둔다", () => {
     expect(resolveStatusOnDeclare(HouseholdStatus.UNCHECKED, RiskGrade.HIGH)).toBeNull();
     expect(
       resolveStatusOnDeclare(HouseholdStatus.UNCHECKED, RiskGrade.MODERATE),
