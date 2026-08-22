@@ -10,9 +10,8 @@ describe("SubjectDetailLoading", () => {
     expect(html).toContain("animate-pulse");
     expect(html).toContain("motion-reduce:animate-none");
     expect(html).toContain("aria-busy=\"true\"");
-    expect(html).toContain("대상자 정보를 불러오는 중입니다.");
-    expect(html).not.toContain(
-      "flex-1 flex-col bg-background-subtle",
-    );
+    expect(html).toContain("대상자 상세를 불러오는 중입니다.");
+    expect(html).not.toContain("flex-1 flex-col bg-background-subtle");
+    expect(html).not.toContain("대상자 정보</h1>");
   });
 });

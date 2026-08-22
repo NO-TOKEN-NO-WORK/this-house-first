@@ -7,8 +7,12 @@ export default function SubjectDetailLoading() {
     <div className="mx-auto flex w-full max-w-[520px] flex-1 flex-col bg-surface-default">
       <header className="sticky top-0 z-30 grid h-[calc(53px_+_var(--safe-top))] grid-cols-[44px_1fr_44px] items-center bg-surface-default px-1.5 pt-[var(--safe-top)]">
         <span aria-hidden />
-        <h1 className="text-center text-label-15 text-text-primary">
-          대상자 정보
+        <h1 className="flex justify-center">
+          <span className="sr-only">대상자 상세</span>
+          <span
+            aria-hidden
+            className="h-5 w-20 animate-pulse rounded-md bg-background-subtle motion-reduce:animate-none"
+          />
         </h1>
         <span aria-hidden />
       </header>
@@ -19,7 +23,7 @@ export default function SubjectDetailLoading() {
         className="flex flex-1 flex-col gap-5 px-5 py-6 pb-10"
       >
         <p id="subject-detail-loading-status" role="status" className="sr-only">
-          대상자 정보를 불러오는 중입니다.
+          대상자 상세를 불러오는 중입니다.
         </p>
 
         <div
