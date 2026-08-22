@@ -4,11 +4,15 @@ import { useId } from "react";
 import { Dialog } from "@/components/Dialog";
 import { PhoneIcon } from "@/components/today/icons";
 import { SubjectSummary } from "@/components/today/SubjectSummary";
-import { CALL_GUIDE_QUESTIONS, type RiskGrade } from "@/lib/domain";
+import {
+  CALL_GUIDE_QUESTIONS,
+  CALL_GUIDE_QUESTION_EMPHASIS,
+  type RiskGrade,
+} from "@/lib/domain";
 
 /**
  * 전화 안내 다이얼로그 — 걸기 직전에 "누구에게, 무엇을 물을지"를 한 화면에 보여 준다.
- * 화면 설계: Figma ④ 25:160 (다이얼로그 본체 7:2577)
+ * 화면 설계: Figma 38:4993
  *
  * 껍데기·접근성은 공용 `Dialog`가 맡는다. 여기는 내용만 만든다.
  * 등급 칩 문구는 Figma의 `심각/경계/주의`가 아니라 `GRADE_LABEL`을 쓴다 —
@@ -66,9 +70,16 @@ export function CallGuideDialog({
             이런 내용 물어보면 좋아요
           </p>
           <ul className="flex list-disc flex-col gap-[11px] ps-6">
-            {questions.map((question) => (
+            {questions.map((question, index) => (
               <li key={question} className="text-body-16 text-text-primary">
-                {question}
+                <EmphasizedQuestion
+                  question={question}
+                  emphasis={
+                    questions === CALL_GUIDE_QUESTIONS
+                      ? CALL_GUIDE_QUESTION_EMPHASIS[index]
+                      : undefined
+                  }
+                />
               </li>
             ))}
           </ul>
@@ -95,5 +106,25 @@ export function CallGuideDialog({
         )}
       </div>
     </Dialog>
+  );
+}
+
+function EmphasizedQuestion({
+  question,
+  emphasis,
+}: {
+  question: string;
+  emphasis?: string;
+}) {
+  if (!emphasis) return question;
+  const start = question.indexOf(emphasis);
+  if (start < 0) return question;
+  const end = start + emphasis.length;
+  return (
+    <>
+      {question.slice(0, start)}
+      <strong className="font-bold">{question.slice(start, end)}</strong>
+      {question.slice(end)}
+    </>
   );
 }

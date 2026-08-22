@@ -47,14 +47,16 @@ describe("CallGuideDialog", () => {
 
   it("대상자·연락처와 안내 질문을 모두 보여 준다", () => {
     const html = contentOf(CallGuideDialog(base) as ReactElement);
+    const text = html.replace(/<[^>]+>/g, "");
 
     expect(html).toContain("김순자");
     expect(html).toContain("88세 · 독거");
     expect(html).toContain("010-2345-1938");
     expect(html).toContain("행복동 중앙로 12-3");
     for (const question of CALL_GUIDE_QUESTIONS) {
-      expect(html).toContain(question);
+      expect(text).toContain(question);
     }
+    expect(html.match(/<strong/g)).toHaveLength(3);
   });
 
   it("번호가 있으면 tel: 링크로 건다", () => {

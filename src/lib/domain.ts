@@ -88,6 +88,16 @@ export const CALL_GUIDE_QUESTIONS: readonly string[] = [
 ];
 
 /**
+ * 전화 안내에서 눈에 띄게 읽어야 하는 핵심 구절 — 질문 원문과 같은 순서다.
+ * Figma 38:4993의 굵은 글자만 재현하며 질문 문장 자체는 CALL_GUIDE_QUESTIONS를 그대로 쓴다.
+ */
+export const CALL_GUIDE_QUESTION_EMPHASIS: readonly string[] = [
+  "선풍기나 에어컨",
+  "어지럽거나 머리 아프진",
+  "밭일이나 외출",
+];
+
+/**
  * 위험 단계 + 위험도 한 줄 표기 — 대상자 상세 화면의 배지에 그대로 쓴다 (Figma ② 3:529).
  * 위험도 문구는 RiskGrade 주석의 정의(심각: 초고위험 / 경계: 고위험 / 주의: 중위험)와 같은 값이다.
  */
@@ -277,6 +287,51 @@ export function isCallResult(value: unknown): value is CallResult {
     typeof value === "string" &&
     Object.prototype.hasOwnProperty.call(CALL_RESULT_LABEL, value)
   );
+}
+
+/** 전화 확인 중 함께 기록하는 냉방기 설비 상태 (Figma 99:1267) */
+export const CoolingStatus = {
+  NORMAL: "NORMAL",
+  NEEDS_CHECK: "NEEDS_CHECK",
+  NONE: "NONE",
+  UNKNOWN: "UNKNOWN",
+} as const;
+export type CoolingStatus =
+  (typeof CoolingStatus)[keyof typeof CoolingStatus];
+
+/** 냉방기 상태 선택 버튼에 그대로 쓰는 라벨 — UI에서 문자열을 다시 쓰지 않는다. */
+export const COOLING_STATUS_LABEL: Record<CoolingStatus, string> = {
+  NORMAL: "정상",
+  NEEDS_CHECK: "점검 필요",
+  NONE: "없음",
+  UNKNOWN: "확인 불가",
+};
+
+export function isCoolingStatus(value: unknown): value is CoolingStatus {
+  return (
+    typeof value === "string" &&
+    Object.prototype.hasOwnProperty.call(COOLING_STATUS_LABEL, value)
+  );
+}
+
+/**
+ * 전화로 확인한 냉방기 상태를 Subject의 기존 두 필드로 옮긴다.
+ * 없음·점검 필요는 모두 익일 위험도 가중 대상이고, hasAircon으로 지원사업 대상을 구분한다.
+ */
+export function coolingStatusSubjectPatch(status: CoolingStatus): {
+  hasAircon: boolean | null;
+  airconBroken: boolean;
+} {
+  switch (status) {
+    case CoolingStatus.NORMAL:
+      return { hasAircon: true, airconBroken: false };
+    case CoolingStatus.NEEDS_CHECK:
+      return { hasAircon: true, airconBroken: true };
+    case CoolingStatus.NONE:
+      return { hasAircon: false, airconBroken: true };
+    case CoolingStatus.UNKNOWN:
+      return { hasAircon: null, airconBroken: false };
+  }
 }
 
 /** 방문 결과 기록 (PRD F4) */

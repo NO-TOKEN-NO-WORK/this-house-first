@@ -12,14 +12,16 @@ import { SubjectSummary } from "@/components/today/SubjectSummary";
 import {
   CallResult,
   CALL_RESULT_LABEL,
+  CoolingStatus,
+  COOLING_STATUS_LABEL,
   type RiskGrade,
 } from "@/lib/domain";
 
 /**
- * 통화 결과 시트 — 통화가 끝나고 앱으로 돌아오면 뜬다 (FR-5).
- * 화면 설계: Figma ⑤ 7:2345 (시트 본체 7:2488)
+ * 통화 결과 풀스크린 시트 — 통화가 끝나고 앱으로 돌아오면 뜬다 (FR-5).
+ * 화면 설계: Figma 99:1267
  *
- * 껍데기·접근성은 공용 `Dialog`(placement="bottom")가 맡는다. 여기는 내용만 만든다.
+ * 껍데기·접근성은 공용 `Dialog`(placement="fullscreen")가 맡는다. 여기는 내용만 만든다.
  * 버튼 문구는 `CALL_RESULT_LABEL`을 그대로 쓴다 — 아래 아이콘·색은 부연일 뿐
  * 결과값의 의미를 새로 만들지 않는다 (AGENTS.md 도메인 규칙 2).
  *
@@ -60,6 +62,8 @@ const OPTIONS: Option[] = [
   },
 ];
 
+const COOLING_OPTIONS = Object.values(CoolingStatus);
+
 interface Props {
   open: boolean;
   onClose: () => void;
@@ -73,7 +77,11 @@ interface Props {
    * 고른 결과와 메모를 넘긴다. 저장(서버 기록)은 받는 쪽이 한다.
    * 실패하면 던진다 — 시트가 그 문구를 그대로 보여 준다.
    */
-  onSave: (result: CallResult, memo: string) => void | Promise<void>;
+  onSave: (
+    result: CallResult,
+    coolingStatus: CoolingStatus,
+    memo: string,
+  ) => void | Promise<void>;
 }
 
 export function CallResultSheet({
@@ -90,16 +98,17 @@ export function CallResultSheet({
   const nameId = useId();
   const memoId = useId();
   const [result, setResult] = useState<CallResult | null>(null);
+  const [coolingStatus, setCoolingStatus] = useState<CoolingStatus | null>(null);
   const [memo, setMemo] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
 
   async function save() {
-    if (result === null || pending) return;
+    if (result === null || coolingStatus === null || pending) return;
     setPending(true);
     setError("");
     try {
-      await onSave(result, memo.trim());
+      await onSave(result, coolingStatus, memo.trim());
     } catch (cause) {
       setError(
         cause instanceof Error ? cause.message : "기록하지 못했습니다.",
@@ -110,7 +119,12 @@ export function CallResultSheet({
   }
 
   return (
-    <Dialog open={open} onClose={onClose} placement="bottom" labelledBy={nameId}>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      placement="fullscreen"
+      labelledBy={nameId}
+    >
       <div className="flex flex-col gap-5 px-5 pt-1 pb-8">
         <SubjectSummary
           nameId={nameId}
@@ -122,7 +136,7 @@ export function CallResultSheet({
           address={address}
         />
 
-        <section className="flex flex-col gap-5">
+        <section className="flex flex-col gap-5 pt-3">
           <h2 className="text-heading-18 text-text-subtle">통화 어땠나요?</h2>
           <div className="grid grid-cols-2 gap-2.5">
             {OPTIONS.map((option) => {
@@ -155,7 +169,34 @@ export function CallResultSheet({
           </div>
         </section>
 
-        <section className="flex flex-col gap-5">
+        <section className="flex flex-col gap-5 pt-3">
+          <h2 className="text-heading-18 text-text-subtle">
+            냉방기 설비 상태 점검
+          </h2>
+          <div className="grid grid-cols-4 gap-2">
+            {COOLING_OPTIONS.map((option) => {
+              const selected = option === coolingStatus;
+              return (
+                <button
+                  key={option}
+                  type="button"
+                  aria-pressed={selected}
+                  disabled={pending}
+                  onClick={() => setCoolingStatus(option)}
+                  className={`flex h-12 items-center justify-center rounded-lg border border-border-soft text-label-16 ${
+                    selected
+                      ? "bg-action-primary text-text-inverse"
+                      : "bg-surface-default text-text-secondary"
+                  }`}
+                >
+                  {COOLING_STATUS_LABEL[option]}
+                </button>
+              );
+            })}
+          </div>
+        </section>
+
+        <section className="flex flex-col gap-5 pt-3">
           <label htmlFor={memoId} className="text-heading-18 text-text-subtle">
             메모 (선택)
           </label>
@@ -177,10 +218,10 @@ export function CallResultSheet({
         {/* 결과를 고르기 전에는 저장할 것이 없다 — 빈 기록이 남지 않게 막는다 */}
         <button
           type="button"
-          disabled={result === null || pending}
+          disabled={result === null || coolingStatus === null || pending}
           onClick={save}
           className={`flex h-14 w-full items-center justify-center rounded-lg text-heading-19 ${
-            result === null || pending
+            result === null || coolingStatus === null || pending
               ? "bg-surface-soft text-text-secondary"
               : "bg-action-primary text-text-inverse active:bg-action-primary-strong"
           }`}

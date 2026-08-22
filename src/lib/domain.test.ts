@@ -4,12 +4,15 @@ import {
   ALERT_LEVEL_LABEL,
   CallResult,
   CheckKind,
+  coolingStatusSubjectPatch,
+  CoolingStatus,
   GRADE_LABEL,
   GRADE_SEVERITY_LABEL,
   HouseholdStatus,
   isAlertLevel,
   isCallResult,
   isCheckKind,
+  isCoolingStatus,
   isHouseholdStatus,
   isNotificationCause,
   isNotificationType,
@@ -73,6 +76,7 @@ describe("확인 기록 값 검증", () => {
   it("정의된 기록 종류·결과만 허용한다", () => {
     expect(isCheckKind(CheckKind.CALL)).toBe(true);
     expect(isCallResult(CallResult.NO_ANSWER)).toBe(true);
+    expect(isCoolingStatus(CoolingStatus.NEEDS_CHECK)).toBe(true);
     expect(isVisitResult(VisitResult.AIRCON_ISSUE)).toBe(true);
   });
 
@@ -96,8 +100,28 @@ describe("확인 기록 값 검증", () => {
   it("Object 프로토타입 속성은 결과값으로 허용하지 않는다", () => {
     for (const bad of ["toString", "constructor", "__proto__"]) {
       expect(isCallResult(bad)).toBe(false);
+      expect(isCoolingStatus(bad)).toBe(false);
       expect(isVisitResult(bad)).toBe(false);
       expect(isCheckKind(bad)).toBe(false);
     }
+  });
+
+  it("냉방기 상태를 기존 대상자 필드로 일관되게 옮긴다", () => {
+    expect(coolingStatusSubjectPatch(CoolingStatus.NORMAL)).toEqual({
+      hasAircon: true,
+      airconBroken: false,
+    });
+    expect(coolingStatusSubjectPatch(CoolingStatus.NEEDS_CHECK)).toEqual({
+      hasAircon: true,
+      airconBroken: true,
+    });
+    expect(coolingStatusSubjectPatch(CoolingStatus.NONE)).toEqual({
+      hasAircon: false,
+      airconBroken: true,
+    });
+    expect(coolingStatusSubjectPatch(CoolingStatus.UNKNOWN)).toEqual({
+      hasAircon: null,
+      airconBroken: false,
+    });
   });
 });
