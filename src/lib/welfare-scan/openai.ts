@@ -45,7 +45,23 @@ function outputText(payload: unknown): string | null {
   return null;
 }
 
-function parseSignals(text: string, subjectIds: Set<string>): WelfareSignal[] {
+function redactSensitiveMemo(memo: string | null): string | null {
+  if (!memo) return memo;
+  return memo
+    .replace(/(?:01[016789])[-.\s]?\d{3,4}[-.\s]?\d{4}/g, "[연락처 제거]")
+    .replace(/[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}/g, "[이메일 제거]")
+    .replace(
+      /(?:서울(?:특별)?시|부산(?:광역)?시|대구(?:광역)?시|인천(?:광역)?시|광주(?:광역)?시|대전(?:광역)?시|울산(?:광역)?시|세종(?:특별자치)?시|경기도|강원(?:특별자치)?도|충청[북남]도|전라[북남]도|경상[북남]도|제주(?:특별자치)?도)\s+[^,.\n]{1,50}(?:로|길|동|리)\s*\d*(?:-\d+)?/g,
+      "[주소 제거]",
+    )
+    .replace(/((?:성명|이름)\s*[:：]?\s*)[가-힣]{2,4}/g, "$1[이름 제거]")
+    .replace(/[가-힣]{2,4}\s*(?:어르신|님)/g, "[이름 제거]");
+}
+
+function parseSignals(
+  text: string,
+  subjectIdsByAlias: Map<string, string>,
+): WelfareSignal[] {
   let parsed: unknown;
   try {
     parsed = JSON.parse(text);
@@ -72,7 +88,7 @@ function parseSignals(text: string, subjectIds: Set<string>): WelfareSignal[] {
     const value = signal as Record<string, unknown>;
     if (
       typeof value.subjectId !== "string" ||
-      !subjectIds.has(value.subjectId) ||
+      !subjectIdsByAlias.has(value.subjectId) ||
       !Array.isArray(value.issues) ||
       value.issues.some((issue) => typeof issue !== "string" || !ALLOWED_ISSUES.has(issue)) ||
       !Array.isArray(value.evidence) ||
@@ -84,9 +100,9 @@ function parseSignals(text: string, subjectIds: Set<string>): WelfareSignal[] {
       );
     }
     return {
-      subjectId: value.subjectId,
+      subjectId: subjectIdsByAlias.get(value.subjectId)!,
       issues: value.issues as WelfareSignal["issues"],
-      evidence: value.evidence as string[],
+      evidence: (value.evidence as string[]).map((item) => redactSensitiveMemo(item) ?? ""),
     };
   });
 }
@@ -104,7 +120,9 @@ export async function extractWelfareSignals(
     );
   }
   const fetcher = options.fetcher ?? fetch;
-  const subjectIds = new Set(profiles.map((profile) => profile.subjectId));
+  const subjectIdsByAlias = new Map(
+    profiles.map((profile, index) => [`scan-${index + 1}`, profile.subjectId]),
+  );
   let response: Response;
   try {
     response = await fetcher(OPENAI_RESPONSES_URL, {
@@ -127,13 +145,13 @@ export async function extractWelfareSignals(
           {
             role: "user",
             content: JSON.stringify(
-              profiles.map((profile) => ({
-                subjectId: profile.subjectId,
+              profiles.map((profile, index) => ({
+                subjectId: `scan-${index + 1}`,
                 age: profile.age,
                 livesAlone: profile.livesAlone,
                 hasAircon: profile.hasAircon,
                 airconBroken: profile.airconBroken,
-                latestMemo: profile.latestMemo,
+                latestMemo: redactSensitiveMemo(profile.latestMemo),
               })),
             ),
           },
@@ -195,5 +213,5 @@ export async function extractWelfareSignals(
       "INCOMPLETE_OPENAI_RESPONSE",
     );
   }
-  return parseSignals(text, subjectIds);
+  return parseSignals(text, subjectIdsByAlias);
 }

@@ -72,6 +72,8 @@ const ISSUE_KEYWORDS: Record<WelfareIssue, readonly string[]> = {
   [WelfareIssue.HOUSING_REPAIR]: ["주거", "주택", "수선", "개선", "단열"],
 };
 
+const MANUAL_REVIEW_CRITERIA = /(?:등록\s*)?장애|질환|질병|임신|재산|고용|실업|국적|가족관계|세대 구성/;
+
 function matchesIssue(program: WelfareProgram, issue: WelfareIssue): boolean {
   const searchable = `${program.name} ${program.summary} ${program.selectionCriteria} ${program.target}`;
   return ISSUE_KEYWORDS[issue].some((keyword) => searchable.includes(keyword));
@@ -118,6 +120,12 @@ export function recommendWelfarePrograms({
         ? ["냉방기기 없음 또는 고장"]
         : []),
     ];
+    if (
+      missing.length === 0 &&
+      (confirmedChecks.length === 0 || MANUAL_REVIEW_CRITERIA.test(program.selectionCriteria))
+    ) {
+      missing.push("사업별 세부 자격요건");
+    }
 
     return [{
       subjectId: profile.subjectId,

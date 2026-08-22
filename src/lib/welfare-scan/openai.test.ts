@@ -4,14 +4,14 @@ import { extractWelfareSignals } from "./openai";
 describe("Luna 복지 메모 분석", () => {
   const profiles = [
     {
-      subjectId: "subject-1",
+      subjectId: "database-subject-987",
       name: "김○○",
       age: 88,
       livesAlone: true,
       hasAircon: false,
       airconBroken: true,
       workerName: "이미경",
-      latestMemo: "에어컨에서 미지근한 바람만 나옵니다.",
+      latestMemo: "성명: 홍길동, 010-1234-5678, 서울시 종로구 세종대로 1. 에어컨이 고장났습니다.",
     },
   ];
 
@@ -31,7 +31,7 @@ describe("Luna 복지 메모 분석", () => {
                   text: JSON.stringify({
                     signals: [
                       {
-                        subjectId: "subject-1",
+                        subjectId: "scan-1",
                         issues: ["COOLING_ISSUE"],
                         evidence: ["에어컨에서 미지근한 바람만 나옴"],
                       },
@@ -57,9 +57,13 @@ describe("Luna 복지 메모 분석", () => {
       text: { format: { type: "json_schema", strict: true } },
     });
     expect(JSON.stringify(sentBody)).not.toContain("이미경");
+    expect(JSON.stringify(sentBody)).not.toContain("database-subject-987");
+    expect(JSON.stringify(sentBody)).not.toContain("홍길동");
+    expect(JSON.stringify(sentBody)).not.toContain("010-1234-5678");
+    expect(JSON.stringify(sentBody)).not.toContain("서울시 종로구 세종대로 1");
     expect(result).toEqual([
       {
-        subjectId: "subject-1",
+        subjectId: "database-subject-987",
         issues: ["COOLING_ISSUE"],
         evidence: ["에어컨에서 미지근한 바람만 나옴"],
       },

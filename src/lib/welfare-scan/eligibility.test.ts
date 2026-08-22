@@ -72,6 +72,34 @@ describe("복지 자격 엔진", () => {
     });
   });
 
+  it("엔진이 확인할 수 없는 자격 조건은 추가 정보 필요로 분류한다", () => {
+    const [recommendation] = recommendWelfarePrograms({
+      profile,
+      signal: {
+        subjectId: profile.subjectId,
+        issues: ["MOBILITY"],
+        evidence: ["거동이 어려움"],
+      },
+      programs: [
+        {
+          id: "mobility-1",
+          name: "장애인 이동 지원",
+          ministry: "보건복지부",
+          summary: "거동이 어려운 등록 장애인의 이동을 지원합니다.",
+          selectionCriteria: "65세 이상 등록 장애인",
+          target: "노년 등록 장애인",
+          link: "https://www.bokjiro.go.kr/",
+        },
+      ],
+    });
+
+    expect(recommendation).toMatchObject({
+      programId: "mobility-1",
+      status: RecommendationStatus.NEEDS_INFO,
+      missingChecks: ["사업별 세부 자격요건"],
+    });
+  });
+
   it("감지 문제와 무관한 사업은 추천하지 않는다", () => {
     const recommendations = recommendWelfarePrograms({
       profile,

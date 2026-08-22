@@ -76,8 +76,16 @@ describe("POST /api/welfare-scan", () => {
   });
 
   it("외부 연동이 모두 실패해도 연결 상태와 빈 결과를 반환한다", async () => {
-    mocks.refreshWelfarePrograms.mockRejectedValue(new Error("public failed"));
-    mocks.extractWelfareSignals.mockRejectedValue(new Error("ai failed"));
+    mocks.refreshWelfarePrograms.mockRejectedValue(
+      Object.assign(new Error("PUBLIC_DATA_SERVICE_KEY 환경변수가 설정되지 않았습니다."), {
+        code: "MISSING_SERVICE_KEY",
+      }),
+    );
+    mocks.extractWelfareSignals.mockRejectedValue(
+      Object.assign(new Error("AI 분석 응답 시간이 초과되었습니다."), {
+        code: "OPENAI_UNAVAILABLE",
+      }),
+    );
 
     const response = await POST();
     const payload = await response.json();
@@ -85,7 +93,9 @@ describe("POST /api/welfare-scan", () => {
     expect(response.status).toBe(200);
     expect(payload.data.recommendations).toEqual([]);
     expect(payload.data.partial).toBe(true);
-    expect(payload.data.connections.publicData.ok).toBe(false);
-    expect(payload.data.connections.ai.ok).toBe(false);
+    expect(payload.data.connections).toEqual({
+      publicData: { ok: false, message: "공공데이터 API 키 미설정" },
+      ai: { ok: false, message: "AI 분석 응답 시간 초과" },
+    });
   });
 });

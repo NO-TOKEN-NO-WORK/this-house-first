@@ -60,6 +60,26 @@ function structuredFallbackSignals(
   });
 }
 
+function connectionFailureMessage(
+  error: unknown,
+  service: "publicData" | "ai",
+): string {
+  const code = error && typeof error === "object" && "code" in error
+    ? String(error.code)
+    : "";
+  const message = error instanceof Error ? error.message : "";
+  if (code === "MISSING_SERVICE_KEY" || code === "MISSING_OPENAI_API_KEY") {
+    return service === "publicData" ? "공공데이터 API 키 미설정" : "AI API 키 미설정";
+  }
+  if (message.includes("시간")) {
+    return service === "publicData" ? "공공데이터 응답 시간 초과" : "AI 분석 응답 시간 초과";
+  }
+  if (code.includes("HTTP") || code.includes("UPSTREAM")) {
+    return service === "publicData" ? "공공데이터 응답 오류" : "AI 분석 응답 오류";
+  }
+  return service === "publicData" ? "공공데이터 연결 실패" : "AI 분석 연결 실패";
+}
+
 export async function GET(): Promise<Response> {
   try {
     const programs = await refreshWelfarePrograms();
@@ -140,10 +160,16 @@ export async function POST(): Promise<Response> {
         connections: {
           publicData: programResult.status === "fulfilled"
             ? { ok: true, message: "공공데이터 연결 정상" }
-            : { ok: false, message: "공공데이터 연결 실패" },
+            : {
+                ok: false,
+                message: connectionFailureMessage(programResult.reason, "publicData"),
+              },
           ai: signalResult.status === "fulfilled"
             ? { ok: true, message: "AI 분석 연결 정상" }
-            : { ok: false, message: "AI 분석 연결 실패" },
+            : {
+                ok: false,
+                message: connectionFailureMessage(signalResult.reason, "ai"),
+              },
         },
       },
     });
