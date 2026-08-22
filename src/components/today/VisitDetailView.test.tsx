@@ -14,6 +14,8 @@ import {
   HouseholdStatus,
   RiskGrade,
   COOLING_STATUS_LABEL,
+  SUBJECT_INFORMATION_LABELS,
+  VISIT_ATTACHMENT_LABELS,
   VISIT_CHECKLIST,
   VISIT_RECORD_RESULTS,
   VISIT_RESULT_LABEL,
@@ -94,7 +96,7 @@ const detail: SubjectDetail = {
 };
 
 describe("VisitDetailView", () => {
-  it("Figma 113:2222의 섹션을 순서대로 보여 준다", () => {
+  it("Figma 164:8144의 섹션을 순서대로 보여 준다", () => {
     const html = renderToStaticMarkup(
       <VisitDetailView detail={detail} backHref="/today?date=2026-08-22" />,
     );
@@ -107,6 +109,7 @@ describe("VisitDetailView", () => {
       "방문 히스토리",
       "방문 상황을 기록하세요",
       "냉방기 설비 상태 점검",
+      VISIT_ATTACHMENT_LABELS.SECTION,
       "메모 (선택)",
       "저장하기",
     ];
@@ -154,53 +157,29 @@ describe("VisitDetailView", () => {
     expect(html).toMatch(/<button[^>]*disabled=""[^>]*>저장하기<\/button>/);
   });
 
-  /** 오늘 남긴 방문 기록 — 되읽기 화면이 여기서 결과·메모를 가져온다 */
-  const todayVisit = {
-    id: "check-0",
-    date: detail.date,
-    dateLabel: "8/22 (토)",
-    kind: CheckKind.VISIT,
-    kindLabel: CHECK_KIND_LABEL[CheckKind.VISIT],
-    result: VisitResult.ABSENT,
-    resultLabel: VISIT_RESULT_LABEL[VisitResult.ABSENT],
-    memo: "문을 두드렸지만 인기척 없음",
-  };
-
-  it("되읽기 화면(123:2971)은 저장 없이 기록한 결과·메모를 보여 준다", () => {
+  /** 기록 추가 (선택) — 사진·음성 자리 (Figma 164:8300 · 붙인 상태 164:8691) */
+  it("기록 추가는 사진·음성 자리를 Figma 문구 그대로 보여 준다", () => {
     const html = renderToStaticMarkup(
-      <VisitDetailView
-        detail={{ ...detail, recentHistory: [todayVisit, ...detail.recentHistory] }}
-        backHref="/today"
-        readOnly
-      />,
+      <VisitDetailView detail={detail} backHref="/today" />,
     );
 
-    expect(html).toContain("방문 기록");
-    expect(html).not.toContain("저장하기");
-    expect(html).toContain(todayVisit.memo);
-    // 기록한 결과 버튼만 눌린 상태(aria-pressed)로 남는다
-    expect(html).toMatch(
-      new RegExp(
-        `aria-pressed="true"[^>]*disabled=""[^>]*>(?:(?!</button>).)*${VISIT_RESULT_LABEL[VisitResult.ABSENT]}`,
-        "s",
-      ),
-    );
+    expect(html).toContain(VISIT_ATTACHMENT_LABELS.PHOTO_EMPTY);
+    expect(html).toContain(VISIT_ATTACHMENT_LABELS.AUDIO_EMPTY);
+    // 붙인 게 없으면 지우기 버튼도 없다
+    expect(html).not.toContain(VISIT_ATTACHMENT_LABELS.AUDIO_REMOVE);
   });
 
-  it("되읽기 화면은 오늘 마지막 확인이 전화면 결과를 고르지 않는다", () => {
-    /*
-      전화·방문 결과는 문자열이 겹친다(OK·SYMPTOM·EMERGENCY_119). `lastResult`를 그대로
-      믿으면 주소로 ?view=record에 들어왔을 때 통화 결과가 방문 결과로 보인다.
-    */
+  /*
+    맥락 브리핑은 이 화면에 없다 (Figma 164:8144). 브리핑은 `대상자 정보` 탭이 맡는다 —
+    카드가 보드에서 같이 뜨면 문 앞에서 읽을 것이 두 배가 된다.
+  */
+  it("맥락 브리핑 카드를 방문 화면에 싣지 않는다", () => {
     const html = renderToStaticMarkup(
-      <VisitDetailView
-        detail={{ ...detail, lastResult: CallResult.OK, recentHistory: [] }}
-        backHref="/today"
-        readOnly
-      />,
+      <VisitDetailView detail={detail} backHref="/today" />,
     );
 
-    expect(html).not.toContain('aria-pressed="true"');
+    expect(html).not.toContain(SUBJECT_INFORMATION_LABELS.OVERVIEW);
+    expect(html).not.toContain(SUBJECT_INFORMATION_LABELS.LOADING);
   });
 
   it("최근 기록은 결과 라벨을 항상 보여 주고 메모를 함께 표시한다", () => {

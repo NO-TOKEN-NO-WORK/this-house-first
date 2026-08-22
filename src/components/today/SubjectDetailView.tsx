@@ -107,17 +107,17 @@ export function SubjectDetailView({
   onBack,
   onRecorded,
   informationOnly = false,
-  visitRecordOnly = false,
 }: {
   detail: SubjectDetail;
   backHref: string;
   /** 있으면 Next 내비게이션 없이 보드로 되돌린다 (보드에서 연 상세) */
   onBack?: () => void;
   onRecorded?: (outcome: CheckOutcome) => void;
-  /** 카드 chevron으로 들어온 경우 기록 UI 없이 Figma 125:6175의 정보만 보여 준다. */
+  /**
+   * 카드 chevron·`방문 완료 기록 보기`로 들어온 경우 — 기록 UI 없이 Figma 164:7618의
+   * 정보만 보여 준다. 끝난 방문 되읽기도 여기다 (그 화면의 `방문 히스토리` 탭).
+   */
   informationOnly?: boolean;
-  /** 카드의 `방문 완료 기록 보기`로 들어온 경우 — 끝난 방문을 되읽는다 (Figma 123:2971) */
-  visitRecordOnly?: boolean;
 }) {
   if (informationOnly) {
     return (
@@ -125,25 +125,9 @@ export function SubjectDetailView({
     );
   }
 
-  // 되읽기는 이미 끝난 가구라 nextCheckKind가 null이다 — 방문 분기보다 먼저 본다
-  if (visitRecordOnly) {
-    return (
-      <VisitDetailView
-        detail={detail}
-        backHref={backHref}
-        onBack={onBack}
-        readOnly
-      />
-    );
-  }
-
   if (detail.nextCheckKind === CheckKind.VISIT) {
     return (
-      <VisitDetailView
-        detail={detail}
-        backHref={backHref}
-        onBack={onBack}
-      />
+      <VisitDetailView detail={detail} backHref={backHref} onBack={onBack} />
     );
   }
 
