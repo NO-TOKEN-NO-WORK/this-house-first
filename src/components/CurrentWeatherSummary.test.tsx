@@ -25,6 +25,7 @@ vi.mock("react", async (importOriginal) => ({
 
 import {
   CurrentWeatherSummary,
+  requestCurrentLocationGrid,
   requestCurrentWeather,
 } from "./CurrentWeatherSummary";
 
@@ -41,6 +42,7 @@ const weather: CurrentWeather = {
 /** CurrentWeatherSummary의 useState 호출 순서 */
 const WEATHER = 0;
 const FAILED = 1;
+const LOCATION_STATUS = 3;
 
 function render(variant: "today" | "admin" = "today") {
   hooks.cursor = 0;
@@ -53,8 +55,21 @@ describe("requestCurrentWeather", () => {
       new Response(JSON.stringify({ data: weather }), { status: 200 }),
     );
 
-    await expect(requestCurrentWeather(fetcher)).resolves.toEqual(weather);
+    await expect(requestCurrentWeather(null, fetcher)).resolves.toEqual(weather);
     expect(fetcher).toHaveBeenCalledWith("/api/public-data/current-weather");
+  });
+
+  it("현재 위치 격자를 현재 날씨 API 쿼리로 전달한다", async () => {
+    const fetcher = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ data: weather }), { status: 200 }),
+    );
+
+    await expect(
+      requestCurrentWeather({ nx: 89, ny: 90 }, fetcher),
+    ).resolves.toEqual(weather);
+    expect(fetcher).toHaveBeenCalledWith(
+      "/api/public-data/current-weather?nx=89&ny=90",
+    );
   });
 
   it("오류 payload 응답은 실패로 전환할 수 있게 거절한다", async () => {
@@ -64,7 +79,7 @@ describe("requestCurrentWeather", () => {
       }),
     );
 
-    await expect(requestCurrentWeather(fetcher)).rejects.toThrow(
+    await expect(requestCurrentWeather(null, fetcher)).rejects.toThrow(
       "현재 날씨를 불러오지 못했습니다.",
     );
   });
@@ -77,9 +92,26 @@ describe("requestCurrentWeather", () => {
       ),
     );
 
-    await expect(requestCurrentWeather(fetcher)).rejects.toThrow(
+    await expect(requestCurrentWeather(null, fetcher)).rejects.toThrow(
       "현재 날씨를 불러오지 못했습니다.",
     );
+  });
+});
+
+describe("requestCurrentLocationGrid", () => {
+  it("브라우저 현재 위치를 기상청 격자로 변환한다", async () => {
+    const geolocation = {
+      getCurrentPosition(success: PositionCallback) {
+        success({
+          coords: { latitude: 37.5665, longitude: 126.978 },
+        } as GeolocationPosition);
+      },
+    } as Geolocation;
+
+    await expect(requestCurrentLocationGrid(geolocation)).resolves.toEqual({
+      nx: 60,
+      ny: 127,
+    });
   });
 });
 
@@ -117,6 +149,35 @@ describe("CurrentWeatherSummary", () => {
 
     expect(html).toContain("날씨 확인 중");
     expect(html).toContain('role="status"');
+  });
+
+  it("사용자가 직접 위치 권한을 요청하는 현재 위치 날씨 버튼을 표시한다", () => {
+    resetHooks();
+
+    const html = render();
+
+    expect(html).toContain("현재 위치 날씨");
+    expect(html).toContain('type="button"');
+  });
+
+  it("현재 위치 날씨가 적용됐음을 표시한다", () => {
+    resetHooks();
+    hooks.values[LOCATION_STATUS] = "active";
+
+    const html = render();
+
+    expect(html).toContain("현재 위치 기준");
+    expect(html).toContain('role="status"');
+  });
+
+  it("위치 권한이나 GPS 확인 실패를 날씨 조회 실패와 구분해 표시한다", () => {
+    resetHooks();
+    hooks.values[LOCATION_STATUS] = "failed";
+
+    const html = render();
+
+    expect(html).toContain("위치를 확인하지 못했습니다");
+    expect(html).toContain('role="alert"');
   });
 
   it("현재 날씨 요청이 실패하면 나머지 화면을 막지 않는 오류 문구를 표시한다", () => {

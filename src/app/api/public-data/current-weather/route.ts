@@ -1,4 +1,5 @@
 import {
+  invalidParameter,
   PublicDataError,
   toPublicDataErrorResponse,
 } from "@/lib/public-data/client";
@@ -18,13 +19,29 @@ function gridCoordinate(name: "KMA_GRID_NX" | "KMA_GRID_NY"): number {
   return Number(value);
 }
 
-export async function GET(_request: Request): Promise<Response> {
-  void _request;
-  try {
-    const weather = await getCurrentWeather({
+function weatherGrid(request: Request): { nx: number; ny: number } {
+  const query = new URL(request.url).searchParams;
+  const nx = query.get("nx");
+  const ny = query.get("ny");
+  if (nx === null && ny === null) {
+    return {
       nx: gridCoordinate("KMA_GRID_NX"),
       ny: gridCoordinate("KMA_GRID_NY"),
-    });
+    };
+  }
+  if (!nx || !ny || !/^\d{1,3}$/.test(nx) || !/^\d{1,3}$/.test(ny)) {
+    throw invalidParameter("nx와 ny는 함께 1~3자리 정수로 보내야 합니다.");
+  }
+  const grid = { nx: Number(nx), ny: Number(ny) };
+  if (grid.nx < 1 || grid.nx > 149 || grid.ny < 1 || grid.ny > 253) {
+    throw invalidParameter("nx는 1~149, ny는 1~253 범위여야 합니다.");
+  }
+  return grid;
+}
+
+export async function GET(request: Request): Promise<Response> {
+  try {
+    const weather = await getCurrentWeather(weatherGrid(request));
     return Response.json({ data: weather });
   } catch (error) {
     return toPublicDataErrorResponse(error);

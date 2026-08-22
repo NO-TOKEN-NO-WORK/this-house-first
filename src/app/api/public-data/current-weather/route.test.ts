@@ -81,4 +81,35 @@ describe("GET /api/public-data/current-weather", () => {
     await expect(response.json()).resolves.toEqual({ data: weather });
     expect(mocks.getCurrentWeather).toHaveBeenCalledWith({ nx: 60, ny: 127 });
   });
+
+  it("쿼리의 GPS 격자를 환경변수보다 우선해 조회한다", async () => {
+    mocks.getCurrentWeather.mockResolvedValue(weather);
+
+    const response = await GET(
+      new Request(
+        "http://localhost/api/public-data/current-weather?nx=89&ny=90",
+      ),
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({ data: weather });
+    expect(mocks.getCurrentWeather).toHaveBeenCalledWith({ nx: 89, ny: 90 });
+  });
+
+  it.each([
+    ["0", "90"],
+    ["89", "254"],
+  ])("기상청 격자 범위 밖 nx=%s, ny=%s를 거절한다", async (nx, ny) => {
+    const response = await GET(
+      new Request(
+        `http://localhost/api/public-data/current-weather?nx=${nx}&ny=${ny}`,
+      ),
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toMatchObject({
+      error: { code: "INVALID_PARAMETER" },
+    });
+    expect(mocks.getCurrentWeather).not.toHaveBeenCalled();
+  });
 });
