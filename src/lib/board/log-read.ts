@@ -11,7 +11,7 @@ async function resolveWorker(workerId?: string): Promise<BoardWorker | null> {
   const worker = workerId
     ? await prisma.worker.findUnique({ where: { id: workerId } })
     : await prisma.worker.findFirst({
-        where: { role: WorkerRole.WORKER },
+        where: { role: WorkerRole.WORKER, archivedAt: null },
         orderBy: { id: "asc" },
       });
   return worker ? { id: worker.id, name: worker.name } : null;

@@ -16,6 +16,7 @@ async function getSubjectProfiles(): Promise<WelfareSubjectProfile[]> {
   const { prisma } = await import("@/lib/db");
   const year = Number(todayInKst().slice(0, 4));
   const subjects = await prisma.subject.findMany({
+    where: { archivedAt: null, worker: { archivedAt: null } },
     select: {
       id: true,
       name: true,

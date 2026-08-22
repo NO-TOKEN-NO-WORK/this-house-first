@@ -1,8 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { WorkerRole } from "../domain";
+import { AlertLevel, WorkerRole } from "../domain";
 
 const mocks = vi.hoisted(() => ({
   alertDayFindUnique: vi.fn(),
+  householdDayStatusFindMany: vi.fn(),
+  riskAssessmentFindMany: vi.fn(),
   subjectFindMany: vi.fn(),
   workerFindFirst: vi.fn(),
 }));
@@ -10,6 +12,8 @@ const mocks = vi.hoisted(() => ({
 vi.mock("../db", () => ({
   prisma: {
     alertDay: { findUnique: mocks.alertDayFindUnique },
+    householdDayStatus: { findMany: mocks.householdDayStatusFindMany },
+    riskAssessment: { findMany: mocks.riskAssessmentFindMany },
     subject: { findMany: mocks.subjectFindMany },
     worker: { findFirst: mocks.workerFindFirst },
   },
@@ -21,6 +25,8 @@ describe("getBoard", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.alertDayFindUnique.mockResolvedValue(null);
+    mocks.householdDayStatusFindMany.mockResolvedValue([]);
+    mocks.riskAssessmentFindMany.mockResolvedValue([]);
     mocks.workerFindFirst.mockResolvedValue({ id: "worker-1", name: "박○○" });
     mocks.subjectFindMany.mockResolvedValue([]);
   });
@@ -54,5 +60,31 @@ describe("getBoard", () => {
       where: { id: "archived-worker", role: WorkerRole.WORKER, archivedAt: null },
       orderBy: { id: "asc" },
     });
+  });
+
+  it("보관된 담당자로 경보 보드를 요청해도 그 ID의 경보 스냅샷은 조회하지 않는다", async () => {
+    mocks.alertDayFindUnique.mockResolvedValueOnce({
+      id: "alert-1",
+      level: AlertLevel.ADVISORY,
+      feelsLikeMax: 33,
+    });
+    mocks.workerFindFirst.mockResolvedValueOnce(null);
+
+    const board = await getBoard({
+      date: "2026-08-23",
+      workerId: "archived-worker",
+    });
+
+    expect(board).toMatchObject({
+      alerted: true,
+      worker: null,
+      groups: [],
+      summary: { total: 0 },
+    });
+    expect(mocks.riskAssessmentFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { alertDayId: "alert-1", subjectId: { in: [] } },
+      }),
+    );
   });
 });

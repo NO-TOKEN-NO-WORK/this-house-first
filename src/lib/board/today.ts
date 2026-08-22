@@ -176,7 +176,7 @@ export async function getBoard(
   const year = yearOfIsoDate(date);
   const worker = await resolveWorker(options.workerId);
   // 요청한 담당자를 못 찾았으면 남의 명단을 대신 보여주지 않는다 — 빈 명단이 맞다
-  const workerId = options.workerId ?? worker?.id ?? null;
+  const workerId = worker?.id ?? null;
 
   const alertDay = await prisma.alertDay.findUnique({ where: { date } });
 
