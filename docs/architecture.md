@@ -97,9 +97,15 @@ erDiagram
     Worker ||--o{ Notification : "수신"
     Worker ||--o{ PushSubscription : "기기 구독"
 
-    Worker { string role "WORKER | MANAGER" }
+    Worker {
+        string role "WORKER | MANAGER"
+        datetime archivedAt "null이면 현재 원장"
+    }
     Building { int builtYear "건축물대장 (진짜)" }
-    Subject { int birthYear "합성 인물 (가짜)" }
+    Subject {
+        int birthYear "합성 인물 (가짜)"
+        datetime archivedAt "null이면 현재 원장"
+    }
     AlertDay { string level "ADVISORY | WARNING | EMERGENCY" }
     RiskAssessment { int grade "내부값 1 | 2 | 3" }
     HouseholdDayStatus { string status "상태머신 §4" }
@@ -109,6 +115,10 @@ erDiagram
 ```
 
 핵심 원칙: **"건물은 진짜, 사람은 가짜"** (PRD §8) — `Building`은 실존 주소의 실제 건축물대장 값, `Subject`는 합성 인물. 실명 개인정보는 어떤 형태로도 저장 금지.
+
+`Worker`·`Subject`·`Building`은 경보와 무관한 영구 원장이다. 현재 관리 대상은 `archivedAt IS NULL`이며, 관리자 보관 작업은 행을 삭제하지 않고 `archivedAt`만 기록한다. 따라서 과거 경보·점검 이력의 외래키 관계는 유지된다([ADR-0022](adr/0022-permanent-roster-alert-snapshot-separation.md)).
+
+`AlertDay`가 없는 날짜에도 활성 생활지원사·대상자 원장은 항상 조회한다. `RiskAssessment`·`HouseholdDayStatus`·`CheckEvent`는 경보일별 스냅샷이므로 해당 날짜에 행이 없으면 관리자 원장 화면은 위험 단계·상태를 복사하지 않고 `경보 없음`으로 표시한다. 새 경보·신규 점검·기본 담당자/관리자 선택에서는 보관 원장을 제외하지만, 명시 ID로 여는 과거 상세와 기존 경보 스냅샷은 보존한다.
 
 ## 4. 에스컬레이션 상태머신 (FR-5)
 
