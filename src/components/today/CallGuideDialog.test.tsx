@@ -7,6 +7,9 @@ vi.mock("react", async (importOriginal) => ({
   ...(await importOriginal<typeof import("react")>()),
   useId: () => "call-guide-name",
 }));
+vi.mock("./useSubjectBriefing", () => ({
+  useSubjectBriefing: () => ({ briefing: null, loading: false }),
+}));
 
 import { CallGuideDialog } from "./CallGuideDialog";
 import { CALL_GUIDE_QUESTIONS, GRADE_LABEL, RiskGrade } from "@/lib/domain";
@@ -25,6 +28,7 @@ function contentOf(element: ReactNode): string {
 const base = {
   open: true,
   onClose: () => {},
+  subjectId: "subject-call-guide",
   name: "김순자",
   age: 88,
   livesAlone: true,

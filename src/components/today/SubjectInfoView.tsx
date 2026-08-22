@@ -5,9 +5,10 @@ import { RiskReasonsCard } from "@/components/today/RiskReasonsCard";
 import {
   GradeChangeNotice,
   VisitChecklist,
-  VisitHistory,
 } from "@/components/today/SubjectInformationSections";
+import { SubjectInformationTabs } from "@/components/today/SubjectInformationTabs";
 import { SubjectSummary } from "@/components/today/SubjectSummary";
+import { useSubjectBriefing } from "@/components/today/useSubjectBriefing";
 import { ChevronLeftIcon } from "@/components/today/icons";
 import type { SubjectDetail } from "@/lib/board/subject";
 
@@ -28,6 +29,7 @@ export function SubjectInfoView({
   onBack?: () => void;
 }) {
   const assessment = detail.assessment;
+  const { briefing, loading } = useSubjectBriefing(detail.subjectId);
 
   return (
     <div className="mx-auto flex w-full max-w-[520px] flex-1 flex-col bg-surface-default">
@@ -70,8 +72,12 @@ export function SubjectInfoView({
 
         {assessment && <RiskReasonsCard assessment={assessment} />}
 
-        <VisitChecklist />
-        <VisitHistory items={detail.recentHistory} />
+        <VisitChecklist personalized={briefing?.todayPrompt} />
+        <SubjectInformationTabs
+          history={detail.recentHistory}
+          briefing={briefing}
+          loading={loading}
+        />
       </main>
     </div>
   );

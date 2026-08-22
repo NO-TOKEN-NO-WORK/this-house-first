@@ -164,14 +164,14 @@ stateDiagram-v2
 
 ### 5-b. 맥락 브리핑 (FR-12) — 스코어링과 분리된 경로
 
-`CheckEvent` 이력에서 대면 전 한 줄과 인수인계 3줄을 만든다(PRD F6, [ADR-0024](adr/0024-subject-context-briefing.md)). **위험도 경로와 아무것도 공유하지 않는 것이 이 설계의 요점이다.**
+`CheckEvent` 이력에서 대면 전 한 줄, 인수인계 3줄, 최근 기록별 대화 요약을 만든다(PRD F6, [ADR-0024](adr/0024-subject-context-briefing.md)). **위험도 경로와 아무것도 공유하지 않는 것이 이 설계의 요점이다.**
 
 | | 위험도 (§5) | 맥락 브리핑 (5-b) |
 |---|---|---|
 | 답하는 질문 | 누구부터 확인할까 | 만나서 무엇을 확인할까 |
 | 입력 | 대상자·건물 속성 + 당일 기상 | `CheckEvent` 이력(결과 + 메모) |
 | 판단 주체 | `scoring/` 순수 규칙 엔진 | 외부 모델 + 서버 근거 대조 |
-| 출력이 닿는 곳 | `RiskAssessment.score`·`grade`·`reasons` | `SubjectBriefing`, 화면의 별도 영역 |
+| 출력이 닿는 곳 | `RiskAssessment.score`·`grade`·`reasons` | `SubjectBriefing`, 화면의 별도 탭·기록 상세 모달 |
 | 실패했을 때 | 발령 자체가 실패 | 브리핑 영역만 사라지고 기록 원문은 그대로 |
 
 - **AI는 `RiskAssessment`에 쓰지도 읽지도 않는다.** 점수·순서는 계속 [ADR-0005](adr/0005-rule-based-risk-model.md)의 규칙 엔진이 단독으로 정한다
@@ -220,7 +220,7 @@ stateDiagram-v2
 | `/api/push-subscriptions` | 담당자·관리자 Web Push 구독 등록·해지 | ✅ 구현됨 |
 | `/api/notifications/dispatch` | 오전 8시 예약·실패 재시도 Push 발송 | ✅ 구현됨 |
 | `/api/visit-queue` | 방문 큐 + 위험 단계 우선 차량 최단 순서 + 카카오 자동차 경로·예상시간 (FR-7) | ✅ 구현됨 |
-| `/api/subjects/[subjectId]/briefing` | `GET` 대상자 맥락 브리핑 — 새 확인 기록이 없으면 캐시 반환 (FR-12) | 예정 (Should) |
+| `/api/subjects/[subjectId]/briefing` | `GET` 대상자 맥락 브리핑 — 새 확인 기록이 없으면 캐시 반환 (FR-12) | ✅ 구현됨 |
 | `/api/report` | 일일 보고서 (FR-9) | 예정 (Could) |
 
 ## 8. 비기능 구현 방침
