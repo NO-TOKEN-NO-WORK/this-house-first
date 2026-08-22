@@ -35,10 +35,10 @@ describe("도메인 상태값 검증", () => {
     expect(isNotificationCause(NotificationCause.SYMPTOM)).toBe(true);
   });
 
-  it("경보 단계 화면 문구는 주의·경계·심각이다", () => {
+  it("경보 단계 화면 문구는 주의·경계·비상이다", () => {
     expect(ALERT_LEVEL_LABEL[AlertLevel.ADVISORY]).toBe("주의");
     expect(ALERT_LEVEL_LABEL[AlertLevel.WARNING]).toBe("경계");
-    expect(ALERT_LEVEL_LABEL[AlertLevel.EMERGENCY]).toBe("심각");
+    expect(ALERT_LEVEL_LABEL[AlertLevel.EMERGENCY]).toBe("비상");
   });
 
   it("대상자 위험 단계 화면 문구는 심각·경계·주의이다", () => {

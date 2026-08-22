@@ -12,7 +12,7 @@ describe("toMapBuildings", () => {
       worker: { id: "worker-1", name: "담당자" },
       dong: "비산동",
       level: AlertLevel.EMERGENCY,
-      levelLabel: "심각",
+      levelLabel: "비상",
       feelsLikeMax: 38,
       groups: [
         {
