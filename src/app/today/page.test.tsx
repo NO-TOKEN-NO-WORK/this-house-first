@@ -6,6 +6,7 @@ import {
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { GradeFilter } from "@/components/today/GradeFilter";
+import { InstallPwaBanner } from "@/components/InstallPwaBanner";
 import type {
   AlertedBoard,
   BoardSubject,
@@ -132,7 +133,24 @@ function findGradeFilter(node: ReactNode): ReactElement | null {
   return findGradeFilter(node.props.children);
 }
 
+function hasInstallBanner(node: ReactNode): boolean {
+  if (Array.isArray(node)) return node.some(hasInstallBanner);
+  if (!isValidElement<{ children?: ReactNode }>(node)) return false;
+  return node.type === InstallPwaBanner || hasInstallBanner(node.props.children);
+}
+
 describe("TodayPage 위험 단계 필터", () => {
+  it("생활지원사 화면 상단에 PWA 설치 배너를 둔다", async () => {
+    getBoard.mockResolvedValue(board);
+
+    const page = await TodayPage({
+      params: Promise.resolve({}),
+      searchParams: Promise.resolve({ date: "2026-08-21" }),
+    });
+
+    expect(hasInstallBanner(page)).toBe(true);
+  });
+
   it("위험 단계 메뉴를 버튼으로 렌더링해 서버 페이지 이동을 만들지 않는다", async () => {
     getBoard.mockResolvedValue(board);
 
