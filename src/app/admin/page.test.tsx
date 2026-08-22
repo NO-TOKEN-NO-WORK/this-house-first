@@ -286,6 +286,90 @@ describe("관리자 관제 화면", () => {
     expect(html).toContain('aria-label="현재 날씨"');
   });
 
+  it("경보 상태 필터는 원장 대상자에도 적용한다", () => {
+    const html = renderToStaticMarkup(
+      <AdminDashboardView
+        dashboard={{
+          alerted: true,
+          date: "2026-08-22",
+          dateLabel: "8월 22일(토)",
+          selectedWorkerId: null,
+          roster: {
+            workers: [
+              {
+                id: "worker-1",
+                name: "이담당",
+                phone: "010-0000-0001",
+                subjectCount: 2,
+              },
+            ],
+            subjects: [
+              {
+                subjectId: "subject-included",
+                name: "상태 필터 포함 대상자",
+                phone: "010-0000-0101",
+                birthYear: 1938,
+                workerId: "worker-1",
+                workerName: "이담당",
+                buildingId: "building-1",
+                address: "대구광역시 서구 비산동 1",
+              },
+              {
+                subjectId: "subject-excluded",
+                name: "상태 필터 제외 대상자",
+                phone: "010-0000-0102",
+                birthYear: 1948,
+                workerId: "worker-1",
+                workerName: "이담당",
+                buildingId: "building-2",
+                address: "대구광역시 서구 비산동 2",
+              },
+            ],
+          },
+          workers: [{ id: "worker-1", name: "이담당" }],
+          generatedAt: "2026-08-22T08:00:00.000Z",
+          level: AlertLevel.EMERGENCY,
+          levelLabel: "비상",
+          feelsLikeMax: 38.4,
+          summary: {
+            total: 1,
+            open: 1,
+            openCritical: 1,
+            visitQueued: 1,
+            completed: 0,
+          },
+          subjects: [
+            {
+              subjectId: "subject-included",
+              name: "상태 필터 포함 대상자",
+              phone: "010-0000-0101",
+              birthYear: 1938,
+              workerId: "worker-1",
+              workerName: "이담당",
+              workerPhone: "010-0000-0001",
+              buildingId: "building-1",
+              address: "대구광역시 서구 비산동 1",
+              lat: 35.87,
+              lng: 128.56,
+              grade: 1,
+              score: 31.5,
+              reasons: ["오늘 비상 단계"],
+              status: HouseholdStatus.VISIT_QUEUED,
+              statusLabel: HOUSEHOLD_STATUS_LABEL[HouseholdStatus.VISIT_QUEUED],
+              open: true,
+            },
+          ],
+          buildings: [],
+        }}
+        filters={{ selectedStatuses: [HouseholdStatus.VISIT_QUEUED] }}
+        mapKey=""
+      />,
+    );
+
+    expect(html).toContain("상태 필터 포함 대상자");
+    expect(html).not.toContain("상태 필터 제외 대상자");
+  });
+
   it("레퍼런스의 관제 패널을 실제 도메인 데이터로 제공한다", () => {
     const html = renderToStaticMarkup(
       <AdminDashboardView

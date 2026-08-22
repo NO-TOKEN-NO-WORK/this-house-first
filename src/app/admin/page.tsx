@@ -679,7 +679,11 @@ export function AdminDashboardView({
   const snapshotBySubjectId = new Map(
     dashboard.subjects.map((subject, index) => [subject.subjectId, { index, subject }]),
   );
-  const managementSubjects = dashboard.roster.subjects
+  const managementRosterSubjects =
+    dashboard.alerted && filters.selectedStatuses !== undefined
+      ? dashboard.roster.subjects.filter((subject) => snapshotBySubjectId.has(subject.subjectId))
+      : dashboard.roster.subjects;
+  const managementSubjects = managementRosterSubjects
     .map((subject) => {
       const snapshot = snapshotBySubjectId.get(subject.subjectId)?.subject;
       return snapshot
