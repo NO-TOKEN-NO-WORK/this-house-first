@@ -245,6 +245,28 @@ describe("관리자 관제 화면", () => {
           date: "2026-08-22",
           dateLabel: "8월 22일(토)",
           selectedWorkerId: null,
+          roster: {
+            workers: [
+              {
+                id: "worker-1",
+                name: "이담당",
+                phone: "010-0000-0001",
+                subjectCount: 1,
+              },
+            ],
+            subjects: [
+              {
+                subjectId: "subject-1",
+                name: "비경보일 대상자",
+                phone: "010-0000-0101",
+                birthYear: 1938,
+                workerId: "worker-1",
+                workerName: "이담당",
+                buildingId: "building-1",
+                address: "대구광역시 서구 비산동 1",
+              },
+            ],
+          },
           workers: [],
           generatedAt: "2026-08-22T08:00:00.000Z",
           subjects: [],
@@ -256,6 +278,11 @@ describe("관리자 관제 화면", () => {
 
     expect(html).toContain("오늘은 경보가 없습니다");
     expect(html).not.toContain("심각 0명");
+    expect(html).toContain("대상자 관리");
+    expect(html).toContain("생활지원사 관리");
+    expect(html).toContain("비경보일 대상자");
+    expect(html).toContain("경보 없음");
+    expect(html).not.toContain("오늘의 관제 요약");
     expect(html).toContain('aria-label="현재 날씨"');
   });
 
@@ -267,6 +294,28 @@ describe("관리자 관제 화면", () => {
           date: "2026-08-22",
           dateLabel: "8월 22일(토)",
           selectedWorkerId: null,
+          roster: {
+            workers: [
+              {
+                id: "worker-1",
+                name: "이담당",
+                phone: "010-0000-0001",
+                subjectCount: 1,
+              },
+            ],
+            subjects: [
+              {
+                subjectId: "subject-1",
+                name: "김○○",
+                phone: "010-0000-0101",
+                birthYear: 1938,
+                workerId: "worker-1",
+                workerName: "이담당",
+                buildingId: "building-1",
+                address: "대구광역시 서구 비산동 1",
+              },
+            ],
+          },
           workers: [{ id: "worker-1", name: "이담당" }],
           generatedAt: "2026-08-22T05:32:00.000Z",
           level: AlertLevel.EMERGENCY,
@@ -355,6 +404,7 @@ describe("관리자 관제 화면", () => {
           date: "2026-08-22",
           dateLabel: "8월 22일(토)",
           selectedWorkerId: null,
+          roster: { workers: [], subjects: [] },
           workers: [],
           generatedAt: "2026-08-22T08:00:00.000Z",
           level: AlertLevel.WARNING,
@@ -398,6 +448,17 @@ describe("관리자 관제 화면", () => {
           date: "2026-08-22",
           dateLabel: "8월 22일(토)",
           selectedWorkerId: null,
+          roster: {
+            workers: [
+              {
+                id: "worker-1",
+                name: "이담당",
+                phone: null,
+                subjectCount: 0,
+              },
+            ],
+            subjects: [],
+          },
           workers: [{ id: "worker-1", name: "이담당" }],
           generatedAt: "2026-08-22T08:00:00.000Z",
           subjects: [],
