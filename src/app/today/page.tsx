@@ -2,10 +2,9 @@ import { notFound } from "next/navigation";
 import { BottomNav } from "@/components/today/BottomNav";
 import { GradeFilter } from "@/components/today/GradeFilter";
 import { SubjectCard } from "@/components/today/SubjectCard";
+import { TodayAppSettings } from "@/components/today/TodayAppSettings";
 import { TodayWorkspace } from "@/components/today/TodayWorkspace";
 import { AlertCircleIcon } from "@/components/today/icons";
-import { InstallPwaBanner } from "@/components/InstallPwaBanner";
-import { PushNotificationManager } from "@/components/PushNotificationManager";
 import {
   type AlertedBoard,
   getBoard,
@@ -183,7 +182,6 @@ export default async function TodayPage(props: PageProps<"/today">) {
             dateLabel={board.dateLabel}
             dong={board.dong}
           />
-          <InstallPwaBanner />
           {board.alerted ? (
             <div className="flex flex-col gap-3">
               <AlertBanner board={board} />
@@ -203,15 +201,12 @@ export default async function TodayPage(props: PageProps<"/today">) {
         ) : (
           <SilentBoardView board={board} workerId={workerId} />
         )}
-      </main>
-      {/* 알림 설정은 화면 맨 위가 아니라 아래 띠로 묻는다 — 위쪽은 오늘의 결정 자리다(PRD §9) */}
-      {board.worker ? (
-        <PushNotificationManager
-          variant="toast"
-          workerId={board.worker.id}
+
+        <TodayAppSettings
+          workerId={board.worker?.id}
           publicKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY?.trim() ?? ""}
         />
-      ) : null}
+      </main>
       <BottomNav current="today" date={date} workerId={workerId} />
     </TodayWorkspace>
   );

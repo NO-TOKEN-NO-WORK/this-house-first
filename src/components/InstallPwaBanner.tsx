@@ -92,7 +92,7 @@ export function InstallPwaBanner() {
   return (
     <section
       aria-label="앱 설치"
-      className="rounded-lg border border-border-default bg-surface-soft p-4 text-text-primary"
+      className="rounded-lg border border-border-default bg-surface-default p-4 text-text-primary"
     >
       <div className="flex items-center gap-3">
         <div className="min-w-0 flex-1">
