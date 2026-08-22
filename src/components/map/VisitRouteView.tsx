@@ -17,6 +17,11 @@ interface Props {
   routeApiUrl: string;
 }
 
+/**
+ * 등급 칩 — Figma 38:5687(심각)·123:3167(경계).
+ * 경계 글자만 Figma의 `status/warning`(#f29900) 대신 `status-warning-strong`을 쓴다 —
+ * amber-50 위 amber-500은 1.94:1이라 12px 글자가 읽히지 않는다(→ 5.32:1). ADR-0014의 접근성 예외.
+ */
 const ROUTE_GRADE_CHIP: Record<RiskGrade, string> = {
   [RiskGrade.CRITICAL]:
     "bg-status-critical-subtle text-status-critical-strong",
@@ -24,22 +29,17 @@ const ROUTE_GRADE_CHIP: Record<RiskGrade, string> = {
   [RiskGrade.MODERATE]: "bg-background-subtle text-text-supporting",
 };
 
-const MAP_PIN_TONE: Record<RiskGrade, string> = {
-  [RiskGrade.CRITICAL]: "bg-status-critical",
-  [RiskGrade.HIGH]: "bg-status-warning",
-  [RiskGrade.MODERATE]: "bg-status-neutral",
-};
-
-const ROUTE_GRADES = [
-  RiskGrade.CRITICAL,
-  RiskGrade.HIGH,
-  RiskGrade.MODERATE,
-] as const;
-
-function formatDistance(meters: number): string {
-  if (meters < 1_000) return `${meters}m`;
-  return `${(meters / 1_000).toFixed(1)}km`;
-}
+/** 주소 앞 핀 (Figma 123:3149) — 하단 탭과 같은 글리프를 18px 상자에 담는다. */
+const ADDRESS_PIN_MASK = {
+  WebkitMaskImage: "url('/figma/visit-route-pin.svg')",
+  WebkitMaskPosition: "center",
+  WebkitMaskRepeat: "no-repeat",
+  WebkitMaskSize: "14.7px 16.8408px",
+  maskImage: "url('/figma/visit-route-pin.svg')",
+  maskPosition: "center",
+  maskRepeat: "no-repeat",
+  maskSize: "14.7px 16.8408px",
+} as const;
 
 function VisitRouteMap({ apiKey, route }: { apiKey: string | undefined; route: VisitRoute }) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -63,24 +63,18 @@ function VisitRouteMap({ apiKey, route }: { apiKey: string | undefined; route: V
     for (const [index, stop] of route.stops.entries()) {
       const position = new maps.LatLng(stop.lat, stop.lng);
       bounds.extend(position);
+      /*
+       * 마커는 Figma 38:5661의 26px 원형 배지다 — 카드 앞 번호 배지와 같은 `GRADE_CHIP`을
+       * 쓰므로 같은 등급이 지도와 목록에서 같은 색으로 보인다.
+       * 상자만 44px로 키운다: 26px은 60대 사용자가 지도 위에서 누르기 어렵다 (PRD §9).
+       */
       const button = document.createElement("button");
       button.type = "button";
-      button.className = "relative flex size-12 items-center justify-center";
-      const pin = document.createElement("span");
-      pin.className = `absolute inset-0 bg-center bg-no-repeat drop-shadow-sm ${MAP_PIN_TONE[stop.grade]}`;
-      pin.setAttribute("aria-hidden", "true");
-      pin.style.webkitMaskImage = "url('/figma/visit-route-pin.svg')";
-      pin.style.webkitMaskPosition = "center";
-      pin.style.webkitMaskRepeat = "no-repeat";
-      pin.style.webkitMaskSize = "36px 42px";
-      pin.style.maskImage = "url('/figma/visit-route-pin.svg')";
-      pin.style.maskPosition = "center";
-      pin.style.maskRepeat = "no-repeat";
-      pin.style.maskSize = "36px 42px";
-      const number = document.createElement("span");
-      number.className = "relative z-10 -translate-y-1 text-label-14 text-text-inverse";
-      number.textContent = String(index + 1);
-      button.append(pin, number);
+      button.className = "flex size-11 items-center justify-center";
+      const badge = document.createElement("span");
+      badge.className = `flex size-[26px] items-center justify-center rounded-full text-label-14 drop-shadow-sm ${GRADE_CHIP[stop.grade]}`;
+      badge.textContent = String(index + 1);
+      button.append(badge);
       button.setAttribute(
         "aria-label",
         `${index + 1}번째 방문 ${stop.name}, ${GRADE_LABEL[stop.grade]}`,
@@ -99,8 +93,33 @@ function VisitRouteMap({ apiKey, route }: { apiKey: string | undefined; route: V
           position,
           content: button,
           xAnchor: 0.5,
-          yAnchor: 1,
+          yAnchor: 0.5,
           zIndex: 3,
+        }),
+      );
+    }
+
+    /*
+     * 구간 이동시간 (Figma 38:5669) — 두 가구를 이은 선 가운데에 얹는다.
+     * 첫 가구는 앞선 구간이 없으므로 1번부터 시작한다.
+     */
+    for (const [index, stop] of route.stops.entries()) {
+      const previous = route.stops[index - 1];
+      if (!previous) continue;
+      const label = document.createElement("span");
+      label.className = "text-body-14 text-text-strong";
+      label.textContent = `${stop.minutesFromPrevious}분`;
+      overlays.push(
+        new maps.CustomOverlay({
+          map,
+          position: new maps.LatLng(
+            (previous.lat + stop.lat) / 2,
+            (previous.lng + stop.lng) / 2,
+          ),
+          content: label,
+          xAnchor: 0.5,
+          yAnchor: 1.4,
+          zIndex: 2,
         }),
       );
     }
@@ -167,7 +186,7 @@ function VisitRouteMap({ apiKey, route }: { apiKey: string | undefined; route: V
       <div
         ref={containerRef}
         role="region"
-        aria-label="방문 순서와 자동차 경로가 표시된 카카오맵"
+        aria-label="방문 순서와 이동 경로가 표시된 지도"
         className="size-full bg-map-road"
       />
       {!ready && !scriptError ? (
@@ -190,13 +209,12 @@ function VisitRouteMap({ apiKey, route }: { apiKey: string | undefined; route: V
   );
 }
 
+/** 지도 + 합계 한 줄 (Figma 38:5659). */
 function RouteOverview({
   apiKey,
-  loading,
   route,
 }: {
   apiKey: string | undefined;
-  loading: boolean;
   route: VisitRoute;
 }) {
   return (
@@ -206,47 +224,28 @@ function RouteOverview({
     >
       <VisitRouteMap apiKey={apiKey} route={route} />
 
-      {route.stops.length > 0 ? (
-        <div className="flex flex-wrap gap-3 border-t border-border-default px-3.5 py-3">
-          {ROUTE_GRADES.map((grade) => (
-            <span key={grade} className="flex items-center gap-1.5 text-body-14 text-text-secondary">
-              <span aria-hidden="true" className={`size-2.5 rounded-full ${MAP_PIN_TONE[grade]}`} />
-              {GRADE_LABEL[grade]}
-            </span>
-          ))}
-        </div>
-      ) : null}
-
-      <div className="flex min-h-14 flex-col justify-center gap-1 border-t border-border-default px-3.5">
-        <p className="flex items-center gap-2 text-label-15 text-text-primary">
-          <span
-            aria-hidden="true"
-            className="size-[17px] shrink-0 bg-icon-secondary"
-            style={{
-              WebkitMaskImage: "url('/figma/visit-route-clock.svg')",
-              WebkitMaskPosition: "center",
-              WebkitMaskRepeat: "no-repeat",
-              WebkitMaskSize: "17px 17px",
-              maskImage: "url('/figma/visit-route-clock.svg')",
-              maskPosition: "center",
-              maskRepeat: "no-repeat",
-              maskSize: "17px 17px",
-            }}
-          />
-          예상 이동 {route.totalMinutes}분 · {formatDistance(route.totalMeters)} · 총 {route.stops.length}가구
-        </p>
-        <p className="text-caption-12 text-text-tertiary">
-          {route.source === "kakao-driving"
-            ? "카카오모빌리티 자동차 최단 경로 기준"
-            : loading
-              ? "자동차 경로를 계산하는 중"
-              : "차량 경로를 불러오지 못해 직선거리 예상치"}
-        </p>
-      </div>
+      <p className="flex items-center gap-2 border-t border-border-default px-3.5 pt-3 pb-[11px] text-label-16 text-text-primary">
+        <span
+          aria-hidden="true"
+          className="size-[17px] shrink-0 bg-icon-secondary"
+          style={{
+            WebkitMaskImage: "url('/figma/visit-route-clock.svg')",
+            WebkitMaskPosition: "center",
+            WebkitMaskRepeat: "no-repeat",
+            WebkitMaskSize: "17px 17px",
+            maskImage: "url('/figma/visit-route-clock.svg')",
+            maskPosition: "center",
+            maskRepeat: "no-repeat",
+            maskSize: "17px 17px",
+          }}
+        />
+        예상 이동 {route.totalMinutes}분 · 총 {route.stops.length}가구
+      </p>
     </section>
   );
 }
 
+/** 방문지 카드 한 장 (Figma 38:5680). */
 function VisitCard({ stop, order }: { stop: VisitRouteStop; order: number }) {
   return (
     <li
@@ -273,29 +272,21 @@ function VisitCard({ stop, order }: { stop: VisitRouteStop; order: number }) {
         </span>
       </div>
 
-      {order > 1 ? (
-        <p className="text-label-14 text-action-primary-strong">
-          이전 방문지에서 차량 {stop.minutesFromPrevious}분 · {formatDistance(stop.metersFromPrevious)}
-        </p>
-      ) : null}
-
-      <p className="truncate text-body-15-relaxed text-text-secondary">{stop.address}</p>
-
-      <ul
-        aria-label={`${stop.name} 위험 사유`}
-        className="list-disc space-y-1 pl-5 text-body-14 text-text-secondary"
-      >
-        {stop.reasons.map((reason, index) => (
-          <li key={`${stop.subjectId}-reason-${index}`}>{reason}</li>
-        ))}
-      </ul>
+      <p className="flex min-w-0 items-center gap-1.5 text-body-15-relaxed text-text-secondary">
+        <span
+          aria-hidden="true"
+          className="size-[18px] shrink-0 bg-icon-secondary"
+          style={ADDRESS_PIN_MASK}
+        />
+        <span className="truncate">{stop.address}</span>
+      </p>
 
       <a
         href={kakaoDirectionsHref(stop)}
         target="_blank"
         rel="noreferrer"
         aria-label={`${stop.name}님 경로 안내`}
-        className="flex min-h-12 w-full items-center justify-center rounded-md bg-action-secondary px-4 text-label-15 text-text-inverse active:bg-action-secondary-strong"
+        className="flex h-11 w-full items-center justify-center rounded-md bg-action-secondary px-4 text-label-15 text-text-inverse active:bg-action-secondary-strong"
       >
         경로 안내
       </a>
@@ -303,15 +294,13 @@ function VisitCard({ stop, order }: { stop: VisitRouteStop; order: number }) {
   );
 }
 
-/** 담당자 방문 동선 (FR-7, Figma 25:460). */
+/** 담당자 방문 동선 (FR-7, Figma 38:5652). */
 export function VisitRouteView({ apiKey, initialRoute, routeApiUrl }: Props) {
   const [resolved, setResolved] = useState<{
     base: VisitRoute;
     route: VisitRoute;
   } | null>(null);
   const route = resolved?.base === initialRoute ? resolved.route : initialRoute;
-  const loading =
-    initialRoute.stops.length > 0 && resolved?.base !== initialRoute;
 
   useEffect(() => {
     if (initialRoute.stops.length === 0) return;
@@ -345,12 +334,7 @@ export function VisitRouteView({ apiKey, initialRoute, routeApiUrl }: Props) {
 
   return (
     <div className="flex flex-col gap-3">
-      {route.stops.length > 0 ? (
-        <p className="text-body-15-relaxed text-text-secondary">
-          {GRADE_LABEL[RiskGrade.CRITICAL]} → {GRADE_LABEL[RiskGrade.HIGH]} → {GRADE_LABEL[RiskGrade.MODERATE]} 순으로 방문합니다.
-        </p>
-      ) : null}
-      <RouteOverview apiKey={apiKey} loading={loading} route={route} />
+      <RouteOverview apiKey={apiKey} route={route} />
       {route.stops.length > 0 ? (
         <ol className="flex flex-col gap-3">
           {route.stops.map((stop, index) => (

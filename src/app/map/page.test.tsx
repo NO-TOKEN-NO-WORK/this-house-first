@@ -60,7 +60,7 @@ const board: AlertedBoard = {
 };
 
 describe("MapPage 방문 동선", () => {
-  it("Figma 방문 동선 구조와 도메인 문구·스코어링 사유를 표시한다", async () => {
+  it("Figma 방문 동선 구조와 도메인 문구를 표시한다", async () => {
     getBoard.mockResolvedValue(board);
 
     const html = renderToStaticMarkup(
@@ -71,11 +71,11 @@ describe("MapPage 방문 동선", () => {
     );
 
     expect(html).toContain("방문 동선");
-    expect(html).toContain("심각 → 경계 → 주의 순으로 방문합니다");
-    expect(html).toContain("예상 이동 0분 · 0m · 총 1가구");
+    expect(html).toContain("예상 이동 0분 · 총 1가구");
     expect(html).toContain("합성 대상자");
+    expect(html).toContain("88세 · 독거");
     expect(html).toContain("심각");
-    expect(html).toContain("1938년생 (88세)·독거");
+    expect(html).toContain("대구광역시 서구 달서로 1");
     expect(html).toContain("경로 안내");
     expect(html).toContain("https://map.kakao.com/link/to/");
     expect(html).toContain('aria-current="page"');
@@ -100,6 +100,6 @@ describe("MapPage 방문 동선", () => {
     );
 
     expect(html).toContain("지금 방문할 가구가 없습니다");
-    expect(html).toContain("예상 이동 0분 · 0m · 총 0가구");
+    expect(html).toContain("예상 이동 0분 · 총 0가구");
   });
 });
