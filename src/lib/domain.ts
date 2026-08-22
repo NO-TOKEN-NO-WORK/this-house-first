@@ -334,14 +334,14 @@ export function coolingStatusSubjectPatch(status: CoolingStatus): {
   }
 }
 
-/** 방문 결과 기록 (PRD F4 + Figma 113:2329의 방문 그리드 — ADR-0020) */
+/** 방문 결과 기록 (PRD F4 + Figma 113:2329의 방문 그리드 — ADR-0021) */
 export const VisitResult = {
   OK: "OK",
   /** 조치함 (냉방 가동·수분 등) */
   ACTED: "ACTED",
-  /** 방문했는데 이상 징후가 보임 — 그날 대응이 끝나지 않는다 (ADR-0020) */
+  /** 방문했는데 이상 징후가 보임 — 그날 대응이 끝나지 않는다 (ADR-0021) */
   SYMPTOM: "SYMPTOM",
-  /** 문을 두드렸지만 안 계심 — 방문 큐에 그대로 남는다 (ADR-0020) */
+  /** 문을 두드렸지만 안 계심 — 방문 큐에 그대로 남는다 (ADR-0021) */
   ABSENT: "ABSENT",
   /** 119 연계 */
   EMERGENCY_119: "EMERGENCY_119",
@@ -371,7 +371,7 @@ export const VISIT_RESULT_LABEL: Record<VisitResult, string> = {
 
 /**
  * 방문 화면 그리드가 내미는 결과 4개 — Figma 113:2329의 배치 순서 그대로다
- * (왼→오른쪽, 위→아래). 나머지 값은 상세 화면(`RecordGrid`)에서만 고른다 (ADR-0020).
+ * (왼→오른쪽, 위→아래). 나머지 값은 상세 화면(`RecordGrid`)에서만 고른다 (ADR-0021).
  */
 export const VISIT_RECORD_RESULTS: readonly VisitResult[] = [
   VisitResult.OK,

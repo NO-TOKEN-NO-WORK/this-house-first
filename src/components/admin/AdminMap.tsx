@@ -228,10 +228,12 @@ export function AdminMap({
   buildings,
   mapKey,
   date,
+  previewMode = false,
 }: {
   buildings: AdminDashboardBuilding[];
   mapKey: string;
   date?: string;
+  previewMode?: boolean;
 }) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const [mapError, setMapError] = useState<string | null>(null);
@@ -490,12 +492,18 @@ export function AdminMap({
                   <li key={`${selectedBuilding.subjects[0].subjectId}-${index}`}>{reason}</li>
                 ))}
               </ul>
-              <Link
-                className={styles.mapSelectionLink}
-                href={`/admin/subjects/${selectedBuilding.subjects[0].subjectId}${date ? `?date=${date}` : ""}`}
-              >
-                대상자 상세 보기
-              </Link>
+              {previewMode ? (
+                <span className={styles.mapSelectionLink} aria-disabled="true">
+                  미리보기에서는 실데이터 관리 기능을 사용하지 않습니다
+                </span>
+              ) : (
+                <Link
+                  className={styles.mapSelectionLink}
+                  href={`/admin/subjects/${selectedBuilding.subjects[0].subjectId}${date ? `?date=${date}` : ""}`}
+                >
+                  대상자 상세 보기
+                </Link>
+              )}
             </>
           ) : (
             <p className={styles.mapSelectionEmpty}>건물 마커를 선택하면 대상자 정보가 표시됩니다.</p>
@@ -516,9 +524,9 @@ export function AdminMap({
                     alt=""
                     aria-hidden="true"
                     className={styles.mapMarkerIcon}
-                    height={32}
+                    height={28}
                     src={buildingIconSrc(building.grade)}
-                    width={32}
+                    width={28}
                   />
                 </button>
               ))}

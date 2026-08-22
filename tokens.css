@@ -28,6 +28,7 @@
   --admin-shadow-subtle: 0 1px 2px oklch(22% 0.025 264 / 0.05);
   --admin-shadow-panel: 0 4px 16px oklch(22% 0.025 264 / 0.06);
   --admin-shadow-strong: 0 12px 32px oklch(22% 0.025 264 / 0.16);
+  --admin-overlay: oklch(22% 0.025 264 / 0.22);
   --admin-radius-panel: 0.75rem;
   --admin-space-1: 0.5rem;
   --admin-space-2: 0.75rem;

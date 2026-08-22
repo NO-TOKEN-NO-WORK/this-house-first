@@ -146,7 +146,7 @@ describe("방문 기록 전이", () => {
     ).toBe(HouseholdStatus.EMERGENCY_119);
   });
 
-  it("걱정돼요·안 계셨어요는 방문 큐에 그대로 남긴다 (ADR-0020)", () => {
+  it("걱정돼요·안 계셨어요는 방문 큐에 그대로 남긴다 (ADR-0021)", () => {
     for (const result of [VisitResult.SYMPTOM, VisitResult.ABSENT]) {
       const r = visit(HouseholdStatus.VISIT_QUEUED, result);
       expect(r.status).toBe(HouseholdStatus.VISIT_QUEUED);

@@ -127,13 +127,13 @@ stateDiagram-v2
     VISIT_QUEUED --> VISITING : 출동
     VISITING --> RESOLVED : 괜찮았어요 / 조치함
     VISITING --> EMERGENCY_119 : 119 신고
-    VISITING --> VISIT_QUEUED : 걱정돼요 / 안 계셨어요 → 재방문 대상 (ADR-0020)
+    VISITING --> VISIT_QUEUED : 걱정돼요 / 안 계셨어요 → 재방문 대상 (ADR-0021)
     RESOLVED --> [*]
 ```
 
 - 발령(`/api/trigger` POST)은 `[*] --> UNCHECKED`와 `[*] --> VISIT_QUEUED` 진입 화살표만 담당한다(`escalation/initial.ts`). 같은 날 재발령해도 진행 중인 상태는 보존한다
-- 방문 결과 `에어컨 없음·고장`은 상태와 별개로 `Subject.airconBroken` 플래그를 세우고 **익일 위험도에 가중**된다(FR-8) + 지원사업 연계 플래그(FR-11). 전화·방문 화면이 함께 받는 `coolingStatus`도 같은 두 필드로 들어간다([ADR-0020](adr/0020-visit-record-flow.md))
-- 방문 결과 `걱정돼요`·`안 계셨어요`는 가구를 방문 큐에 그대로 남긴다 — 그날 대응이 끝나지 않았으므로 미처리 수에서 빠지지 않는다([ADR-0020](adr/0020-visit-record-flow.md))
+- 방문 결과 `에어컨 없음·고장`은 상태와 별개로 `Subject.airconBroken` 플래그를 세우고 **익일 위험도에 가중**된다(FR-8) + 지원사업 연계 플래그(FR-11). 전화·방문 화면이 함께 받는 `coolingStatus`도 같은 두 필드로 들어간다([ADR-0021](adr/0021-visit-record-flow.md))
+- 방문 결과 `걱정돼요`·`안 계셨어요`는 가구를 방문 큐에 그대로 남긴다 — 그날 대응이 끝나지 않았으므로 미처리 수에서 빠지지 않는다([ADR-0021](adr/0021-visit-record-flow.md))
 - 방문 큐 2건 이상 → 위험 단계 우선 제약 안에서 실제 차량 도로거리 합이 가장 짧은 순서 제시(FR-7, 카카오모빌리티 자동차 길찾기 — [ADR-0018](adr/0018-kakao-driving-shortest-route.md))
 
 ## 5. 위험도 스코어링 (FR-3)
@@ -151,8 +151,10 @@ stateDiagram-v2
 | 기상청 단기예보·초단기실황·특보 (공공데이터포털) | F1 트리거·기상계수·현재 날씨 | 공공데이터포털 서비스 키 (서버 전용) | `PUBLIC_DATA_SERVICE_KEY`, `KMA_GRID_NX`, `KMA_GRID_NY` |
 | 국토부 건축HUB 건축물대장 | FR-2 건물 취약도 | 공공데이터포털 서비스 키 (서버 전용) | `PUBLIC_DATA_SERVICE_KEY` |
 | 행안부 행정동별 성·연령별 주민등록 인구수 | 지역 고령밀도 | 공공데이터포털 서비스 키 (서버 전용) | `PUBLIC_DATA_SERVICE_KEY` |
+| 한국사회보장정보원 중앙부처 복지서비스 | FR-11 복지 스캔 사업 검색 | 공공데이터포털 서비스 키 (서버 전용) | `PUBLIC_DATA_SERVICE_KEY` |
 | 카카오맵 JS SDK | F5 지도 | JS 앱 키 (클라이언트) | `NEXT_PUBLIC_KAKAO_MAP_KEY` |
 | 카카오 REST (로컬 주소검색·자동차 경로) | 지오코딩 + 법정동코드(`b_code` → 건축HUB 조회 키), FR-7 차량 최단 경로 | REST 키 (서버 전용) | `KAKAO_REST_KEY` |
+| OpenAI Responses API (`gpt-5.6-luna`, high) | FR-11 설비 사실·비식별 현장 용어의 문제 신호 분류 | API 키 (서버 전용) | `OPENAI_API_KEY` |
 
 - 서버 전용 키는 절대 `NEXT_PUBLIC_` 접두사를 붙이지 않는다. 외부 호출은 Route Handler를 거쳐 프록시
 - 키 목록은 [.env.example](../.env.example) 참조. 실제 키는 커밋 금지
@@ -169,6 +171,8 @@ stateDiagram-v2
 | `/today/log` | 담당자 확인 기록 목록 — 선택한 담당자의 CheckEvent (읽기 전용) | ✅ 구현됨 |
 | `/map` | 담당자 담당 가구 지도 | ✅ 구현됨 |
 | `/admin` | 관리자 지도 대시보드·건물별 카카오 오버레이 (FR-6) | ✅ 구현됨 |
+| `/admin/welfare-scan` | 관리자 복지 스캔·자격 검토 (FR-11) | ✅ 구현됨 |
+| `/api/welfare-scan` | `POST` 대상자 설비·비식별 기록 분석·자격 비교 / `GET` 최신 복지사업 연결 확인 | ✅ 연동됨 |
 | `/api/trigger` | `GET` 판정 미리보기 / `POST` 발령 — AlertDay + 당일 평가 + 가구 상태 생성 (FR-1·FR-3) | ✅ 연동됨 |
 | `/api/public-data/weather-warnings` | 기상청 기상특보 목록 | ✅ 연동됨 |
 | `/api/public-data/current-weather` | 기상청 초단기실황 현재 기온·현재 체감온도(10분 서버 캐시) | ✅ 연동됨 |
