@@ -67,7 +67,8 @@ function findButton(node: ReactNode): ButtonElement | null {
     return element as ButtonElement;
   }
   if (typeof element.type === "function") {
-    return findButton(element.type(element.props));
+    const renderComponent = element.type as (props: typeof element.props) => ReactNode;
+    return findButton(renderComponent(element.props));
   }
   for (const child of Children.toArray(element.props.children)) {
     const button = findButton(child);
