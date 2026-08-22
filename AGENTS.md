@@ -23,7 +23,7 @@ npm run lint         # ESLint
 npm test             # Vitest (스코어링·상태머신 단위 테스트)
 npm run db:migrate   # 스키마 변경 → 마이그레이션 생성·적용 (Prisma Postgres, ADR-0013)
 npm run db:deploy    # 기존 마이그레이션만 적용 (배포·팀원 세팅)
-npm run db:seed      # 시드 — 건축HUB·카카오 실호출로 건물 10동 + 합성 대상자 15명 (키 필요, ADR-0012)
+npm run db:seed      # 시드 — 건축HUB·카카오 실호출로 건물 10동 + 합성 대상자 15명 + 합성 확인 기록 이력 (키 필요, ADR-0012)
 npm run push:keys    # Web Push VAPID 공개키·비밀키 생성 (ADR-0017)
 npx prisma studio    # DB 브라우저
 ```

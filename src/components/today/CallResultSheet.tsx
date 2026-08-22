@@ -6,7 +6,9 @@ import {
   AlertCircleIcon,
   AlertTriangleIcon,
   CheckIcon,
+  PaperclipIcon,
   PhoneOffIcon,
+  XIcon,
 } from "@/components/today/icons";
 import { SubjectSummary } from "@/components/today/SubjectSummary";
 import {
@@ -19,7 +21,7 @@ import {
 
 /**
  * 통화 결과 풀스크린 시트 — 통화가 끝나고 앱으로 돌아오면 뜬다 (FR-5).
- * 화면 설계: Figma 99:1267
+ * 화면 설계: Figma 99:1267 · 음성 파일 첨부는 163:3468(선택 상태 164:9043)
  *
  * 껍데기·접근성은 공용 `Dialog`(placement="fullscreen")가 맡는다. 여기는 내용만 만든다.
  * 버튼 문구는 `CALL_RESULT_LABEL`을 그대로 쓴다 — 아래 아이콘·색은 부연일 뿐
@@ -102,6 +104,11 @@ export function CallResultSheet({
   const [memo, setMemo] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
+  /**
+   * 첨부한 통화 음성 파일 이름. 파일 자체는 아무 데도 가지 않는다 — 아래 섹션 주석 참고.
+   * `useState` 호출 순서의 맨 뒤에 둔다: 앞에 끼우면 훅을 순서로 흉내 내는 테스트가 어긋난다.
+   */
+  const [recording, setRecording] = useState<string | null>(null);
 
   async function save() {
     if (result === null || coolingStatus === null || pending) return;
@@ -193,6 +200,57 @@ export function CallResultSheet({
                 </button>
               );
             })}
+          </div>
+        </section>
+
+        {/*
+          ⚠️ 화면만 있고 저장은 없다 (Figma 163:3468 · 선택 상태 164:9043).
+
+          통화 음성은 어르신의 육성이라 저장하려면 저장소·전사 도입과 개인정보 경계를 새로 정하는
+          ADR이 먼저다 — ADR-0024가 정한 경계는 텍스트 메모까지다. 고른 파일 이름은 이 시트 안에만
+          남고 `저장하기`로 서버에 올라가지 않는다 (ADR-0014 결과 11의 의도적 차이).
+        */}
+        <section className="flex flex-col gap-5 pt-3">
+          <h2 className="text-heading-18 text-text-subtle">기록 추가 (선택)</h2>
+          <div className="flex flex-col items-center gap-2 rounded-lg border border-border-soft p-4">
+            <div className="flex w-full items-center justify-center gap-2">
+              {/* 누르는 자리를 상자 폭 전체로 넓힌다 — 아이콘+글자만큼이면 60대 기준에서 좁다 */}
+              <label className="flex min-w-0 flex-1 cursor-pointer items-center justify-center gap-2 py-3 text-label-16 text-text-secondary">
+                <PaperclipIcon className="size-4 shrink-0" />
+                <span className="min-w-0 break-all">
+                  {recording ?? "전화 음성 파일 (최대 1개)"}
+                </span>
+                {/*
+                  `key`가 파일 이름을 따라간다 — 첨부를 지우면 입력이 새로 붙어 값이 비워진다.
+                  같은 파일을 다시 골라도 change가 오게 하려면 값이 남아 있으면 안 된다.
+                */}
+                <input
+                  key={recording ?? ""}
+                  type="file"
+                  accept="audio/*"
+                  disabled={pending}
+                  onChange={(event) =>
+                    setRecording(event.target.files?.[0]?.name ?? null)
+                  }
+                  className="sr-only"
+                />
+              </label>
+              {recording !== null && (
+                <button
+                  type="button"
+                  aria-label="첨부한 음성 파일 지우기"
+                  disabled={pending}
+                  onClick={() => setRecording(null)}
+                  /* 글리프는 Figma대로 작지만 누르는 자리는 44px다 (ADR-0014 접근성) */
+                  className="flex size-11 shrink-0 items-center justify-center text-icon-secondary"
+                >
+                  <XIcon className="size-4" />
+                </button>
+              )}
+            </div>
+            <p className="text-center text-body-14 text-text-tertiary">
+              &lsquo;전화 앱 → 통화기록 → 해당 통화 → 녹음 확인&rsquo;에서 확인
+            </p>
           </div>
         </section>
 

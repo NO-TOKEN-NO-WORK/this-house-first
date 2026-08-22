@@ -247,4 +247,5 @@ stateDiagram-v2
 | 문제 | 영향 | 현재 대응 |
 |---|---|---|
 | `POST /api/trigger`가 콜드 커넥션에서 Prisma 인터랙티브 트랜잭션 5초 제한을 넘겨 500 (`A commit cannot be executed on an expired transaction`) | 그날 첫 발령이 실패한다. **데모 첫 시연에서 바로 터질 수 있다** | 재시도하면 성공. `declareTrigger`의 `$transaction`에 `timeout` 상향 또는 대상자별 쓰기를 트랜잭션 밖으로 빼는 것이 근본 대응 |
+| 통화 음성 파일 첨부(Figma 163:3468 · 164:9043)가 화면에만 있고 저장되지 않는다 | 담당자가 붙인 파일이 `저장하기`로 서버에 올라가지 않는다. 데모에서는 첨부 화면만 보여 준다 | 음성은 어르신의 육성이라 저장소·전사 도입과 개인정보 경계를 정하는 ADR이 선행이다. ADR-0024가 정한 경계는 텍스트 메모까지다 ([ADR-0014](adr/0014-figma-design-with-domain-terms.md) 결과 9) |
 | 비경보일에는 가구 확인 기록을 남길 수 없다 | ①-b 화면의 `연락 완료` 칩·`3 / 15` 요약을 구현하지 못함 | 명단만 표시하고 전화는 `tel:`로 바로 건다. 저장하려면 `HouseholdDayStatus`를 `AlertDay`에서 분리해야 하며 별도 ADR 필요 ([ADR-0014](adr/0014-figma-design-with-domain-terms.md)) |
