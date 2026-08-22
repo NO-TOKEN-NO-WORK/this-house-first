@@ -1,0 +1,91 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const mocks = vi.hoisted(() => ({
+  findMany: vi.fn(),
+  refreshWelfarePrograms: vi.fn(),
+  extractWelfareSignals: vi.fn(),
+}));
+
+vi.mock("@/lib/db", () => ({
+  prisma: { subject: { findMany: mocks.findMany } },
+}));
+vi.mock("@/lib/public-data/welfare", () => ({
+  refreshWelfarePrograms: mocks.refreshWelfarePrograms,
+}));
+vi.mock("@/lib/welfare-scan/openai", () => ({
+  extractWelfareSignals: mocks.extractWelfareSignals,
+}));
+
+import { POST } from "./route";
+
+describe("POST /api/welfare-scan", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.findMany.mockResolvedValue([
+      {
+        id: "subject-1",
+        name: "김○○",
+        birthYear: 1938,
+        livesAlone: true,
+        hasAircon: false,
+        airconBroken: true,
+        worker: { name: "이미경" },
+        checkEvents: [{ memo: "에어컨에서 미지근한 바람만 나옵니다." }],
+      },
+    ]);
+    mocks.refreshWelfarePrograms.mockResolvedValue([
+      {
+        id: "energy-1",
+        name: "저소득층 에너지효율개선사업",
+        ministry: "기후에너지환경부",
+        summary: "냉방기기와 단열 개선을 지원합니다.",
+        selectionCriteria: "기초생활수급자 또는 차상위계층",
+        target: "저소득 노인가구",
+        link: "https://www.bokjiro.go.kr/energy",
+      },
+    ]);
+    mocks.extractWelfareSignals.mockResolvedValue([
+      {
+        subjectId: "subject-1",
+        issues: ["COOLING_ISSUE"],
+        evidence: ["에어컨에서 미지근한 바람만 나옴"],
+      },
+    ]);
+  });
+
+  it("대상자 메모와 공공 복지사업을 결합해 검토 가능한 제안을 반환한다", async () => {
+    const response = await POST();
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload.data.recommendations).toEqual([
+      expect.objectContaining({
+        subjectId: "subject-1",
+        subjectName: "김○○",
+        workerName: "이미경",
+        programId: "energy-1",
+        status: "NEEDS_INFO",
+        missingChecks: ["기초생활수급 또는 차상위 여부"],
+      }),
+    ]);
+    expect(payload.data.connections).toEqual({
+      publicData: { ok: true, message: "공공데이터 연결 정상" },
+      ai: { ok: true, message: "AI 분석 연결 정상" },
+    });
+    expect(JSON.stringify(payload)).not.toContain("010-");
+  });
+
+  it("외부 연동이 모두 실패해도 연결 상태와 빈 결과를 반환한다", async () => {
+    mocks.refreshWelfarePrograms.mockRejectedValue(new Error("public failed"));
+    mocks.extractWelfareSignals.mockRejectedValue(new Error("ai failed"));
+
+    const response = await POST();
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload.data.recommendations).toEqual([]);
+    expect(payload.data.partial).toBe(true);
+    expect(payload.data.connections.publicData.ok).toBe(false);
+    expect(payload.data.connections.ai.ok).toBe(false);
+  });
+});

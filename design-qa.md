@@ -67,6 +67,49 @@ final result: passed
 
 ---
 
+# Design QA — 관리자 복지 스캔
+
+## 비교 대상
+
+- Source visual truth: `/var/folders/nj/p0_b3g6d0y73t8t3dy_7cwhh0000gn/T/codex-clipboard-6001cbce-a595-468c-9b48-c750b7dbb9a6.png`
+- Implementation screenshots:
+  - `docs/design-qa/welfare-scan-1440.jpg` — 상세 드로어가 열린 상태, `1440 × 900`
+  - `docs/design-qa/welfare-scan-1024.jpg` — 목록 중심 반응형 상태, `1024 × 768`
+  - `docs/design-qa/admin-dashboard-reference.png` — 현재 관제 현황 디자인 기준
+  - `docs/design-qa/welfare-scan-consistent.png` — 공통 관리자 UI 적용 후 복지 스캔
+- Full-view comparison: `docs/design-qa/welfare-scan-comparison.png` — 참조와 1440px 구현을 같은 너비로 세로 배치
+- Admin consistency comparison: `docs/design-qa/admin-welfare-consistency.png` — Arc 동일 뷰포트의 관제 현황과 복지 스캔을 가로 배치
+- Source pixels: `1536 × 1024`; 시안 내부 주 화면 표기는 1440px
+- State: 합성 대상자 3명의 복지 제안, 냉방기 고장 대상자의 상세 패널
+
+## 결과
+
+- 남은 P0/P1/P2 차이 없음.
+- 레퍼런스의 상단 상태 바, 좌측 관리자 메뉴, 스캔 동작, 5개 요약 지표, 다중 필터,
+  검토 표, 우측 상세 드로어를 기존 관리자 `--admin-*` 토큰과 PNG 자산으로 재현했다.
+- 기존 관리자 화면의 보라색 주요 동작 색을 유지했다. 레퍼런스의 파란색과 다른 점은
+  프로젝트 전체 관리자 디자인과의 일관성을 위한 의도된 차이다.
+- 1024px에서는 좌측 메뉴를 아이콘 레일로 축소하고 지표·필터를 재배치했다. 표의 핵심
+  열과 상세 보기 동작은 잘림 없이 유지된다.
+- 필터 `추가 정보 필요` 2건, 대상자 이름 검색 1건, 두 번째 행 상세 패널, 공공 API 실패
+  안내, DB 미연결 스캔 실패 안내를 실제 브라우저에서 확인했다.
+- 좌측 메뉴 6개가 관제 현황과 복지 스캔 양쪽에서 같은 위치를 유지하고 현재 화면을 강조한다.
+  미리보기 문맥을 보존한 양방향 전환과 합성 관제 데이터 표시를 Arc에서 확인했다.
+- LLM 확률·자동 수급 확정 같은 근거 없는 정보는 표시하지 않는다. Luna는 문제 신호와
+  메모 근거만 구조화하고 자격 후보 판정은 규칙 엔진이 수행한다.
+
+## 비교 이력
+
+1. 최초 1440px 비교에서 시안의 임시 영문 지역명이 상단에 남아 있는 것을 발견했다.
+2. 프로젝트 데이터와 무관한 문구를 `담당 지역 · 전체`로 교체했다.
+3. CSS 상태 점을 기존 PNG 상태 자산으로 바꾸고 오버레이 색도 관리자 토큰으로 이동했다.
+4. 1440px 드로어 상태와 1024px 목록 상태를 재캡처해 레이아웃·타이포·테두리·간격을 확인했다.
+5. 관제 현황의 상단바를 공통 `AdminTopBar`로 이동하고 복지 스캔이 같은 컴포넌트를 사용하게 했다. 요약 카드·필터·표의 높이, 둘레선, 글자 계층을 관제 현황에 맞춰 Arc 동일 뷰포트에서 재비교했다.
+
+final result: passed
+
+---
+
 # Design QA — 관리자 생활지원사 상세
 
 ## Comparison target
