@@ -130,8 +130,11 @@ describe("AdminMap", () => {
           {
             subjectId: "subject-1",
             name: "김○○",
+            phone: "010-0000-0101",
+            birthYear: 1938,
             workerId: "worker-1",
             workerName: "이담당",
+            workerPhone: "010-0000-0001",
             buildingId: "building-1",
             address: "대구광역시 서구 비산동 1",
             lat: 35.87,

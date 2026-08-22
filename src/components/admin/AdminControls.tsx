@@ -48,8 +48,7 @@ export async function requestDemoTrigger(
 
 export function AdminControls({ date }: { date: string }) {
   const router = useRouter();
-  const [level, setLevel] = useState<AlertLevelValue>(AlertLevel.WARNING);
-  const [pending, setPending] = useState(false);
+  const [pendingLevel, setPendingLevel] = useState<AlertLevelValue | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -59,7 +58,12 @@ export function AdminControls({ date }: { date: string }) {
 
   async function submitDemoTrigger(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setPending(true);
+    const submitter = (event.nativeEvent as SubmitEvent)
+      .submitter as HTMLButtonElement | null;
+    const level = submitter?.value;
+    if (!isAlertLevel(level)) return;
+
+    setPendingLevel(level);
     setMessage(null);
     try {
       await requestDemoTrigger({ date, level });
@@ -70,49 +74,31 @@ export function AdminControls({ date }: { date: string }) {
         error instanceof Error ? error.message : DEMO_TRIGGER_FAILURE_MESSAGE,
       );
     } finally {
-      setPending(false);
+      setPendingLevel(null);
     }
   }
 
   return (
-    <section className={styles.demoPanel} aria-labelledby="demo-trigger-title">
-      <h2 id="demo-trigger-title" className={styles.demoTitle}>
-        데모 경보 발령
-      </h2>
-      <p id="demo-trigger-description" className={styles.demoDescription}>
-        데모 전용 기능입니다. 실제 기상 예보 판정 대신 선택한 단계로 관제 화면을 갱신합니다.
-      </p>
-      <form className={styles.demoForm} onSubmit={submitDemoTrigger}>
-        <label className={styles.demoField}>
-          <span className={styles.filterLabel}>경보 단계</span>
-          <select
-            aria-describedby="demo-trigger-description"
-            className={styles.filterControl}
-            name="level"
+    <section className={styles.alertControls} aria-label="데모 경보 단계">
+      <span className={styles.alertControlLabel}>경보 단계</span>
+      <form className={styles.alertButtons} onSubmit={submitDemoTrigger}>
+        {Object.values(AlertLevel).map((level) => (
+          <button
+            aria-busy={pendingLevel === level}
+            aria-label={`${ALERT_LEVEL_LABEL[level]} 단계 발령`}
+            className={styles.alertButton}
+            data-level={level}
+            disabled={pendingLevel !== null}
+            key={level}
+            type="submit"
             value={level}
-            onChange={(event) => {
-              const value = event.currentTarget.value;
-              if (isAlertLevel(value)) setLevel(value);
-            }}
           >
-            {Object.values(AlertLevel).map((option) => (
-              <option key={option} value={option}>
-                {ALERT_LEVEL_LABEL[option]}
-              </option>
-            ))}
-          </select>
-        </label>
-        <button
-          aria-busy={pending}
-          className={styles.submitButton}
-          disabled={pending}
-          type="submit"
-        >
-          {pending ? "발령 중…" : "데모 경보 발령"}
-        </button>
+            {pendingLevel === level ? "발령 중…" : ALERT_LEVEL_LABEL[level]}
+          </button>
+        ))}
       </form>
       {message ? (
-        <p className={styles.demoStatus} role="status" aria-live="polite">
+        <p className={styles.alertMessage} role="status" aria-live="polite">
           {message}
         </p>
       ) : null}

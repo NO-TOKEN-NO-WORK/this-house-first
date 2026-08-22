@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 import styles from "../../app/admin/admin.module.css";
 import type { AdminDashboardBuilding } from "../../lib/admin/dashboard";
@@ -34,6 +35,12 @@ type KakaoMaps = {
     yAnchor: number;
   }) => KakaoOverlay;
 };
+
+function buildingIconSrc(grade: AdminDashboardBuilding["grade"]): string {
+  if (grade === 1) return "/admin/building-critical.png";
+  if (grade === 2) return "/admin/building-high.png";
+  return "/admin/building-moderate.png";
+}
 
 function getKakaoMaps(): KakaoMaps | undefined {
   return (window as Window & { kakao?: { maps: KakaoMaps } }).kakao?.maps;
@@ -118,7 +125,9 @@ export function AdminMap({
 }) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const [mapError, setMapError] = useState<string | null>(null);
-  const [selectedBuildingId, setSelectedBuildingId] = useState<string | null>(null);
+  const [selectedBuildingId, setSelectedBuildingId] = useState<string | null>(
+    buildings[0]?.buildingId ?? null,
+  );
   const buildingsSignature = adminMapBuildingsSignature(buildings);
   const mappedBuildings = useMemo(
     () =>
@@ -127,9 +136,9 @@ export function AdminMap({
       ),
     [buildingsSignature],
   );
-  const selectedBuilding = buildings.find(
-    (building) => building.buildingId === selectedBuildingId,
-  );
+  const selectedBuilding =
+    buildings.find((building) => building.buildingId === selectedBuildingId) ??
+    buildings[0];
   const coordinateError =
     mapKey && mappedBuildings.length === 0
       ? "지도에 표시할 수 있는 건물 좌표가 없습니다."
@@ -166,7 +175,21 @@ export function AdminMap({
                 const button = document.createElement("button");
                 button.type = "button";
                 button.className = `${styles.mapMarker} ${styles[`grade${building.grade}`]} ${styles[building.statusCategory]}`;
-                button.textContent = String(building.openCount);
+                const icon = document.createElement("img");
+                icon.src = buildingIconSrc(building.grade);
+                icon.alt = "";
+                icon.className = styles.mapMarkerIcon;
+                icon.setAttribute("aria-hidden", "true");
+                const copy = document.createElement("div");
+                copy.className = styles.mapMarkerCopy;
+                const address = document.createElement("strong");
+                address.textContent = building.address.split(" ").slice(-2).join(" ");
+                const grade = document.createElement("span");
+                grade.textContent = `건물 위험 ${GRADE_LABEL[building.grade]}`;
+                const open = document.createElement("em");
+                open.textContent = `미처리 ${building.openCount}명`;
+                copy.append(address, grade, open);
+                button.append(icon, copy);
                 button.setAttribute(
                   "aria-label",
                   `${building.address}, ${building.grade}등급, 미처리 ${building.openCount}명`,
@@ -225,13 +248,38 @@ export function AdminMap({
 
   return (
     <section className={styles.map} aria-labelledby="map-title">
-      <h2 id="map-title" className={styles.sectionTitle}>
+      <h2 id="map-title" className={styles.screenReaderOnly}>
         건물 위험도 지도
       </h2>
       {!mapKey ? (
-        <p className={styles.mapMessage}>
-          카카오 지도 키가 설정되지 않았습니다. 우선 대상자 목록은 계속 확인할 수 있습니다.
-        </p>
+        <div className={styles.mapFallback} role="region" aria-label="건물 위험도 지도">
+          {mappedBuildings.slice(0, 5).map((building) => (
+            <button
+              aria-label={`${building.address}, ${GRADE_LABEL[building.grade]}, 미처리 ${building.openCount}명`}
+              className={`${styles.mapMarker} ${styles.fallbackMarker} ${styles[`grade${building.grade}`]} ${styles[building.statusCategory]}`}
+              key={building.buildingId}
+              onClick={() => setSelectedBuildingId(building.buildingId)}
+              type="button"
+            >
+              <Image
+                alt=""
+                aria-hidden="true"
+                className={styles.mapMarkerIcon}
+                height={24}
+                src={buildingIconSrc(building.grade)}
+                width={24}
+              />
+              <span className={styles.mapMarkerCopy}>
+                <strong>{building.address.split(" ").slice(-2).join(" ")}</strong>
+                <span>건물 위험 {GRADE_LABEL[building.grade]}</span>
+                <em>미처리 {building.openCount}명</em>
+              </span>
+            </button>
+          ))}
+          <p className={styles.screenReaderOnly}>
+            카카오 지도 키가 설정되지 않았습니다. 생성된 지도 이미지로 현황을 표시합니다.
+          </p>
+        </div>
       ) : (
         <>
           <div
@@ -245,35 +293,69 @@ export function AdminMap({
               {coordinateError ?? mapError}
             </p>
           ) : null}
-          <section
-            className={styles.mapDetail}
-            aria-label="선택한 건물 상세"
-            aria-live="polite"
-          >
-            {selectedBuilding ? (
-              <>
-                <h3 className={styles.mapDetailTitle}>{selectedBuilding.address}</h3>
-                <ul className={styles.mapSubjectList}>
-                  {selectedBuilding.subjects.map((subject) => (
-                    <li key={subject.subjectId} className={styles.mapSubject}>
-                      <p>
-                        {subject.name} · {GRADE_LABEL[subject.grade]} · {subject.statusLabel}
-                      </p>
-                      <ul className={styles.reasonList} aria-label={`${subject.name} 위험 사유`}>
-                        {subject.reasons.map((reason, index) => (
-                          <li key={`${subject.subjectId}-${index}`}>{reason}</li>
-                        ))}
-                      </ul>
-                    </li>
-                  ))}
-                </ul>
-              </>
-            ) : (
-              <p className={styles.mapMessage}>지도 마커를 선택하면 건물 상세를 확인할 수 있습니다.</p>
-            )}
-          </section>
         </>
       )}
+      {selectedBuilding?.subjects[0] ? (
+        <section
+          className={styles.mapDetail}
+          aria-label="선택한 건물 상세"
+          aria-live="polite"
+        >
+          <span className={styles.mapDetailLabel}>최우선 대상</span>
+          <Image
+            alt=""
+            aria-hidden="true"
+            className={styles.mapDetailAlert}
+            height={42}
+            src="/admin/metric-critical.png"
+            width={42}
+          />
+          <div className={styles.mapSubject}>
+            <Image
+              alt={`${selectedBuilding.subjects[0].name} 합성 프로필`}
+              className={styles.mapSubjectAvatar}
+              height={64}
+              src="/admin/elder-female-1.png"
+              width={64}
+            />
+            <div>
+              <h3 className={styles.mapDetailTitle}>
+                <strong>{selectedBuilding.subjects[0].name}</strong>
+                <span className={`${styles.badge} ${styles[`grade${selectedBuilding.subjects[0].grade}`]}`}>
+                  {GRADE_LABEL[selectedBuilding.subjects[0].grade]}
+                </span>
+                <span className={styles.statusBadge}>{selectedBuilding.subjects[0].statusLabel}</span>
+              </h3>
+              <p className={styles.mapSubjectMetaRow}>
+                <span className={styles.mapSubjectMeta}>
+                  <Image alt="" aria-hidden="true" height={14} src="/admin/person.png" width={14} />
+                  담당자 {selectedBuilding.subjects[0].workerName}
+                </span>
+                <span className={styles.mapSubjectMeta}>
+                  <Image alt="" aria-hidden="true" height={14} src="/admin/location.png" width={14} />
+                  {selectedBuilding.address.split(" ").slice(0, 2).join(" ")}
+                </span>
+              </p>
+            </div>
+          </div>
+          <ul
+            className={styles.reasonList}
+            aria-label={`${selectedBuilding.subjects[0].name} 위험 사유`}
+          >
+            {selectedBuilding.subjects[0].reasons.map((reason, index) => (
+              <li key={`${selectedBuilding.subjects[0].subjectId}-${index}`}>{reason}</li>
+            ))}
+          </ul>
+          <Image
+            alt=""
+            aria-hidden="true"
+            className={styles.mapDetailPin}
+            height={42}
+            src="/admin/map-pin.png"
+            width={32}
+          />
+        </section>
+      ) : null}
     </section>
   );
 }
