@@ -15,4 +15,25 @@ describe("담당자 PWA manifest", () => {
         visitRoute.pathname.startsWith(scope.pathname),
     ).toBe(true);
   });
+
+  it("Chromium 설치 창에 필요한 192px·512px PNG 아이콘을 제공한다", () => {
+    const manifest = JSON.parse(
+      readFileSync("public/today.webmanifest", "utf8"),
+    ) as { icons: { src: string; sizes: string; type: string }[] };
+
+    expect(manifest.icons).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          src: "/icons/icon-192.png",
+          sizes: "192x192",
+          type: "image/png",
+        }),
+        expect.objectContaining({
+          src: "/icons/icon-512.png",
+          sizes: "512x512",
+          type: "image/png",
+        }),
+      ]),
+    );
+  });
 });

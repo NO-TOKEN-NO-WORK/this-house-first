@@ -4,6 +4,7 @@ import { GradeFilter } from "@/components/today/GradeFilter";
 import { SubjectCard } from "@/components/today/SubjectCard";
 import { TodayWorkspace } from "@/components/today/TodayWorkspace";
 import { AlertCircleIcon } from "@/components/today/icons";
+import { InstallPwaBanner } from "@/components/InstallPwaBanner";
 import { PushNotificationManager } from "@/components/PushNotificationManager";
 import {
   type AlertedBoard,
@@ -182,6 +183,7 @@ export default async function TodayPage(props: PageProps<"/today">) {
             dateLabel={board.dateLabel}
             dong={board.dong}
           />
+          <InstallPwaBanner />
           {board.worker ? (
             <PushNotificationManager
               workerId={board.worker.id}
