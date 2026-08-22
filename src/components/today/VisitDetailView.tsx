@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useId, useState, type ReactNode } from "react";
 import { RiskReasonsCard } from "@/components/today/RiskReasonsCard";
+import { SubjectBriefingCard } from "@/components/today/SubjectBriefingCard";
 import {
   GradeChangeNotice,
   VisitChecklist,
@@ -350,6 +351,8 @@ export function VisitDetailView({
         <GradeChangeNotice detail={detail} />
 
         {assessment && <RiskReasonsCard assessment={assessment} />}
+
+        <SubjectBriefingCard subjectId={detail.subjectId} />
 
         <VisitChecklist />
         <VisitHistory items={detail.recentHistory} />

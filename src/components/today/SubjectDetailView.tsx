@@ -5,6 +5,7 @@ import Link from "next/link";
 import { GRADE_CHIP } from "@/components/today/gradeStyles";
 import { RecordGrid } from "@/components/today/RecordGrid";
 import { RiskReasonsCard } from "@/components/today/RiskReasonsCard";
+import { SubjectBriefingCard } from "@/components/today/SubjectBriefingCard";
 import { VisitDetailView } from "@/components/today/VisitDetailView";
 import { SubjectInfoView } from "@/components/today/SubjectInfoView";
 import {
@@ -213,6 +214,8 @@ export function SubjectDetailView({
         {detail.assessment && (
           <RiskReasonsCard assessment={detail.assessment} showPlan />
         )}
+
+        <SubjectBriefingCard subjectId={detail.subjectId} />
 
         <RecordArea detail={detail} onRecorded={onRecorded} />
       </main>

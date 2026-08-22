@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { BUILDING_SLOTS } from "./config";
+import { CHECK_HISTORY, HISTORY_ALERT_DAYS } from "./history";
 import { SUBJECTS, WORKERS } from "./synthetic";
 import { hasEnoughCandidates, rankCandidatesForSlots, shuffleDeterministic } from "./select";
 import type { BuildingFacts } from "../../src/lib/bldg-hub/mapping";
@@ -27,6 +28,17 @@ describe("합성 대상자 프로필", () => {
       used.add(s.buildingSlot);
     }
     expect(used.size).toBe(BUILDING_SLOTS.length);
+  });
+
+  it("모든 대상자에게 유효한 경보일의 확인 기록이 최소 2건씩 있다", () => {
+    expect(Object.keys(CHECK_HISTORY).sort()).toEqual(
+      SUBJECTS.map((subject) => subject.name).sort(),
+    );
+    const alertDays = new Set(HISTORY_ALERT_DAYS.map((day) => day.daysAgo));
+    for (const checks of Object.values(CHECK_HISTORY)) {
+      expect(checks.length).toBeGreaterThanOrEqual(2);
+      for (const check of checks) expect(alertDays.has(check.daysAgo)).toBe(true);
+    }
   });
 });
 

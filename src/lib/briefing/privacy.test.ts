@@ -19,6 +19,21 @@ describe("맥락 브리핑 개인정보 마스킹", () => {
     expect(masked).not.toContain("행복복지관");
   });
 
+  it("기관은 고유명만 버리고 유형은 남긴다 — 어디에 다녀오셨는지가 생활 맥락이다", () => {
+    expect(maskBriefingMemo("행복동주민센터 무더위쉼터를 안내했다.", [])).toBe(
+      "주민센터 무더위쉼터를 안내했다.",
+    );
+    expect(maskBriefingMemo("동네병원에 다녀오셨다고 했다.", [])).toBe(
+      "병원에 다녀오셨다고 했다.",
+    );
+    expect(maskBriefingMemo("주민센터 무더위쉼터를 이용하셨다.", [])).toBe(
+      "주민센터 무더위쉼터를 이용하셨다.",
+    );
+    expect(maskBriefingMemo("봄병원에 다녀오셨다고 했다.", [])).toBe(
+      "병원에 다녀오셨다고 했다.",
+    );
+  });
+
   it("실제 CheckEvent id 대신 호출별 임시 별칭을 만든다", () => {
     const { events, sourceIdByAlias } = toBriefingModelEvents(
       [{

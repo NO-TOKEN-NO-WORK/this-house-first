@@ -290,6 +290,15 @@ export const CALL_RESULT_LABEL: Record<CallResult, string> = {
   UNREACHABLE: "연락두절",
 };
 
+/** 통화 결과 시트의 음성 파일 선택 문구 — 현재는 데모 UI이며 파일을 저장하지 않는다. */
+export const CALL_RECORDING_LABELS = {
+  SECTION: "기록 추가 (선택)",
+  EMPTY: "전화 음성 파일 (최대 1개)",
+  REMOVE: "첨부한 음성 파일 지우기",
+  GUIDE: "‘전화 앱 → 통화기록 → 해당 통화 → 녹음 확인’에서 확인",
+  NOT_SAVED: "현재 음성 파일은 저장되지 않습니다.",
+} as const;
+
 export function isCallResult(value: unknown): value is CallResult {
   // `in`은 프로토타입 체인까지 본다 — "toString"이 통과하면 DB에 쓰레기 결과값이 들어간다
   return (
