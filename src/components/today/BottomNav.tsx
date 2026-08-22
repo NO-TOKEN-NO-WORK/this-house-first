@@ -4,16 +4,32 @@ import { HomeIcon, ListIcon, MapIcon } from "./icons";
 /**
  * 담당자 하단 탭 (Figma ① 8:1945).
  *
- * 지도(④ 관제 지도)·기록은 아직 화면이 없다. 눌러도 아무 일이 없는 링크를 두면 담당자가
- * 고장으로 읽으므로, 준비 중임을 드러낸 비활성 항목으로 둔다.
+ * 기록은 아직 화면이 없다. 눌러도 아무 일이 없는 링크를 두면 담당자가 고장으로 읽으므로,
+ * 준비 중임을 드러낸 비활성 항목으로 둔다.
  */
 const ITEMS = [
   { key: "today", label: "오늘", href: "/today", Icon: HomeIcon },
-  { key: "map", label: "지도", href: null, Icon: MapIcon },
+  { key: "map", label: "지도", href: "/map", Icon: MapIcon },
   { key: "log", label: "기록", href: null, Icon: ListIcon },
 ] as const;
 
-export function BottomNav({ current }: { current: "today" | "map" | "log" }) {
+function withContext(path: string, date?: string, workerId?: string): string {
+  const query = new URLSearchParams();
+  if (date) query.set("date", date);
+  if (workerId) query.set("workerId", workerId);
+  const value = query.toString();
+  return value ? `${path}?${value}` : path;
+}
+
+export function BottomNav({
+  current,
+  date,
+  workerId,
+}: {
+  current: "today" | "map" | "log";
+  date?: string;
+  workerId?: string;
+}) {
   return (
     <nav
       aria-label="담당자 메뉴"
@@ -32,7 +48,7 @@ export function BottomNav({ current }: { current: "today" | "map" | "log" }) {
         return href ? (
           <Link
             key={key}
-            href={href}
+            href={withContext(href, date, workerId)}
             aria-current={active ? "page" : undefined}
             className={`flex flex-1 flex-col items-center justify-center gap-[3px] ${tone}`}
           >

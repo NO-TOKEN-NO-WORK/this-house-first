@@ -310,7 +310,7 @@ export default async function TodayPage(props: PageProps<"/today">) {
           <SilentBoardView board={board} workerId={workerId} />
         )}
       </main>
-      <BottomNav current="today" />
+      <BottomNav current="today" date={date} workerId={workerId} />
     </>
   );
 }

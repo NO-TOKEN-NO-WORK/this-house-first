@@ -29,12 +29,16 @@ import { ageOf, dongOf, formatBoardDate, yearOfIsoDate } from "./format";
 /** 경보일·비경보일 카드가 공통으로 쓰는 대상자 정보 (Figma ① 8:1867 profile) */
 export interface RosterSubject {
   subjectId: string;
+  buildingId: string;
   name: string;
   /** 경보일 기준 연도로 계산한 나이 — 스코어링 엔진의 "(88세)"와 같은 값 */
   age: number;
   livesAlone: boolean;
   phone: string | null;
   address: string;
+  roadAddress: string | null;
+  lat: number;
+  lng: number;
 }
 
 export interface BoardSubject extends RosterSubject {
@@ -49,9 +53,6 @@ export interface BoardSubject extends RosterSubject {
   open: boolean;
   /** 이번 기록에서 받아야 할 기록 종류 — 1등급·승격 가구는 방문 */
   nextCheckKind: CheckKind;
-  roadAddress: string | null;
-  lat: number;
-  lng: number;
 }
 
 export interface BoardGroup {
@@ -171,11 +172,15 @@ export async function getBoard(
     });
     const subjects: RosterSubject[] = rows.map((row) => ({
       subjectId: row.id,
+      buildingId: row.building.id,
       name: row.name,
       age: ageOf(row.birthYear, year),
       livesAlone: row.livesAlone,
       phone: row.phone,
       address: row.building.address,
+      roadAddress: row.building.roadAddress,
+      lat: row.building.lat,
+      lng: row.building.lng,
     }));
     return {
       alerted: false,
@@ -233,11 +238,15 @@ export async function getBoard(
     const group = groups.find((g) => g.grade === grade);
     group?.subjects.push({
       subjectId: row.subjectId,
+      buildingId: row.subject.building.id,
       name: row.subject.name,
       age: ageOf(row.subject.birthYear, year),
       livesAlone: row.subject.livesAlone,
       phone: row.subject.phone,
       address: row.subject.building.address,
+      roadAddress: row.subject.building.roadAddress,
+      lat: row.subject.building.lat,
+      lng: row.subject.building.lng,
       grade,
       score: row.score,
       reasons: parseReasons(row.reasons),
@@ -251,9 +260,6 @@ export async function getBoard(
         status === HouseholdStatus.VISITING
           ? CheckKind.VISIT
           : CheckKind.CALL,
-      roadAddress: row.subject.building.roadAddress,
-      lat: row.subject.building.lat,
-      lng: row.subject.building.lng,
     });
   }
 
