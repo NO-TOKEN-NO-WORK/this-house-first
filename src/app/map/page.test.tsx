@@ -60,7 +60,7 @@ const board: AlertedBoard = {
 };
 
 describe("MapPage 방문 동선", () => {
-  it("Figma 방문 동선 구조와 도메인 문구·스코어링 사유를 표시한다", async () => {
+  it("Figma 방문 동선 구조와 도메인 문구를 표시한다", async () => {
     getBoard.mockResolvedValue(board);
 
     const html = renderToStaticMarkup(
@@ -71,14 +71,32 @@ describe("MapPage 방문 동선", () => {
     );
 
     expect(html).toContain("방문 동선");
-    expect(html).toContain("심각 → 경계 → 주의 순으로 방문합니다");
-    expect(html).toContain("예상 이동 0분 · 0m · 총 1가구");
+    expect(html).toContain("예상 이동 0분 · 총 1가구");
     expect(html).toContain("합성 대상자");
+    expect(html).toContain("88세 · 독거");
     expect(html).toContain("심각");
-    expect(html).toContain("1938년생 (88세)·독거");
+    expect(html).toContain("대구광역시 서구 달서로 1");
     expect(html).toContain("경로 안내");
     expect(html).toContain("https://map.kakao.com/link/to/");
     expect(html).toContain('aria-current="page"');
+  });
+
+  it("디자인에 없는 경로 출처 문구와 위험 사유를 싣지 않는다", async () => {
+    getBoard.mockResolvedValue(board);
+
+    const html = renderToStaticMarkup(
+      await MapPage({
+        params: Promise.resolve({}),
+        searchParams: Promise.resolve({ date: "2026-08-21", workerId: "worker-1" }),
+      }),
+    );
+
+    // 개발 중 임의로 넣었던 카카오 모빌리티 경로 출처 캡션 (Figma 38:5652에 자리가 없다)
+    expect(html).not.toContain("카카오모빌리티");
+    expect(html).not.toContain("직선거리");
+    expect(html).not.toContain("이전 방문지에서");
+    // 위험 사유 원문은 오늘 보드·대상자 정보의 몫이다 (ADR-0014 §결과 8)
+    expect(html).not.toContain("1938년생 (88세)·독거");
   });
 
   it("비경보일에는 빈 방문 동선을 조용히 표시한다", async () => {
@@ -100,6 +118,6 @@ describe("MapPage 방문 동선", () => {
     );
 
     expect(html).toContain("지금 방문할 가구가 없습니다");
-    expect(html).toContain("예상 이동 0분 · 0m · 총 0가구");
+    expect(html).toContain("예상 이동 0분 · 총 0가구");
   });
 });
