@@ -8,7 +8,7 @@ import type { LogListItem } from "@/lib/board/log";
 /**
  * 담당자 확인 기록 목록 — 하단 탭 `기록`.
  *
- * `/today` PWA scope 안에 둔다 (ADR-0006, start_url·scope 모두 `/today`).
+ * 담당자 PWA의 `/today` 하위 경로다 (ADR-0006, start_url은 `/today`, scope는 `/`).
  * 이미 남은 CheckEvent만 보여 준다. 열 때 AlertDay·기록·알림을 만들지 않는다.
  * 비경보일·기록이 없는 날은 빈 상태다 (행을 지어내지 않는다).
  */
