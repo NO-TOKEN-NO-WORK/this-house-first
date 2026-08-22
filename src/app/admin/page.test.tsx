@@ -101,6 +101,12 @@ describe("관리자 관제 화면", () => {
     );
   });
 
+  it("지도는 선택 대상자 정보를 내부 스크롤 없이 보여줄 높이를 확보한다", () => {
+    expect(adminStyles).toMatch(
+      /\.dashboardContent\s*\{[^}]*grid-template-rows:\s*auto 6\.5rem 24rem 20\.5rem;/,
+    );
+  });
+
   it("반복된 날짜나 담당자 검색값은 조회 전에 404로 막는다", async () => {
     const repeatedSearches = [
       { date: ["2026-08-22", "2026-08-23"] },
