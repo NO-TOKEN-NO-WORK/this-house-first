@@ -8,7 +8,9 @@ vi.mock("@/lib/public-data/kma", () => ({
   getCurrentWeather: mocks.getCurrentWeather,
 }));
 
-import { GET } from "./route";
+import * as currentWeatherRoute from "./route";
+
+const { GET } = currentWeatherRoute;
 
 const weather = {
   source: "기상청 초단기실황 조회서비스",
@@ -28,6 +30,10 @@ describe("GET /api/public-data/current-weather", () => {
 
   afterEach(() => {
     vi.unstubAllEnvs();
+  });
+
+  it("Route Handler는 upstream 600초 fetch 캐시를 무효화하지 않는다", () => {
+    expect(currentWeatherRoute).not.toHaveProperty("dynamic");
   });
 
   it("기상 격자 환경변수가 누락되면 503 MISSING_WEATHER_GRID을 반환한다", async () => {

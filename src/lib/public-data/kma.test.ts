@@ -131,6 +131,53 @@ describe("getCurrentWeather", () => {
       status: 502,
     });
   });
+
+  it("빈 관측값을 숫자 0으로 해석하지 않는다", async () => {
+    const fetcher: PublicDataFetch = async () =>
+      new Response(
+        JSON.stringify({
+          response: {
+            header: { resultCode: "00", resultMsg: "NORMAL_SERVICE" },
+            body: {
+              items: {
+                item: [
+                  {
+                    baseDate: "20260822",
+                    baseTime: "1400",
+                    category: "T1H",
+                    obsrValue: " ",
+                    nx: 60,
+                    ny: 127,
+                  },
+                  {
+                    baseDate: "20260822",
+                    baseTime: "1400",
+                    category: "REH",
+                    obsrValue: "68",
+                    nx: 60,
+                    ny: 127,
+                  },
+                ],
+              },
+            },
+          },
+        }),
+      );
+
+    await expect(
+      getCurrentWeather(
+        { nx: 60, ny: 127 },
+        {
+          serviceKey: "decoded/key+value=",
+          fetcher,
+          now: new Date("2026-08-22T05:12:00.000Z"),
+        },
+      ),
+    ).rejects.toMatchObject({
+      code: "INVALID_UPSTREAM_RESPONSE",
+      status: 502,
+    });
+  });
 });
 
 describe("resolveForecastBase", () => {

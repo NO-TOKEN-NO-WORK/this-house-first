@@ -5,7 +5,6 @@ import {
 import { getCurrentWeather } from "@/lib/public-data/kma";
 
 export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
 
 function gridCoordinate(name: "KMA_GRID_NX" | "KMA_GRID_NY"): number {
   const value = process.env[name];
