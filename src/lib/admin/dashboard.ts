@@ -27,6 +27,29 @@ export interface AdminDashboardWorker {
   subjectCount?: number;
 }
 
+export interface AdminRosterWorker {
+  id: string;
+  name: string;
+  phone: string | null;
+  subjectCount: number;
+}
+
+export interface AdminRosterSubject {
+  subjectId: string;
+  name: string;
+  phone: string | null;
+  birthYear: number;
+  workerId: string;
+  workerName: string;
+  buildingId: string;
+  address: string;
+}
+
+export interface AdminRoster {
+  workers: AdminRosterWorker[];
+  subjects: AdminRosterSubject[];
+}
+
 export interface AdminDashboardSubject {
   subjectId: string;
   name: string;
@@ -63,6 +86,7 @@ interface AdminDashboardBase {
   date: string;
   dateLabel: string;
   selectedWorkerId: string | null;
+  roster: AdminRoster;
   workers: AdminDashboardWorker[];
   generatedAt: string;
 }
@@ -126,6 +150,26 @@ interface AdminSnapshot {
   buildings: AdminDashboardBuilding[];
 }
 
+interface AdminRosterWorkerRow {
+  id: string;
+  name: string;
+  phone: string | null;
+}
+
+interface AdminRosterSubjectRow {
+  id: string;
+  name: string;
+  phone: string | null;
+  birthYear: number;
+  workerId: string;
+  worker: { name: string };
+  building: {
+    id: string;
+    address: string;
+    roadAddress: string | null;
+  };
+}
+
 const STATUS_CATEGORY: Record<HouseholdStatus, AdminStatusCategory> = {
   [HouseholdStatus.EMERGENCY_119]: "emergency",
   [HouseholdStatus.VISITING]: "visit",
@@ -156,6 +200,58 @@ export function parseAdminReasons(raw: string): string[] {
     // 사실을 숨기지 않는 폴백을 아래에서 반환한다.
   }
   return ["위험 사유를 불러오지 못했습니다"];
+}
+
+export function buildAdminRoster({
+  workers,
+  subjects,
+  workerId,
+  subjectQuery,
+}: {
+  workers: AdminRosterWorkerRow[];
+  subjects: AdminRosterSubjectRow[];
+  workerId?: string;
+  subjectQuery?: string;
+}): AdminRoster {
+  const query = subjectQuery?.trim().toLocaleLowerCase("ko-KR") ?? "";
+  const selectedSubjects = subjects
+    .filter(
+      (subject) =>
+        (!workerId || subject.workerId === workerId) &&
+        (!query || subject.name.toLocaleLowerCase("ko-KR").includes(query)),
+    )
+    .map((subject) => ({
+      subjectId: subject.id,
+      name: subject.name,
+      phone: subject.phone,
+      birthYear: subject.birthYear,
+      workerId: subject.workerId,
+      workerName: subject.worker.name,
+      buildingId: subject.building.id,
+      address: subject.building.roadAddress ?? subject.building.address,
+    }))
+    .sort(
+      (left, right) =>
+        left.name.localeCompare(right.name, "ko") ||
+        left.subjectId.localeCompare(right.subjectId),
+    );
+  const subjectCountByWorker = new Map<string, number>();
+  for (const subject of subjects) {
+    subjectCountByWorker.set(
+      subject.workerId,
+      (subjectCountByWorker.get(subject.workerId) ?? 0) + 1,
+    );
+  }
+
+  return {
+    workers: workers.map((worker) => ({
+      id: worker.id,
+      name: worker.name,
+      phone: worker.phone,
+      subjectCount: subjectCountByWorker.get(worker.id) ?? 0,
+    })),
+    subjects: selectedSubjects,
+  };
 }
 
 export function buildAdminSnapshot({
@@ -284,24 +380,30 @@ export async function getAdminDashboard(
   ]);
   const now = options.now ?? new Date();
   const date = options.date ?? todayInKst(now);
-  const [workers, alertDay] = await Promise.all([
+  const [workers, subjects, alertDay] = await Promise.all([
     prisma.worker.findMany({
-      where: { role: WorkerRole.WORKER },
+      where: { role: WorkerRole.WORKER, archivedAt: null },
       orderBy: [{ name: "asc" }, { id: "asc" }],
-      include: { _count: { select: { subjects: true } } },
+    }),
+    prisma.subject.findMany({
+      where: { archivedAt: null, worker: { archivedAt: null } },
+      include: { worker: { select: { name: true } }, building: true },
+      orderBy: [{ name: "asc" }, { id: "asc" }],
     }),
     prisma.alertDay.findUnique({ where: { date } }),
   ]);
+  const roster = buildAdminRoster({
+    workers,
+    subjects,
+    workerId: options.workerId,
+    subjectQuery: options.subjectQuery,
+  });
   const base: AdminDashboardBase = {
     date,
     dateLabel: formatBoardDate(date),
     selectedWorkerId: options.workerId ?? null,
-    workers: workers.map((worker) => ({
-      id: worker.id,
-      name: worker.name,
-      phone: worker.phone,
-      subjectCount: worker._count.subjects,
-    })),
+    roster,
+    workers: roster.workers,
     generatedAt: now.toISOString(),
   };
 
