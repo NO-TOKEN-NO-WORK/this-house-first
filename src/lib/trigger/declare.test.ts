@@ -12,15 +12,15 @@ vi.mock("server-only", () => ({}));
 vi.mock("../db", () => ({ prisma: {} }));
 
 describe("declareTrigger", () => {
-  it("기존 실제 경보일은 데모 발령으로 덮어쓰지 않는다", async () => {
-    const upsert = vi.fn();
+  it("기존 실제 경보일과 별도로 데모 경보를 만든다", async () => {
+    const upsert = vi.fn().mockResolvedValue({ id: "demo-alert" });
+    const riskAssessmentUpsert = vi.fn().mockResolvedValue({});
     const tx = {
       alertDay: {
-        findUnique: vi.fn().mockResolvedValue({ id: "alert-1", isDemo: false }),
-        upsert: upsert.mockResolvedValue({ id: "alert-1" }),
+        upsert,
       },
       worker: { findMany: vi.fn().mockResolvedValue([]) },
-      riskAssessment: { upsert: vi.fn().mockResolvedValue({}) },
+      riskAssessment: { upsert: riskAssessmentUpsert },
       householdDayStatus: {
         findUnique: vi.fn().mockResolvedValue(null),
         create: vi.fn().mockResolvedValue({}),
@@ -56,8 +56,19 @@ describe("declareTrigger", () => {
         { targetDate: "20260822", feelsLikeMax: 38, demo: true },
         { client },
       ),
-    ).rejects.toMatchObject({ code: "DEMO_CONFLICT", status: 409 });
-    expect(upsert).not.toHaveBeenCalled();
+    ).resolves.toMatchObject({ alerted: true, alertDayId: "demo-alert" });
+    expect(upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          date_isDemo: { date: "2026-08-22", isDemo: true },
+        },
+      }),
+    );
+    expect(riskAssessmentUpsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({ alertDayId: "demo-alert" }),
+      }),
+    );
   });
 
   it("데모 발령은 경보일에 데모 표시를 저장한다", async () => {
@@ -341,16 +352,21 @@ describe("resetDemoTrigger", () => {
     });
   });
 
-  it("실제 경보일은 어떤 기록도 지우지 않고 거부한다", async () => {
+  it("데모 종료 시 같은 날짜의 실제 경보와 기록은 남긴다", async () => {
+    const deleteAlertDay = vi.fn().mockResolvedValue({});
     const tx = {
       alertDay: {
-        findUnique: vi.fn().mockResolvedValue({ id: "alert-1", isDemo: false }),
-        delete: vi.fn(),
+        findUnique: vi.fn().mockImplementation(({ where }) =>
+          where.date_isDemo
+            ? Promise.resolve({ id: "demo-alert", isDemo: true })
+            : Promise.resolve({ id: "real-alert", isDemo: false }),
+        ),
+        delete: deleteAlertDay,
       },
-      notification: { deleteMany: vi.fn() },
-      checkEvent: { deleteMany: vi.fn() },
-      householdDayStatus: { deleteMany: vi.fn() },
-      riskAssessment: { deleteMany: vi.fn() },
+      notification: { deleteMany: vi.fn().mockResolvedValue({ count: 1 }) },
+      checkEvent: { deleteMany: vi.fn().mockResolvedValue({ count: 1 }) },
+      householdDayStatus: { deleteMany: vi.fn().mockResolvedValue({ count: 1 }) },
+      riskAssessment: { deleteMany: vi.fn().mockResolvedValue({ count: 1 }) },
     };
     const client = {
       $transaction: vi.fn(async (callback) => callback(tx)),
@@ -358,8 +374,12 @@ describe("resetDemoTrigger", () => {
 
     await expect(
       resetDemoTrigger("20260822", { client }),
-    ).rejects.toMatchObject({ code: "NOT_DEMO_ALERT", status: 409 });
-    expect(tx.alertDay.delete).not.toHaveBeenCalled();
-    expect(tx.checkEvent.deleteMany).not.toHaveBeenCalled();
+    ).resolves.toEqual({ reset: true, targetDate: "2026-08-22" });
+    expect(deleteAlertDay).toHaveBeenCalledWith({
+      where: { id: "demo-alert" },
+    });
+    expect(deleteAlertDay).not.toHaveBeenCalledWith({
+      where: { id: "real-alert" },
+    });
   });
 });

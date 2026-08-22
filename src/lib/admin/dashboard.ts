@@ -11,6 +11,7 @@ import {
   WorkerRole,
 } from "../domain";
 import { formatBoardDate } from "../board/format";
+import { findActiveAlertDay } from "../trigger/active-alert-day";
 
 export type AdminStatusCategory =
   | "emergency"
@@ -391,7 +392,7 @@ export async function getAdminDashboard(
       include: { worker: { select: { name: true } }, building: true },
       orderBy: [{ name: "asc" }, { id: "asc" }],
     }),
-    prisma.alertDay.findUnique({ where: { date } }),
+    findActiveAlertDay(prisma, date),
   ]);
   const roster = buildAdminRoster({
     workers,

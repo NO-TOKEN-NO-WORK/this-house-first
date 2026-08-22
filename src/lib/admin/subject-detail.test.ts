@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { WorkerRole } from "../domain";
 
 const mocks = vi.hoisted(() => ({
+  alertDayFindFirst: vi.fn(),
   buildingFindMany: vi.fn(),
   subjectFindUnique: vi.fn(),
   workerFindMany: vi.fn(),
@@ -9,6 +10,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("../db", () => ({
   prisma: {
+    alertDay: { findFirst: mocks.alertDayFindFirst },
     building: { findMany: mocks.buildingFindMany },
     subject: { findUnique: mocks.subjectFindUnique },
     worker: { findMany: mocks.workerFindMany },
@@ -21,6 +23,7 @@ describe("getAdminSubjectDetail", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.subjectFindUnique.mockResolvedValue(null);
+    mocks.alertDayFindFirst.mockResolvedValue({ id: "demo-alert" });
     mocks.workerFindMany.mockResolvedValue([]);
     mocks.buildingFindMany.mockResolvedValue([]);
   });
@@ -29,7 +32,17 @@ describe("getAdminSubjectDetail", () => {
     await expect(getAdminSubjectDetail("archived-subject", "2026-08-22")).resolves.toBeNull();
 
     expect(mocks.subjectFindUnique).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id: "archived-subject" } }),
+      expect.objectContaining({
+        where: { id: "archived-subject" },
+        include: expect.objectContaining({
+          assessments: expect.objectContaining({
+            where: { alertDayId: "demo-alert" },
+          }),
+          dayStatuses: expect.objectContaining({
+            where: { alertDayId: "demo-alert" },
+          }),
+        }),
+      }),
     );
     expect(mocks.workerFindMany).toHaveBeenCalledWith(
       expect.objectContaining({

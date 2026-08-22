@@ -31,6 +31,7 @@ import { transition, TransitionError } from "@/lib/escalation/transition";
 import { visitPromotedDraft } from "@/lib/notifications/message";
 import { promotedCallCause } from "@/lib/notifications/policy";
 import { dispatchDueNotifications } from "@/lib/notifications/push";
+import { findActiveAlertDay } from "@/lib/trigger/active-alert-day";
 
 /**
  * 확인 기록 (FR-5) — 전화·방문 결과 원터치 기록.
@@ -110,7 +111,7 @@ export async function POST(request: Request): Promise<Response> {
     const now = new Date();
 
     const outcome = await prisma.$transaction(async (tx) => {
-      const alertDay = await tx.alertDay.findUnique({ where: { date } });
+      const alertDay = await findActiveAlertDay(tx, date);
       if (!alertDay) {
         // 비경보일에는 기록할 대상이 없다 — 발령이 먼저다
         throw conflict(
@@ -220,17 +221,19 @@ export async function POST(request: Request): Promise<Response> {
         },
       });
 
-      if (next.airconIssue) {
-        // 익일 위험도 가중(FR-8) + 지원사업 연계 플래그(FR-11)
-        await tx.subject.update({
-          where: { id: subjectId },
-          data: { airconBroken: true, hasAircon: false },
-        });
-      } else if (coolingStatus) {
-        await tx.subject.update({
-          where: { id: subjectId },
-          data: coolingStatusSubjectPatch(coolingStatus),
-        });
+      if (!alertDay.isDemo) {
+        if (next.airconIssue) {
+          // 익일 위험도 가중(FR-8) + 지원사업 연계 플래그(FR-11)
+          await tx.subject.update({
+            where: { id: subjectId },
+            data: { airconBroken: true, hasAircon: false },
+          });
+        } else if (coolingStatus) {
+          await tx.subject.update({
+            where: { id: subjectId },
+            data: coolingStatusSubjectPatch(coolingStatus),
+          });
+        }
       }
 
       if (next.promoted && check.kind === CheckKind.CALL) {
@@ -258,12 +261,12 @@ export async function POST(request: Request): Promise<Response> {
         }
       }
 
-      return next;
+      return { ...next, alertDayId: alertDay.id };
     });
 
     // 상태와 알림 원장은 이미 커밋됐다. 외부 Push 실패가 확인 기록을 되돌리지 않게 분리한다.
     if (outcome.promoted) {
-      await dispatchDueNotifications().catch((error: unknown) => {
+      await dispatchDueNotifications({ alertDayId: outcome.alertDayId }).catch((error: unknown) => {
         console.error("[notifications] 승격 Push 전달 실패", error);
       });
     }
