@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -56,6 +57,12 @@ export function AdminControls({ date }: { date: string }) {
     return () => window.clearInterval(timer);
   }, [router]);
 
+  useEffect(() => {
+    if (!message) return;
+    const timer = window.setTimeout(() => setMessage(null), 3_000);
+    return () => window.clearTimeout(timer);
+  }, [message]);
+
   async function submitDemoTrigger(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const submitter = (event.nativeEvent as SubmitEvent)
@@ -100,6 +107,9 @@ export function AdminControls({ date }: { date: string }) {
       {message ? (
         <p className={styles.alertMessage} role="status" aria-live="polite">
           {message}
+          <button aria-label="알림 닫기" onClick={() => setMessage(null)} type="button">
+            <Image alt="" aria-hidden="true" height={12} src="/admin/close.png" width={12} />
+          </button>
         </p>
       ) : null}
     </section>

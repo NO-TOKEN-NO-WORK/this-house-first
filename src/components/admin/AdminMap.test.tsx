@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
@@ -59,6 +60,11 @@ afterEach(() => {
 });
 
 describe("AdminMap", () => {
+  it("마우스 휠은 페이지 스크롤을 가로채지 않는다", () => {
+    const source = readFileSync(new URL("./AdminMap.tsx", import.meta.url), "utf8");
+    expect(source).toContain("map.setZoomable(false)");
+  });
+
   it("카카오 키가 없으면 목록을 막지 않는 설정 안내를 보여준다", () => {
     const html = renderToStaticMarkup(<AdminMap buildings={[]} mapKey="" />);
     expect(html).toContain("카카오 지도 키가 설정되지 않았습니다");
@@ -84,6 +90,55 @@ describe("AdminMap", () => {
       />,
     );
     expect(html).toContain('aria-label="건물 위험도 지도"');
+  });
+
+  it("선택한 대상자 정보는 지도 위 말풍선이 아니라 왼쪽 패널에 둔다", () => {
+    const html = renderToStaticMarkup(
+      <AdminMap
+        mapKey=""
+        buildings={[
+          {
+            buildingId: "building-1",
+            address: "대구광역시 서구 비산동 1",
+            lat: 35.87,
+            lng: 128.56,
+            grade: 1,
+            score: 31.5,
+            statusCategory: "unchecked",
+            openCount: 1,
+            subjects: [
+              {
+                subjectId: "subject-1",
+                name: "김○○",
+                phone: "010-0000-0101",
+                birthYear: 1938,
+                workerId: "worker-1",
+                workerName: "이담당",
+                workerPhone: "010-0000-0001",
+                buildingId: "building-1",
+                address: "대구광역시 서구 비산동 1",
+                lat: 35.87,
+                lng: 128.56,
+                grade: 1,
+                score: 31.5,
+                reasons: ["1938년생 (88세)·독거"],
+                status: "UNCHECKED",
+                statusLabel: "미확인",
+                open: true,
+              },
+            ],
+          },
+        ]}
+      />,
+    );
+
+    expect(html).toContain('aria-label="선택한 대상자"');
+    expect(html).toContain("김○○");
+    expect(html).toContain("1938년생 (88세)·독거");
+    expect(html.indexOf('aria-label="선택한 대상자"')).toBeLessThan(
+      html.indexOf('aria-label="건물 위험도 지도"'),
+    );
+    expect(html).not.toContain("mapDetailPin");
   });
 
   it("유효하지 않은 좌표는 지도 오류로 분리한다", () => {

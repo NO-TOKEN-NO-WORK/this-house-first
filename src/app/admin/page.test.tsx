@@ -141,6 +141,8 @@ describe("관리자 관제 화면", () => {
     expect(html).toContain("이담당");
     expect(html).toContain("미확인");
     expect(html).toContain("1938년생 (88세)·독거");
+    expect(html).toContain('href="/admin/subjects/subject-1"');
+    expect(html).toContain('href="/admin/subjects/subject-1/edit"');
   });
 
   it("비경보일에는 위험도를 만들지 않고 침묵 상태를 안내한다", () => {
@@ -228,8 +230,9 @@ describe("관리자 관제 화면", () => {
     expect(html).toContain("생활지원사 관리");
     expect(html).toContain("대상자 등록");
     expect(html).toContain("생활지원사 등록");
-    expect(html).toContain("대상자 상세");
-    expect(html).toContain("010-0000-0101");
+    expect(html).toContain('href="/admin/subjects/new"');
+    expect(html).toContain('href="/admin/workers/new"');
+    expect(html).not.toContain("010-0000-0101");
     expect(html).toContain("010-****-0001");
     expect(html).toContain('aria-label="대상자 검색"');
     expect(html).toContain('aria-label="대상자 상태"');

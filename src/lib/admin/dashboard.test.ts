@@ -126,4 +126,40 @@ describe("buildAdminSnapshot", () => {
       "building-b",
     ]);
   });
+
+  it("대상자 이름 검색은 목록·지도·요약에 같은 행 집합을 사용한다", () => {
+    const result = buildAdminSnapshot({
+      assessments,
+      statuses,
+      subjectQuery: "박",
+    });
+
+    expect(result.subjects.map((subject) => subject.subjectId)).toEqual([
+      "subject-visit",
+    ]);
+    expect(result.buildings).toHaveLength(1);
+    expect(result.buildings[0]?.subjects).toHaveLength(1);
+    expect(result.summary.total).toBe(1);
+  });
+
+  it("선택한 상태만 목록과 지도에 남기며 빈 선택은 모두 숨긴다", () => {
+    const visitOnly = buildAdminSnapshot({
+      assessments,
+      statuses,
+      selectedStatuses: [HouseholdStatus.VISIT_QUEUED],
+    });
+    const none = buildAdminSnapshot({
+      assessments,
+      statuses,
+      selectedStatuses: [],
+    });
+
+    expect(visitOnly.subjects.map((subject) => subject.subjectId)).toEqual([
+      "subject-visit",
+    ]);
+    expect(visitOnly.buildings[0]?.subjects).toHaveLength(1);
+    expect(none.subjects).toEqual([]);
+    expect(none.buildings).toEqual([]);
+    expect(none.summary.total).toBe(0);
+  });
 });
