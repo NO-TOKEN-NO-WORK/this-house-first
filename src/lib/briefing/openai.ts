@@ -1,6 +1,9 @@
 import {
   BriefingCategory,
+  BRIEFING_MAX_LINES,
+  CONVERSATION_ONGOING_MAX,
   CONVERSATION_SUGGESTION_MAX,
+  CONVERSATION_SUMMARY_MAX,
 } from "../domain";
 import type {
   BriefingModelEvent,
@@ -195,10 +198,10 @@ export async function generateSubjectBriefing(
               "위험도, 우선순위, 의료 판단, 처방, 복지 수급 자격은 판단하지 마세요.",
               "모든 문장은 반드시 제공된 기록 하나의 sourceCheckEventId를 인용해야 합니다.",
               "근거가 약하면 문장을 만들지 말고 빈 배열을 반환하세요.",
-              "handover는 최대 3개이며 LIFE_RHYTHM, REPEATED_SIGNAL, CAUTION 분류를 사용하세요.",
+              `handover는 최대 ${BRIEFING_MAX_LINES}개이며 LIFE_RHYTHM, REPEATED_SIGNAL, CAUTION 분류를 하나씩만 사용하세요.`,
               `conversationSuggestions는 최대 ${CONVERSATION_SUGGESTION_MAX}개이며 question은 어르신께 그대로 여쭐 말, reason은 담당자에게만 보이는 이유입니다.`,
               "emphasis는 question 안에 그대로 들어 있는 짧은 구절이거나 null이어야 합니다.",
-              "conversationSummaries는 최근 기록별 대화 핵심과 아직 확인할 사항만 간결하게 정리하세요.",
+              `conversationSummaries는 최대 ${CONVERSATION_SUMMARY_MAX}개이며 기록 한 건당 하나입니다. 대화 핵심과 아직 확인할 사항만 간결하게 정리하세요.`,
             ].join(" "),
           },
           {
@@ -217,7 +220,7 @@ export async function generateSubjectBriefing(
               properties: {
                 handover: {
                   type: "array",
-                  maxItems: 3,
+                  maxItems: BRIEFING_MAX_LINES,
                   items: {
                     type: "object",
                     properties: {
@@ -256,7 +259,7 @@ export async function generateSubjectBriefing(
                 },
                 conversationSummaries: {
                   type: "array",
-                  maxItems: 3,
+                  maxItems: CONVERSATION_SUMMARY_MAX,
                   items: {
                     type: "object",
                     properties: {
@@ -264,7 +267,7 @@ export async function generateSubjectBriefing(
                       sourceCheckEventId: { type: "string" },
                       ongoingItems: {
                         type: "array",
-                        maxItems: 3,
+                        maxItems: CONVERSATION_ONGOING_MAX,
                         items: {
                           type: "object",
                           properties: {

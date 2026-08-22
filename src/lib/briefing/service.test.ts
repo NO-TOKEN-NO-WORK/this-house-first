@@ -1,10 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  BriefingCategory,
-  CallResult,
-  CheckKind,
-  VisitResult,
-} from "../domain";
+import { BriefingCategory, CallResult, CheckKind } from "../domain";
 const mocks = vi.hoisted(() => ({
   subjectFindUnique: vi.fn(),
   briefingFindUnique: vi.fn(),
@@ -26,101 +21,7 @@ vi.mock("./openai", async (importOriginal) => ({
   generateSubjectBriefing: mocks.generateSubjectBriefing,
 }));
 
-import { getSubjectBriefing, verifySubjectBriefing } from "./service";
-
-describe("맥락 브리핑 근거 검증", () => {
-  const sourceEvents = [
-    {
-      id: "subject-a-call",
-      subjectId: "subject-a",
-      date: "2026-08-19",
-      kind: CheckKind.CALL,
-      result: CallResult.OK,
-      memo: "무릎이 불편하다고 했다.",
-    },
-    {
-      id: "subject-b-visit",
-      subjectId: "subject-b",
-      date: "2026-08-20",
-      kind: CheckKind.VISIT,
-      result: VisitResult.OK,
-      memo: "다른 대상자의 기록",
-    },
-  ];
-
-  it("해당 대상자의 실재 기록만 남기고 근거 문구는 DB 행에서 만든다", () => {
-    const result = verifySubjectBriefing({
-      subjectId: "subject-a",
-      sourceEvents,
-      sourceIdByAlias: new Map([
-        ["event-1", "subject-a-call"],
-        ["event-2", "subject-b-visit"],
-      ]),
-      output: {
-        conversationSuggestions: [{
-          question: "무릎은 좀 어떠세요?",
-          emphasis: "무릎",
-          reason: "최근 무릎이 불편하다고 하셨어요.",
-          sourceCheckEventId: "event-1",
-        }],
-        handover: [
-          {
-            category: BriefingCategory.CAUTION,
-            text: "최근 무릎 불편을 말했다.",
-            sourceCheckEventId: "event-1",
-          },
-          {
-            category: BriefingCategory.LIFE_RHYTHM,
-            text: "다른 대상자의 생활 리듬",
-            sourceCheckEventId: "event-2",
-          },
-        ],
-        conversationSummaries: [{
-          text: "무릎 불편을 이야기했다.",
-          sourceCheckEventId: "event-1",
-          ongoingItems: [{
-            text: "다음 통화에서 상태 확인",
-            sourceCheckEventId: "event-1",
-          }],
-        }],
-      },
-      generatedAt: new Date("2026-08-23T00:00:00.000Z"),
-    });
-
-    expect(result?.handover).toHaveLength(1);
-    expect(result?.handover[0]).toMatchObject({
-      category: BriefingCategory.CAUTION,
-      source: {
-        checkEventId: "subject-a-call",
-        kindLabel: "전화",
-        resultLabel: "괜찮았어요",
-        label: "8/19 (수) 전화 · 괜찮았어요",
-      },
-    });
-    expect(JSON.stringify(result)).not.toContain("다른 대상자");
-  });
-
-  it("근거가 전부 틀리면 재호출하지 않도록 검증된 빈 브리핑으로 만든다", () => {
-    const result = verifySubjectBriefing({
-      subjectId: "subject-a",
-      sourceEvents,
-      sourceIdByAlias: new Map([["event-2", "subject-b-visit"]]),
-      output: {
-        conversationSuggestions: [],
-        handover: [{
-          category: BriefingCategory.CAUTION,
-          text: "근거가 다른 대상자다.",
-          sourceCheckEventId: "event-2",
-        }],
-        conversationSummaries: [],
-      },
-      generatedAt: new Date(),
-    });
-
-    expect(result.handover).toEqual([]);
-    expect(result.conversationSuggestions).toEqual([]);
-  });
-});
+import { getSubjectBriefing } from "./service";
 
 describe("맥락 브리핑 캐시", () => {
   beforeEach(() => {

@@ -1,185 +1,47 @@
 import { prisma } from "../db";
 import {
-  BRIEFING_CATEGORY_LABEL,
   CALL_RESULT_LABEL,
   CHECK_KIND_LABEL,
-  CheckKind,
-  CONVERSATION_SUGGESTION_MAX,
-  isBriefingCategory,
   isCallResult,
   isCheckKind,
   isVisitResult,
   VISIT_RESULT_LABEL,
 } from "../domain";
-import { formatHistoryDate } from "../board/format";
+import { toStoredBriefing, verifySubjectBriefing } from "./evidence";
 import { generateSubjectBriefing, parseUnverifiedBriefing } from "./openai";
 import { toBriefingModelEvents } from "./privacy";
 import type {
-  BriefingEvidence,
   BriefingSourceEvent,
   SubjectBriefingView,
   UnverifiedSubjectBriefing,
 } from "./types";
 
-const SOURCE_EVENT_LIMIT = 12;
-const OUTPUT_TEXT_LIMIT = 500;
-const ONGOING_TEXT_LIMIT = 200;
-
-function cleanText(value: string, limit = OUTPUT_TEXT_LIMIT): string | null {
-  const text = value.replace(/\s+/g, " ").trim();
-  return text.length > 0 && text.length <= limit ? text : null;
-}
-
-function evidenceOf(event: BriefingSourceEvent): BriefingEvidence | null {
-  if (!isCheckKind(event.kind)) return null;
-  const kind = event.kind;
-  const kindLabel = CHECK_KIND_LABEL[kind];
-  if (kind === CheckKind.CALL) {
-    if (!isCallResult(event.result)) return null;
-    const resultLabel = CALL_RESULT_LABEL[event.result];
-    return {
-      checkEventId: event.id,
-      date: event.date,
-      dateLabel: formatHistoryDate(event.date),
-      kind,
-      kindLabel,
-      result: event.result,
-      resultLabel,
-      label: `${formatHistoryDate(event.date)} ${kindLabel} · ${resultLabel}`,
-    };
-  }
-  if (!isVisitResult(event.result)) return null;
-  const resultLabel = VISIT_RESULT_LABEL[event.result];
-  return {
-    checkEventId: event.id,
-    date: event.date,
-    dateLabel: formatHistoryDate(event.date),
-    kind,
-    kindLabel,
-    result: event.result,
-    resultLabel,
-    label: `${formatHistoryDate(event.date)} ${kindLabel} · ${resultLabel}`,
-  };
-}
-
 /**
- * 모델의 sourceCheckEventId를 실제 행과 대조한다. 다른 대상자 id·없는 id·도메인 밖 결과는
- * 문장 단위로 버리며, 근거 라벨은 항상 DB 행과 domain.ts에서 다시 만든다 (ADR-0024).
+ * 대상자 맥락 브리핑 (FR-12 · ADR-0024) — 확인 기록 → 인수인계 3줄 · 대화 추천 · 기록별 대화 요약.
+ *
+ * 이 파일은 DB와 캐시만 맡는다. 근거 대조와 근거 문구 만들기는 `evidence.ts`의 순수 함수다 —
+ * 이 기능의 안전장치이므로 prisma 없이 검사할 수 있는 자리에 둔다.
+ *
+ * 캐시 규칙 하나로 외부 호출을 묶는다: **새 확인 기록이 없으면 다시 만들지 않는다.**
+ * 저장된 문장도 열람할 때마다 같은 대조를 다시 통과해야 한다 — 그 사이 기록이 지워졌으면
+ * 그 문장은 화면에 닿지 않는다.
+ *
+ * ⚠️ 이 모듈은 `RiskAssessment`를 읽지 않는다. 위험 점수·등급·확인 순서는 규칙 엔진 단독이며
+ *    (ADR-0005) 브리핑은 "만나서 무엇을 확인할까"만 답한다.
  */
-export function verifySubjectBriefing(options: {
-  subjectId: string;
-  output: UnverifiedSubjectBriefing;
-  sourceIdByAlias: ReadonlyMap<string, string>;
-  sourceEvents: BriefingSourceEvent[];
-  generatedAt: Date;
-}): SubjectBriefingView {
-  const eventById = new Map(
-    options.sourceEvents
-      .filter((event) => event.subjectId === options.subjectId)
-      .map((event) => [event.id, event] as const),
-  );
-  const resolveEvidence = (alias: string): BriefingEvidence | null => {
-    const sourceId = options.sourceIdByAlias.get(alias);
-    const event = sourceId ? eventById.get(sourceId) : undefined;
-    return event ? evidenceOf(event) : null;
-  };
 
-  const usedCategories = new Set<string>();
-  const handover = options.output.handover.flatMap((item) => {
-    if (!isBriefingCategory(item.category) || usedCategories.has(item.category)) {
-      return [];
-    }
-    const text = cleanText(item.text);
-    const source = resolveEvidence(item.sourceCheckEventId);
-    if (!text || !source) return [];
-    usedCategories.add(item.category);
-    return [{
-      category: item.category,
-      categoryLabel: BRIEFING_CATEGORY_LABEL[item.category],
-      text,
-      source,
-    }];
-  }).slice(0, 3);
+const SOURCE_EVENT_LIMIT = 12;
 
-  const usedSuggestionQuestions = new Set<string>();
-  const conversationSuggestions = options.output.conversationSuggestions
-    .flatMap((item) => {
-      const question = cleanText(item.question);
-      const reason = cleanText(item.reason, ONGOING_TEXT_LIMIT);
-      const source = resolveEvidence(item.sourceCheckEventId);
-      if (
-        !question ||
-        !reason ||
-        !source ||
-        usedSuggestionQuestions.has(question)
-      ) {
-        return [];
-      }
-      usedSuggestionQuestions.add(question);
-      const emphasis = item.emphasis?.replace(/\s+/g, " ").trim() ?? "";
-      return [{
-        question,
-        emphasis: emphasis && question.includes(emphasis) ? emphasis : null,
-        reason,
-        source,
-      }];
-    })
-    .slice(0, CONVERSATION_SUGGESTION_MAX);
-
-  const usedConversationSources = new Set<string>();
-  const conversationSummaries = options.output.conversationSummaries.flatMap(
-    (item) => {
-      const text = cleanText(item.text);
-      const source = resolveEvidence(item.sourceCheckEventId);
-      if (!text || !source || usedConversationSources.has(source.checkEventId)) {
-        return [];
-      }
-      usedConversationSources.add(source.checkEventId);
-      return [{
-        text,
-        source,
-        ongoingItems: item.ongoingItems
-          .flatMap((entry) => {
-            const ongoingText = cleanText(entry.text, ONGOING_TEXT_LIMIT);
-            const ongoingSource = resolveEvidence(entry.sourceCheckEventId);
-            return ongoingText && ongoingSource
-              ? [{ text: ongoingText, source: ongoingSource }]
-              : [];
-          })
-          .slice(0, 3),
-      }];
-    },
-  ).slice(0, 3);
-
+/** 모델에게는 도메인 상수가 만든 라벨을 준다 — 저장값(`OK`·`CALL`)은 뜻이 통하지 않는다 */
+function labelled(event: BriefingSourceEvent): BriefingSourceEvent {
   return {
-    handover,
-    conversationSuggestions,
-    conversationSummaries,
-    generatedAt: options.generatedAt.toISOString(),
-  };
-}
-
-function storedOutput(view: SubjectBriefingView): UnverifiedSubjectBriefing {
-  return {
-    handover: view.handover.map((item) => ({
-      category: item.category,
-      text: item.text,
-      sourceCheckEventId: item.source.checkEventId,
-    })),
-    conversationSuggestions: view.conversationSuggestions.map((item) => ({
-      question: item.question,
-      emphasis: item.emphasis,
-      reason: item.reason,
-      sourceCheckEventId: item.source.checkEventId,
-    })),
-    conversationSummaries: view.conversationSummaries.map((item) => ({
-      text: item.text,
-      sourceCheckEventId: item.source.checkEventId,
-      ongoingItems: item.ongoingItems.map((entry) => ({
-        text: entry.text,
-        sourceCheckEventId: entry.source.checkEventId,
-      })),
-    })),
+    ...event,
+    kind: isCheckKind(event.kind) ? CHECK_KIND_LABEL[event.kind] : event.kind,
+    result: isCallResult(event.result)
+      ? CALL_RESULT_LABEL[event.result]
+      : isVisitResult(event.result)
+        ? VISIT_RESULT_LABEL[event.result]
+        : event.result,
   };
 }
 
@@ -187,6 +49,7 @@ function parseStoredOutput(content: string): UnverifiedSubjectBriefing | null {
   try {
     return parseUnverifiedBriefing(content);
   } catch {
+    // 저장된 JSON이 깨졌거나 예전 모양이면 캐시가 없는 것으로 본다 — 다음 열람이 다시 만든다
     return null;
   }
 }
@@ -238,14 +101,13 @@ export async function getSubjectBriefing(
       const identityAliases = new Map(
         sourceEvents.map((event) => [event.id, event.id] as const),
       );
-      const verified = verifySubjectBriefing({
+      return verifySubjectBriefing({
         subjectId,
         output,
         sourceIdByAlias: identityAliases,
         sourceEvents,
         generatedAt: cached.updatedAt,
       });
-      return verified;
     }
   }
 
@@ -257,15 +119,7 @@ export async function getSubjectBriefing(
     subject.building.roadAddress ?? "",
   ];
   const { events: modelEvents, sourceIdByAlias } = toBriefingModelEvents(
-    sourceEvents.map((event) => ({
-      ...event,
-      kind: isCheckKind(event.kind) ? CHECK_KIND_LABEL[event.kind] : event.kind,
-      result: isCallResult(event.result)
-        ? CALL_RESULT_LABEL[event.result]
-        : isVisitResult(event.result)
-          ? VISIT_RESULT_LABEL[event.result]
-          : event.result,
-    })),
+    sourceEvents.map(labelled),
     privateTerms,
   );
   const output = await generateSubjectBriefing(modelEvents);
@@ -276,17 +130,12 @@ export async function getSubjectBriefing(
     sourceEvents,
     generatedAt: new Date(),
   });
+  // 대조를 통과한 문장만 저장한다 — 버려진 문장이 캐시에 남아 다음 열람에 되살아나지 않게
+  const content = JSON.stringify(toStoredBriefing(verified));
   const saved = await prisma.subjectBriefing.upsert({
     where: { subjectId },
-    update: {
-      sourceCheckEventId: latestSourceId,
-      content: JSON.stringify(storedOutput(verified)),
-    },
-    create: {
-      subjectId,
-      sourceCheckEventId: latestSourceId,
-      content: JSON.stringify(storedOutput(verified)),
-    },
+    update: { sourceCheckEventId: latestSourceId, content },
+    create: { subjectId, sourceCheckEventId: latestSourceId, content },
     select: { updatedAt: true },
   });
   return { ...verified, generatedAt: saved.updatedAt.toISOString() };
