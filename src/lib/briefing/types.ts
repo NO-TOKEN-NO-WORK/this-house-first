@@ -31,10 +31,17 @@ export interface BriefingConversationSummary extends BriefingStatement {
   ongoingItems: BriefingStatement[];
 }
 
+export interface BriefingConversationSuggestion {
+  question: string;
+  emphasis: string | null;
+  reason: string;
+  source: BriefingEvidence;
+}
+
 /** GET /api/subjects/[subjectId]/briefing의 브라우저 안전 응답. */
 export interface SubjectBriefingView {
-  todayPrompt: BriefingStatement | null;
   handover: BriefingHandoverItem[];
+  conversationSuggestions: BriefingConversationSuggestion[];
   conversationSummaries: BriefingConversationSummary[];
   generatedAt: string;
 }
@@ -73,9 +80,16 @@ export interface UnverifiedConversationSummary
   ongoingItems: UnverifiedBriefingStatement[];
 }
 
+export interface UnverifiedConversationSuggestion {
+  question: string;
+  emphasis: string | null;
+  reason: string;
+  sourceCheckEventId: string;
+}
+
 /** strict Structured Outputs를 파싱했지만 DB 소유권 대조 전인 값. */
 export interface UnverifiedSubjectBriefing {
-  todayPrompt: UnverifiedBriefingStatement | null;
   handover: UnverifiedBriefingHandoverItem[];
+  conversationSuggestions: UnverifiedConversationSuggestion[];
   conversationSummaries: UnverifiedConversationSummary[];
 }

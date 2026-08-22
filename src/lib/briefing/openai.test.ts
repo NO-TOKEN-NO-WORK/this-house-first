@@ -14,13 +14,15 @@ describe("Luna 맥락 브리핑 생성", () => {
           content: [{
             type: "output_text",
             text: JSON.stringify({
-              todayPrompt: {
-                text: "다음 진료 이동 방법을 확인해 주세요.",
-                sourceCheckEventId: "event-1",
-              },
               handover: [{
                 category: BriefingCategory.CAUTION,
                 text: "최근 무릎 불편으로 외출이 줄었다고 했다.",
+                sourceCheckEventId: "event-1",
+              }],
+              conversationSuggestions: [{
+                question: "다음 진료 때 어떻게 이동하실 예정이에요?",
+                emphasis: "어떻게 이동",
+                reason: "지난 통화에서 진료 이동을 걱정하셨어요.",
                 sourceCheckEventId: "event-1",
               }],
               conversationSummaries: [{
@@ -59,9 +61,9 @@ describe("Luna 맥락 브리핑 생성", () => {
       input.find((message) => message.role === "user")?.content ?? "{}",
     ) as Record<string, unknown>;
     expect(userInput).toMatchObject({
-      subjectId: "brief-1",
       checkEvents: [{ sourceCheckEventId: "event-1" }],
     });
+    expect(userInput).not.toHaveProperty("subjectId");
     expect(result.handover[0]?.category).toBe(BriefingCategory.CAUTION);
   });
 });

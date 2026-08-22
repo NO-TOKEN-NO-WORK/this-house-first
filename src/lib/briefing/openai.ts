@@ -1,4 +1,7 @@
-import { BriefingCategory } from "../domain";
+import {
+  BriefingCategory,
+  CONVERSATION_SUGGESTION_MAX,
+} from "../domain";
 import type {
   BriefingModelEvent,
   UnverifiedBriefingStatement,
@@ -81,6 +84,7 @@ export function parseUnverifiedBriefing(text: string): UnverifiedSubjectBriefing
   const value = parsed as Record<string, unknown>;
   if (
     !Array.isArray(value.handover) ||
+    !Array.isArray(value.conversationSuggestions) ||
     !Array.isArray(value.conversationSummaries)
   ) {
     throw new BriefingGenerationError(
@@ -88,16 +92,6 @@ export function parseUnverifiedBriefing(text: string): UnverifiedSubjectBriefing
       "INVALID_BRIEFING_RESPONSE",
     );
   }
-  const todayPrompt = value.todayPrompt === null
-    ? null
-    : parseStatement(value.todayPrompt);
-  if (value.todayPrompt !== null && !todayPrompt) {
-    throw new BriefingGenerationError(
-      "오늘 확인할 것의 형식이 올바르지 않습니다.",
-      "INVALID_BRIEFING_RESPONSE",
-    );
-  }
-
   const handover = value.handover.map((item) => {
     const statement = parseStatement(item);
     const category = item && typeof item === "object"
@@ -110,6 +104,33 @@ export function parseUnverifiedBriefing(text: string): UnverifiedSubjectBriefing
       );
     }
     return { ...statement, category };
+  });
+
+  const conversationSuggestions = value.conversationSuggestions.map((item) => {
+    if (!item || typeof item !== "object") {
+      throw new BriefingGenerationError(
+        "대화 추천의 형식이 올바르지 않습니다.",
+        "INVALID_BRIEFING_RESPONSE",
+      );
+    }
+    const suggestion = item as Record<string, unknown>;
+    if (
+      typeof suggestion.question !== "string" ||
+      typeof suggestion.reason !== "string" ||
+      (typeof suggestion.emphasis !== "string" && suggestion.emphasis !== null) ||
+      typeof suggestion.sourceCheckEventId !== "string"
+    ) {
+      throw new BriefingGenerationError(
+        "대화 추천의 형식이 올바르지 않습니다.",
+        "INVALID_BRIEFING_RESPONSE",
+      );
+    }
+    return {
+      question: suggestion.question,
+      emphasis: suggestion.emphasis,
+      reason: suggestion.reason,
+      sourceCheckEventId: suggestion.sourceCheckEventId,
+    };
   });
 
   const conversationSummaries = value.conversationSummaries.map((item) => {
@@ -133,7 +154,7 @@ export function parseUnverifiedBriefing(text: string): UnverifiedSubjectBriefing
     };
   });
 
-  return { todayPrompt, handover, conversationSummaries };
+  return { handover, conversationSuggestions, conversationSummaries };
 }
 
 export async function generateSubjectBriefing(
@@ -173,15 +194,17 @@ export async function generateSubjectBriefing(
               "당신은 생활지원사가 다음 만남 전에 확인할 생활 맥락만 정리합니다.",
               "위험도, 우선순위, 의료 판단, 처방, 복지 수급 자격은 판단하지 마세요.",
               "모든 문장은 반드시 제공된 기록 하나의 sourceCheckEventId를 인용해야 합니다.",
-              "근거가 약하면 문장을 만들지 말고 빈 배열이나 null을 반환하세요.",
+              "근거가 약하면 문장을 만들지 말고 빈 배열을 반환하세요.",
               "handover는 최대 3개이며 LIFE_RHYTHM, REPEATED_SIGNAL, CAUTION 분류를 사용하세요.",
+              `conversationSuggestions는 최대 ${CONVERSATION_SUGGESTION_MAX}개이며 question은 어르신께 그대로 여쭐 말, reason은 담당자에게만 보이는 이유입니다.`,
+              "emphasis는 question 안에 그대로 들어 있는 짧은 구절이거나 null이어야 합니다.",
               "conversationSummaries는 최근 기록별 대화 핵심과 아직 확인할 사항만 간결하게 정리하세요.",
             ].join(" "),
           },
           {
             type: "message",
             role: "user",
-            content: JSON.stringify({ subjectId: "brief-1", checkEvents: events }),
+            content: JSON.stringify({ checkEvents: events }),
           },
         ],
         text: {
@@ -192,20 +215,6 @@ export async function generateSubjectBriefing(
             schema: {
               type: "object",
               properties: {
-                todayPrompt: {
-                  anyOf: [
-                    {
-                      type: "object",
-                      properties: {
-                        text: { type: "string" },
-                        sourceCheckEventId: { type: "string" },
-                      },
-                      required: ["text", "sourceCheckEventId"],
-                      additionalProperties: false,
-                    },
-                    { type: "null" },
-                  ],
-                },
                 handover: {
                   type: "array",
                   maxItems: 3,
@@ -220,6 +229,28 @@ export async function generateSubjectBriefing(
                       sourceCheckEventId: { type: "string" },
                     },
                     required: ["category", "text", "sourceCheckEventId"],
+                    additionalProperties: false,
+                  },
+                },
+                conversationSuggestions: {
+                  type: "array",
+                  maxItems: CONVERSATION_SUGGESTION_MAX,
+                  items: {
+                    type: "object",
+                    properties: {
+                      question: { type: "string" },
+                      emphasis: {
+                        anyOf: [{ type: "string" }, { type: "null" }],
+                      },
+                      reason: { type: "string" },
+                      sourceCheckEventId: { type: "string" },
+                    },
+                    required: [
+                      "question",
+                      "emphasis",
+                      "reason",
+                      "sourceCheckEventId",
+                    ],
                     additionalProperties: false,
                   },
                 },
@@ -250,7 +281,11 @@ export async function generateSubjectBriefing(
                   },
                 },
               },
-              required: ["todayPrompt", "handover", "conversationSummaries"],
+              required: [
+                "handover",
+                "conversationSuggestions",
+                "conversationSummaries",
+              ],
               additionalProperties: false,
             },
           },
@@ -274,7 +309,15 @@ export async function generateSubjectBriefing(
       response.status === 401 ? 503 : 502,
     );
   }
-  const payload: unknown = await response.json();
+  let payload: unknown;
+  try {
+    payload = await response.json();
+  } catch {
+    throw new BriefingGenerationError(
+      "맥락 브리핑 응답을 JSON으로 해석하지 못했습니다.",
+      "INVALID_BRIEFING_RESPONSE",
+    );
+  }
   const text = outputText(payload);
   if (!text) {
     throw new BriefingGenerationError(

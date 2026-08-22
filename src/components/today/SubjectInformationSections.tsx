@@ -3,10 +3,8 @@ import type {
   SubjectDetail,
   SubjectHistoryItem,
 } from "@/lib/board/subject";
-import type { BriefingStatement } from "@/lib/briefing/types";
 import {
   GRADE_LABEL,
-  SUBJECT_INFORMATION_LABELS,
   VISIT_CHECKLIST,
   VisitResult,
 } from "@/lib/domain";
@@ -42,11 +40,7 @@ export function GradeChangeNotice({ detail }: { detail: SubjectDetail }) {
 }
 
 /** 현장에서 놓치기 쉬운 항목을 도메인 상수 순서 그대로 보여 준다. */
-export function VisitChecklist({
-  personalized,
-}: {
-  personalized?: BriefingStatement | null;
-} = {}) {
+export function VisitChecklist() {
   return (
     <section className="flex flex-col gap-4 rounded-[10px] border border-border-default bg-surface-default p-6">
       <h2 className="text-label-15 text-text-secondary">방문 체크리스트</h2>
@@ -59,22 +53,6 @@ export function VisitChecklist({
             <span>{item}</span>
           </li>
         ))}
-        {personalized && (
-          <li className="flex items-start gap-2">
-            <span aria-hidden className="shrink-0">
-              -
-            </span>
-            <span>
-              <strong className="font-bold">
-                {SUBJECT_INFORMATION_LABELS.TODAY_PROMPT}:{" "}
-              </strong>
-              {personalized.text}
-              <span className="mt-1 block text-body-14 text-text-secondary">
-                {SUBJECT_INFORMATION_LABELS.EVIDENCE} · {personalized.source.label}
-              </span>
-            </span>
-          </li>
-        )}
       </ul>
     </section>
   );

@@ -2,13 +2,13 @@
 
 import { useId } from "react";
 import { Dialog } from "@/components/Dialog";
+import { ConversationSuggestions } from "@/components/today/ConversationSuggestions";
 import { PhoneIcon } from "@/components/today/icons";
 import { SubjectSummary } from "@/components/today/SubjectSummary";
 import { useSubjectBriefing } from "@/components/today/useSubjectBriefing";
 import {
   CALL_GUIDE_QUESTIONS,
   CALL_GUIDE_QUESTION_EMPHASIS,
-  SUBJECT_INFORMATION_LABELS,
   type RiskGrade,
 } from "@/lib/domain";
 
@@ -53,9 +53,9 @@ export function CallGuideDialog({
 }: Props) {
   const nameId = useId();
   const { briefing } = useSubjectBriefing(subjectId, open);
-  const todayPrompt = questions === CALL_GUIDE_QUESTIONS
-    ? briefing?.todayPrompt ?? null
-    : null;
+  const suggestions = questions === CALL_GUIDE_QUESTIONS
+    ? briefing?.conversationSuggestions ?? []
+    : [];
 
   const cta =
     "mt-6 flex h-14 w-full items-center justify-center gap-[9px] rounded-lg text-heading-19";
@@ -90,18 +90,8 @@ export function CallGuideDialog({
                 />
               </li>
             ))}
-            {todayPrompt && (
-              <li className="text-body-16 text-text-primary">
-                <strong className="font-bold">
-                  {SUBJECT_INFORMATION_LABELS.TODAY_PROMPT}
-                </strong>
-                <span className="block">{todayPrompt.text}</span>
-                <span className="mt-1 block text-body-14 text-text-secondary">
-                  {SUBJECT_INFORMATION_LABELS.EVIDENCE} · {todayPrompt.source.label}
-                </span>
-              </li>
-            )}
           </ul>
+          <ConversationSuggestions suggestions={suggestions} />
         </div>
 
         {phone ? (

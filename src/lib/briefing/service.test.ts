@@ -57,10 +57,12 @@ describe("맥락 브리핑 근거 검증", () => {
         ["event-2", "subject-b-visit"],
       ]),
       output: {
-        todayPrompt: {
-          text: "무릎 상태를 확인해 주세요.",
+        conversationSuggestions: [{
+          question: "무릎은 좀 어떠세요?",
+          emphasis: "무릎",
+          reason: "최근 무릎이 불편하다고 하셨어요.",
           sourceCheckEventId: "event-1",
-        },
+        }],
         handover: [
           {
             category: BriefingCategory.CAUTION,
@@ -98,13 +100,13 @@ describe("맥락 브리핑 근거 검증", () => {
     expect(JSON.stringify(result)).not.toContain("다른 대상자");
   });
 
-  it("근거가 전부 틀리면 빈 브리핑으로 버린다", () => {
-    expect(verifySubjectBriefing({
+  it("근거가 전부 틀리면 재호출하지 않도록 검증된 빈 브리핑으로 만든다", () => {
+    const result = verifySubjectBriefing({
       subjectId: "subject-a",
       sourceEvents,
       sourceIdByAlias: new Map([["event-2", "subject-b-visit"]]),
       output: {
-        todayPrompt: null,
+        conversationSuggestions: [],
         handover: [{
           category: BriefingCategory.CAUTION,
           text: "근거가 다른 대상자다.",
@@ -113,7 +115,10 @@ describe("맥락 브리핑 근거 검증", () => {
         conversationSummaries: [],
       },
       generatedAt: new Date(),
-    })).toBeNull();
+    });
+
+    expect(result.handover).toEqual([]);
+    expect(result.conversationSuggestions).toEqual([]);
   });
 });
 
@@ -141,10 +146,12 @@ describe("맥락 브리핑 캐시", () => {
     mocks.briefingFindUnique.mockResolvedValue({
       sourceCheckEventId: "latest-event",
       content: JSON.stringify({
-        todayPrompt: {
-          text: "산책 시간을 확인해 주세요.",
+        conversationSuggestions: [{
+          question: "오늘도 산책 다녀오셨어요?",
+          emphasis: "산책",
+          reason: "평소 아침 산책을 하신다고 했어요.",
           sourceCheckEventId: "latest-event",
-        },
+        }],
         handover: [],
         conversationSummaries: [],
       }),
@@ -153,7 +160,9 @@ describe("맥락 브리핑 캐시", () => {
 
     const result = await getSubjectBriefing("subject-a");
 
-    expect(result?.todayPrompt?.source.checkEventId).toBe("latest-event");
+    expect(result?.conversationSuggestions[0]?.source.checkEventId).toBe(
+      "latest-event",
+    );
     expect(mocks.generateSubjectBriefing).not.toHaveBeenCalled();
     expect(mocks.briefingUpsert).not.toHaveBeenCalled();
   });
@@ -165,7 +174,7 @@ describe("맥락 브리핑 캐시", () => {
       updatedAt: new Date("2026-08-20T00:00:00.000Z"),
     });
     mocks.generateSubjectBriefing.mockResolvedValue({
-      todayPrompt: null,
+      conversationSuggestions: [],
       handover: [{
         category: BriefingCategory.LIFE_RHYTHM,
         text: "아침 산책을 하는 생활 리듬이 있다.",
@@ -185,6 +194,29 @@ describe("맥락 브리핑 캐시", () => {
       expect.objectContaining({
         where: { subjectId: "subject-a" },
         update: expect.objectContaining({
+          sourceCheckEventId: "latest-event",
+        }),
+      }),
+    );
+  });
+
+  it("모델이 빈 결과를 내도 최신 기록 기준으로 캐시한다", async () => {
+    mocks.briefingFindUnique.mockResolvedValue(null);
+    mocks.generateSubjectBriefing.mockResolvedValue({
+      handover: [],
+      conversationSuggestions: [],
+      conversationSummaries: [],
+    });
+    mocks.briefingUpsert.mockResolvedValue({
+      updatedAt: new Date("2026-08-23T01:00:00.000Z"),
+    });
+
+    const result = await getSubjectBriefing("subject-a");
+
+    expect(result?.handover).toEqual([]);
+    expect(mocks.briefingUpsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({
           sourceCheckEventId: "latest-event",
         }),
       }),

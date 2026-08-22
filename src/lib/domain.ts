@@ -423,14 +423,17 @@ export function isBriefingCategory(value: unknown): value is BriefingCategory {
   );
 }
 
+/** 전화 안내에 붙는 대상자별 대화 추천 상한 — PRD F6·ADR-0024. */
+export const CONVERSATION_SUGGESTION_MAX = 2;
+
 /** 대상자 정보 화면의 새 탭·상세 문구 — Figma 용어를 제품 용어(ADR-0024)로 맞춘다. */
 export const SUBJECT_INFORMATION_LABELS = {
   HISTORY_TAB: "방문 히스토리",
   BRIEFING_TAB: "맥락 브리핑",
   OVERVIEW: "한눈에 보기",
   CONVERSATION_SUMMARY: "대화 요약",
+  CONVERSATION_SUGGESTIONS: "AI 대화 추천",
   IN_PROGRESS: "진행 중인 사항",
-  TODAY_PROMPT: "오늘 확인할 것",
   RECORD_MEMO: "기록 메모",
   EVIDENCE: "근거",
   LOADING: "맥락을 불러오는 중이에요.",

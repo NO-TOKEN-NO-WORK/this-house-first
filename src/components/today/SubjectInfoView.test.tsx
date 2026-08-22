@@ -124,7 +124,6 @@ describe("SubjectInfoView", () => {
         loading={false}
         briefing={{
           generatedAt: "2026-08-23T00:00:00.000Z",
-          todayPrompt: null,
           handover: [{
             category: BriefingCategory.CAUTION,
             categoryLabel: "조심할 것",
@@ -140,6 +139,7 @@ describe("SubjectInfoView", () => {
               label: "8/19 (수) 전화 · 괜찮았어요",
             },
           }],
+          conversationSuggestions: [],
           conversationSummaries: [],
         }}
       />,

@@ -247,5 +247,4 @@ stateDiagram-v2
 | 문제 | 영향 | 현재 대응 |
 |---|---|---|
 | `POST /api/trigger`가 콜드 커넥션에서 Prisma 인터랙티브 트랜잭션 5초 제한을 넘겨 500 (`A commit cannot be executed on an expired transaction`) | 그날 첫 발령이 실패한다. **데모 첫 시연에서 바로 터질 수 있다** | 재시도하면 성공. `declareTrigger`의 `$transaction`에 `timeout` 상향 또는 대상자별 쓰기를 트랜잭션 밖으로 빼는 것이 근본 대응 |
-| 시드가 `CheckEvent`를 지우기만 하고 만들지 않는다 (`prisma/seed.ts:155`) | FR-11 복지 스캔은 최신 메모 1건, FR-12 맥락 브리핑은 입력 전체가 0건이 된다. **브리핑을 붙여도 데모에서 빈 화면이 나온다** | 대상자별 과거 경보일·확인 기록·메모를 합성해 시드에 넣는 것이 FR-12의 선행 작업이다 ([ADR-0024](adr/0024-subject-context-briefing.md)) |
 | 비경보일에는 가구 확인 기록을 남길 수 없다 | ①-b 화면의 `연락 완료` 칩·`3 / 15` 요약을 구현하지 못함 | 명단만 표시하고 전화는 `tel:`로 바로 건다. 저장하려면 `HouseholdDayStatus`를 `AlertDay`에서 분리해야 하며 별도 ADR 필요 ([ADR-0014](adr/0014-figma-design-with-domain-terms.md)) |

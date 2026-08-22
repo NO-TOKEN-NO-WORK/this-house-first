@@ -72,7 +72,7 @@ export function SubjectInfoView({
 
         {assessment && <RiskReasonsCard assessment={assessment} />}
 
-        <VisitChecklist personalized={briefing?.todayPrompt} />
+        <VisitChecklist />
         <SubjectInformationTabs
           history={detail.recentHistory}
           briefing={briefing}

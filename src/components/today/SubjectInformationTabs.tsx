@@ -113,7 +113,7 @@ export function BriefingPanel({
       </p>
     );
   }
-  if (!briefing || (!briefing.todayPrompt && briefing.handover.length === 0)) {
+  if (!briefing || briefing.handover.length === 0) {
     return (
       <p className="py-4 text-body-15 text-text-secondary">
         {SUBJECT_INFORMATION_LABELS.EMPTY}
@@ -123,15 +123,6 @@ export function BriefingPanel({
 
   return (
     <div className="flex flex-col gap-6">
-      {briefing.todayPrompt && (
-        <BriefingSection title={SUBJECT_INFORMATION_LABELS.TODAY_PROMPT}>
-          <p className="text-body-16 text-text-primary">
-            {briefing.todayPrompt.text}
-          </p>
-          <EvidenceLabel label={briefing.todayPrompt.source.label} />
-        </BriefingSection>
-      )}
-
       {briefing.handover.length > 0 && (
         <BriefingSection title={SUBJECT_INFORMATION_LABELS.OVERVIEW}>
           <ul className="flex flex-col gap-5">

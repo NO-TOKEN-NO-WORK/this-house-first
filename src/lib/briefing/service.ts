@@ -4,6 +4,7 @@ import {
   CALL_RESULT_LABEL,
   CHECK_KIND_LABEL,
   CheckKind,
+  CONVERSATION_SUGGESTION_MAX,
   isBriefingCategory,
   isCallResult,
   isCheckKind,
@@ -71,7 +72,7 @@ export function verifySubjectBriefing(options: {
   sourceIdByAlias: ReadonlyMap<string, string>;
   sourceEvents: BriefingSourceEvent[];
   generatedAt: Date;
-}): SubjectBriefingView | null {
+}): SubjectBriefingView {
   const eventById = new Map(
     options.sourceEvents
       .filter((event) => event.subjectId === options.subjectId)
@@ -82,16 +83,6 @@ export function verifySubjectBriefing(options: {
     const event = sourceId ? eventById.get(sourceId) : undefined;
     return event ? evidenceOf(event) : null;
   };
-
-  const promptText = options.output.todayPrompt
-    ? cleanText(options.output.todayPrompt.text)
-    : null;
-  const promptSource = options.output.todayPrompt
-    ? resolveEvidence(options.output.todayPrompt.sourceCheckEventId)
-    : null;
-  const todayPrompt = promptText && promptSource
-    ? { text: promptText, source: promptSource }
-    : null;
 
   const usedCategories = new Set<string>();
   const handover = options.output.handover.flatMap((item) => {
@@ -109,6 +100,31 @@ export function verifySubjectBriefing(options: {
       source,
     }];
   }).slice(0, 3);
+
+  const usedSuggestionQuestions = new Set<string>();
+  const conversationSuggestions = options.output.conversationSuggestions
+    .flatMap((item) => {
+      const question = cleanText(item.question);
+      const reason = cleanText(item.reason, ONGOING_TEXT_LIMIT);
+      const source = resolveEvidence(item.sourceCheckEventId);
+      if (
+        !question ||
+        !reason ||
+        !source ||
+        usedSuggestionQuestions.has(question)
+      ) {
+        return [];
+      }
+      usedSuggestionQuestions.add(question);
+      const emphasis = item.emphasis?.replace(/\s+/g, " ").trim() ?? "";
+      return [{
+        question,
+        emphasis: emphasis && question.includes(emphasis) ? emphasis : null,
+        reason,
+        source,
+      }];
+    })
+    .slice(0, CONVERSATION_SUGGESTION_MAX);
 
   const usedConversationSources = new Set<string>();
   const conversationSummaries = options.output.conversationSummaries.flatMap(
@@ -135,12 +151,9 @@ export function verifySubjectBriefing(options: {
     },
   ).slice(0, 3);
 
-  if (!todayPrompt && handover.length === 0 && conversationSummaries.length === 0) {
-    return null;
-  }
   return {
-    todayPrompt,
     handover,
+    conversationSuggestions,
     conversationSummaries,
     generatedAt: options.generatedAt.toISOString(),
   };
@@ -148,15 +161,15 @@ export function verifySubjectBriefing(options: {
 
 function storedOutput(view: SubjectBriefingView): UnverifiedSubjectBriefing {
   return {
-    todayPrompt: view.todayPrompt
-      ? {
-          text: view.todayPrompt.text,
-          sourceCheckEventId: view.todayPrompt.source.checkEventId,
-        }
-      : null,
     handover: view.handover.map((item) => ({
       category: item.category,
       text: item.text,
+      sourceCheckEventId: item.source.checkEventId,
+    })),
+    conversationSuggestions: view.conversationSuggestions.map((item) => ({
+      question: item.question,
+      emphasis: item.emphasis,
+      reason: item.reason,
       sourceCheckEventId: item.source.checkEventId,
     })),
     conversationSummaries: view.conversationSummaries.map((item) => ({
@@ -191,7 +204,7 @@ export async function getSubjectBriefing(
       worker: { select: { name: true } },
       building: { select: { address: true, roadAddress: true } },
       checkEvents: {
-        orderBy: { createdAt: "desc" },
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
         take: SOURCE_EVENT_LIMIT,
         select: {
           id: true,
@@ -232,7 +245,7 @@ export async function getSubjectBriefing(
         sourceEvents,
         generatedAt: cached.updatedAt,
       });
-      if (verified) return verified;
+      return verified;
     }
   }
 
@@ -263,8 +276,6 @@ export async function getSubjectBriefing(
     sourceEvents,
     generatedAt: new Date(),
   });
-  if (!verified) return null;
-
   const saved = await prisma.subjectBriefing.upsert({
     where: { subjectId },
     update: {
