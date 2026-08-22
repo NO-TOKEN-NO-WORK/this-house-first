@@ -11,6 +11,8 @@ const WAYPOINTS_URL =
 const DESTINATION_RADIUS_METERS = 10_000;
 const REQUEST_TIMEOUT_MS = 8_000;
 const MAX_VISIT_STOPS = 15;
+/** 로그에 붙일 카카오 오류 본문 최대 길이 */
+const ERROR_BODY_MAX_CHARS = 200;
 
 type Fetcher = typeof fetch;
 
@@ -72,6 +74,25 @@ function uniqueConsecutiveStops(stops: VisitRouteStop[]): RoutingStop[] {
   }
 
   return result;
+}
+
+/**
+ * 실패 응답을 로그에 남길 문구로 바꾼다.
+ *
+ * 상태 코드만으로는 키가 틀린 건지 권한 문제인지 못 가리므로 카카오가 준 본문까지 붙인다.
+ * 단 카카오는 401 본문에 보낸 앱 키를 그대로 되돌려주므로(`wrong appKey(...) format`)
+ * 반드시 가린다 — 안 가리면 서버 로그에 `KAKAO_REST_KEY`가 그대로 남는다.
+ */
+async function requestFailure(response: Response, apiKey: string): Promise<string> {
+  let body = "";
+  try {
+    body = (await response.text()).trim();
+  } catch {
+    body = "";
+  }
+  if (!body) return `HTTP ${response.status}`;
+  const masked = apiKey ? body.split(apiKey).join("***") : body;
+  return `HTTP ${response.status} ${masked.slice(0, ERROR_BODY_MAX_CHARS)}`;
 }
 
 function kakaoHeaders(apiKey: string): HeadersInit {
@@ -155,7 +176,7 @@ async function drivingDistanceMatrix(
       });
       if (!response.ok) {
         throw new Error(
-          `카카오 자동차 거리 요청에 실패했습니다: HTTP ${response.status}`,
+          `카카오 자동차 거리 요청에 실패했습니다: ${await requestFailure(response, apiKey)}`,
         );
       }
 
@@ -355,7 +376,9 @@ export async function withKakaoDrivingRoute(
     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });
   if (!response.ok) {
-    throw new Error(`카카오 자동차 경로 요청에 실패했습니다: HTTP ${response.status}`);
+    throw new Error(
+      `카카오 자동차 경로 요청에 실패했습니다: ${await requestFailure(response, apiKey)}`,
+    );
   }
 
   const sections = parseSections(await response.json(), routingStops.length - 1);
