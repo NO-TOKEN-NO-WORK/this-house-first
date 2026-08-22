@@ -20,7 +20,7 @@ import {
  * 대상자마다 최소 2건을 둔다. 기록이 한 건이면 브리핑이 `반복 신호`를 만들 수 없고
  * 기록별 대화 요약도 한 줄에서 끝나 데모에서 화면이 비어 보인다.
  *
- * 마스킹 경로(`src/lib/briefing/mask.ts`)를 실제로 태우기 위해 이름·전화·기관명이 섞인 문장을
+ * 마스킹 경로(`src/lib/briefing/privacy.ts`)를 실제로 태우기 위해 이름·전화·기관명이 섞인 문장을
  * 일부러 남겨 뒀다. 외부 모델에는 지워진 뒤에 나간다.
  */
 
@@ -37,14 +37,18 @@ export const HISTORY_ALERT_DAYS: readonly HistoryAlertDay[] = [
   { daysAgo: 2, level: AlertLevel.WARNING, feelsLikeMax: 36.1 },
 ];
 
-export interface HistoryCheck {
+interface HistoryCheckBase {
   daysAgo: number;
   /** 같은 날 여러 건일 때의 순서 — 작을수록 먼저 (기록 시각이 벌어지게 쓴다) */
   order?: number;
-  kind: CheckKind;
-  result: string;
   memo: string | null;
 }
+
+/** 기록 종류와 결과를 묶어 잘못된 상태 조합이 DB에 들어가지 않게 한다. */
+export type HistoryCheck = HistoryCheckBase & (
+  | { kind: typeof CheckKind.CALL; result: CallResult }
+  | { kind: typeof CheckKind.VISIT; result: VisitResult }
+);
 
 /** 대상자 이름(`synthetic.ts`의 합성 이름) → 그 사람의 확인 기록 */
 export const CHECK_HISTORY: Readonly<Record<string, readonly HistoryCheck[]>> = {

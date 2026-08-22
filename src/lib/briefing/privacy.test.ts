@@ -26,6 +26,12 @@ describe("맥락 브리핑 개인정보 마스킹", () => {
     expect(maskBriefingMemo("동네병원에 다녀오셨다고 했다.", [])).toBe(
       "병원에 다녀오셨다고 했다.",
     );
+    expect(maskBriefingMemo("주민센터 무더위쉼터를 이용하셨다.", [])).toBe(
+      "주민센터 무더위쉼터를 이용하셨다.",
+    );
+    expect(maskBriefingMemo("봄병원에 다녀오셨다고 했다.", [])).toBe(
+      "병원에 다녀오셨다고 했다.",
+    );
   });
 
   it("실제 CheckEvent id 대신 호출별 임시 별칭을 만든다", () => {

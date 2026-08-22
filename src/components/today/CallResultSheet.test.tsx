@@ -30,6 +30,7 @@ const RECORDING = 5;
 import { CallResultSheet } from "./CallResultSheet";
 import {
   CallResult,
+  CALL_RECORDING_LABELS,
   CALL_RESULT_LABEL,
   CoolingStatus,
   COOLING_STATUS_LABEL,
@@ -147,10 +148,11 @@ describe("CallResultSheet", () => {
     const html = render(base);
     const text = html.replace(/<[^>]+>/g, "");
 
-    expect(text).toContain("기록 추가 (선택)");
-    expect(text).toContain("전화 음성 파일 (최대 1개)");
+    expect(text).toContain(CALL_RECORDING_LABELS.SECTION);
+    expect(text).toContain(CALL_RECORDING_LABELS.EMPTY);
+    expect(text).toContain(CALL_RECORDING_LABELS.NOT_SAVED);
     expect(html).toContain('accept="audio/*"');
-    expect(text).not.toContain("첨부한 음성 파일 지우기");
+    expect(text).not.toContain(CALL_RECORDING_LABELS.REMOVE);
   });
 
   it("파일을 고르면 이름과 지우기 버튼으로 바뀐다", () => {
@@ -158,7 +160,7 @@ describe("CallResultSheet", () => {
     const html = render(base);
 
     expect(html).toContain("2026-08-23.m4a");
-    expect(html).toContain('aria-label="첨부한 음성 파일 지우기"');
+    expect(html).toContain(`aria-label="${CALL_RECORDING_LABELS.REMOVE}"`);
     // 지우기 버튼의 누르는 자리는 44px다 (ADR-0014 접근성)
     expect(html).toContain("size-11");
   });

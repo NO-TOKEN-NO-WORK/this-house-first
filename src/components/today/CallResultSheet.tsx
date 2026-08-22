@@ -13,6 +13,7 @@ import {
 import { SubjectSummary } from "@/components/today/SubjectSummary";
 import {
   CallResult,
+  CALL_RECORDING_LABELS,
   CALL_RESULT_LABEL,
   CoolingStatus,
   COOLING_STATUS_LABEL,
@@ -208,17 +209,19 @@ export function CallResultSheet({
 
           통화 음성은 어르신의 육성이라 저장하려면 저장소·전사 도입과 개인정보 경계를 새로 정하는
           ADR이 먼저다 — ADR-0024가 정한 경계는 텍스트 메모까지다. 고른 파일 이름은 이 시트 안에만
-          남고 `저장하기`로 서버에 올라가지 않는다 (ADR-0014 결과 11의 의도적 차이).
+          남고 `저장하기`로 서버에 올라가지 않는다 (ADR-0014 결과 9의 의도적 차이).
         */}
         <section className="flex flex-col gap-5 pt-3">
-          <h2 className="text-heading-18 text-text-subtle">기록 추가 (선택)</h2>
+          <h2 className="text-heading-18 text-text-subtle">
+            {CALL_RECORDING_LABELS.SECTION}
+          </h2>
           <div className="flex flex-col items-center gap-2 rounded-lg border border-border-soft p-4">
             <div className="flex w-full items-center justify-center gap-2">
               {/* 누르는 자리를 상자 폭 전체로 넓힌다 — 아이콘+글자만큼이면 60대 기준에서 좁다 */}
               <label className="flex min-w-0 flex-1 cursor-pointer items-center justify-center gap-2 py-3 text-label-16 text-text-secondary">
                 <PaperclipIcon className="size-4 shrink-0" />
                 <span className="min-w-0 break-all">
-                  {recording ?? "전화 음성 파일 (최대 1개)"}
+                  {recording ?? CALL_RECORDING_LABELS.EMPTY}
                 </span>
                 {/*
                   `key`가 파일 이름을 따라간다 — 첨부를 지우면 입력이 새로 붙어 값이 비워진다.
@@ -238,7 +241,7 @@ export function CallResultSheet({
               {recording !== null && (
                 <button
                   type="button"
-                  aria-label="첨부한 음성 파일 지우기"
+                  aria-label={CALL_RECORDING_LABELS.REMOVE}
                   disabled={pending}
                   onClick={() => setRecording(null)}
                   /* 글리프는 Figma대로 작지만 누르는 자리는 44px다 (ADR-0014 접근성) */
@@ -249,7 +252,10 @@ export function CallResultSheet({
               )}
             </div>
             <p className="text-center text-body-14 text-text-tertiary">
-              &lsquo;전화 앱 → 통화기록 → 해당 통화 → 녹음 확인&rsquo;에서 확인
+              {CALL_RECORDING_LABELS.GUIDE}
+            </p>
+            <p className="text-center text-body-14 text-status-warning-strong">
+              {CALL_RECORDING_LABELS.NOT_SAVED}
             </p>
           </div>
         </section>
