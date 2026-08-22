@@ -47,6 +47,7 @@ describe("복지 스캔 관리자 화면", () => {
     expect(programList).toContain("저소득 노인가구");
     expect(programList).toContain("냉방기기와 단열 개선을 지원합니다.");
     expect(programList).toContain('href="https://www.bokjiro.go.kr/energy"');
+    expect(programList).toContain('aria-label="저소득층 에너지효율개선사업 공식 정보 보기"');
     expect(html).toMatch(/<h2[^>]*>복지 제안 검토<\/h2>/);
     expect(html).toContain("새로운 제안");
     expect(html).toContain("추가 정보 필요");

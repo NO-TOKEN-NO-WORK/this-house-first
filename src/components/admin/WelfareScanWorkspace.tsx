@@ -288,7 +288,7 @@ export function WelfareScanWorkspace({
                         <td>{program.ministry}</td>
                         <td className={styles.programTextCell}>{program.target || "대상 정보 확인 필요"}</td>
                         <td className={styles.programTextCell}>{program.summary || "요약 정보 확인 필요"}</td>
-                        <td><a className={styles.viewButton} href={program.link} rel="noreferrer" target="_blank">보기</a></td>
+                        <td><a aria-label={`${program.name} 공식 정보 보기`} className={styles.viewButton} href={program.link} rel="noreferrer" target="_blank">보기</a></td>
                       </tr>
                     ))}
                   </tbody>
