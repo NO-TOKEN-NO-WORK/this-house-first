@@ -15,11 +15,22 @@ export interface VisitRouteStop {
   reasons: string[];
   /** 바로 전 방문지에서 이 가구까지의 예상 도보 시간. 첫 가구는 0이다. */
   minutesFromPrevious: number;
+  /** 바로 전 방문지에서 이 가구까지의 예상 도보 거리(m). 첫 가구는 0이다. */
+  metersFromPrevious: number;
+}
+
+export interface RouteCoordinate {
+  lat: number;
+  lng: number;
 }
 
 export interface VisitRoute {
   stops: VisitRouteStop[];
   totalMinutes: number;
+  totalMeters: number;
+  /** 지도에 순서대로 그릴 경로. 카카오 응답 전에는 가구 좌표를 직선으로 잇는다. */
+  path: RouteCoordinate[];
+  source: "estimate" | "kakao";
 }
 
 const EARTH_RADIUS_METERS = 6_371_000;
@@ -51,6 +62,10 @@ function walkingMinutes(from: BoardSubject, to: BoardSubject): number {
     (distanceMeters(from, to) * STREET_DISTANCE_FACTOR) /
       WALKING_METERS_PER_MINUTE,
   );
+}
+
+function walkingMeters(from: BoardSubject, to: BoardSubject): number {
+  return Math.round(distanceMeters(from, to) * STREET_DISTANCE_FACTOR);
 }
 
 function isVisitStop(subject: BoardSubject): boolean {
@@ -99,14 +114,25 @@ function orderVisitSubjects(board: AlertedBoard): BoardSubject[] {
 }
 
 export function toVisitRoute(board: Board): VisitRoute {
-  if (!board.alerted) return { stops: [], totalMinutes: 0 };
+  if (!board.alerted) {
+    return {
+      stops: [],
+      totalMinutes: 0,
+      totalMeters: 0,
+      path: [],
+      source: "estimate",
+    };
+  }
 
   let totalMinutes = 0;
+  let totalMeters = 0;
   const ordered = orderVisitSubjects(board);
   const stops = ordered.map((subject, index): VisitRouteStop => {
     const previous = ordered[index - 1];
     const minutesFromPrevious = previous ? walkingMinutes(previous, subject) : 0;
+    const metersFromPrevious = previous ? walkingMeters(previous, subject) : 0;
     totalMinutes += minutesFromPrevious;
+    totalMeters += metersFromPrevious;
 
     return {
       subjectId: subject.subjectId,
@@ -120,10 +146,17 @@ export function toVisitRoute(board: Board): VisitRoute {
       score: subject.score,
       reasons: subject.reasons,
       minutesFromPrevious,
+      metersFromPrevious,
     };
   });
 
-  return { stops, totalMinutes };
+  return {
+    stops,
+    totalMinutes,
+    totalMeters,
+    path: stops.map(({ lat, lng }) => ({ lat, lng })),
+    source: "estimate",
+  };
 }
 
 /** 카카오맵 공식 목적지 길찾기 URL. 현재 위치는 카카오맵이 출발지로 받는다. */

@@ -173,7 +173,7 @@ stateDiagram-v2
 | `/api/checks` | 확인 기록 생성 → 상태머신 전이 (FR-5) | ✅ 구현됨 |
 | `/api/push-subscriptions` | 담당자·관리자 Web Push 구독 등록·해지 | ✅ 구현됨 |
 | `/api/notifications/dispatch` | 오전 8시 예약·실패 재시도 Push 발송 | ✅ 구현됨 |
-| `/api/visit-queue` | 방문 큐 + 출동 순서 (FR-7) | 예정 (D2) |
+| `/api/visit-queue` | 방문 큐 + 위험 단계 우선 출동 순서 + 카카오 도보 경로·예상시간 (FR-7) | ✅ 구현됨 |
 | `/api/report` | 일일 보고서 (FR-9) | 예정 (Could) |
 
 ## 8. 비기능 구현 방침
