@@ -1,12 +1,12 @@
 import { getBoard } from "@/lib/board/today";
 import { optionalId, optionalIsoDate, toErrorResponse } from "@/lib/http";
-import { withKakaoWalkingRoute } from "@/lib/kakao/walking-route";
+import { withKakaoDrivingRoute } from "@/lib/kakao/driving-route";
 import { toVisitRoute } from "@/lib/map/route";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/** 담당자 방문 큐를 위험 단계 우선으로 정렬하고 카카오 도보 경로로 보강한다. */
+/** 담당자 방문 큐를 위험 단계 우선으로 정렬하고 카카오 자동차 최단 경로로 보강한다. */
 export async function GET(request: Request): Promise<Response> {
   try {
     const query = new URL(request.url).searchParams;
@@ -22,10 +22,10 @@ export async function GET(request: Request): Promise<Response> {
     }
 
     try {
-      const route = await withKakaoWalkingRoute(fallbackRoute, { apiKey });
+      const route = await withKakaoDrivingRoute(fallbackRoute, { apiKey });
       return Response.json({ data: route });
     } catch (error) {
-      console.warn("카카오 도보 경로를 불러오지 못해 거리 추정치를 사용합니다.", error);
+      console.warn("카카오 자동차 경로를 불러오지 못해 거리 추정치를 사용합니다.", error);
       return Response.json({ data: fallbackRoute });
     }
   } catch (error) {

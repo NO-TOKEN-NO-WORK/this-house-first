@@ -167,7 +167,7 @@ function VisitRouteMap({ apiKey, route }: { apiKey: string | undefined; route: V
       <div
         ref={containerRef}
         role="region"
-        aria-label="방문 순서와 도보 경로가 표시된 카카오맵"
+        aria-label="방문 순서와 자동차 경로가 표시된 카카오맵"
         className="size-full bg-map-road"
       />
       {!ready && !scriptError ? (
@@ -190,7 +190,15 @@ function VisitRouteMap({ apiKey, route }: { apiKey: string | undefined; route: V
   );
 }
 
-function RouteOverview({ apiKey, route }: { apiKey: string | undefined; route: VisitRoute }) {
+function RouteOverview({
+  apiKey,
+  loading,
+  route,
+}: {
+  apiKey: string | undefined;
+  loading: boolean;
+  route: VisitRoute;
+}) {
   return (
     <section
       aria-label="방문 동선 요약"
@@ -228,7 +236,11 @@ function RouteOverview({ apiKey, route }: { apiKey: string | undefined; route: V
           예상 이동 {route.totalMinutes}분 · {formatDistance(route.totalMeters)} · 총 {route.stops.length}가구
         </p>
         <p className="text-caption-12 text-text-tertiary">
-          {route.source === "kakao" ? "카카오맵 최단 도보 경로 기준" : "직선거리 기반 예상치"}
+          {route.source === "kakao-driving"
+            ? "카카오모빌리티 자동차 최단 경로 기준"
+            : loading
+              ? "자동차 경로를 계산하는 중"
+              : "차량 경로를 불러오지 못해 직선거리 예상치"}
         </p>
       </div>
     </section>
@@ -263,7 +275,7 @@ function VisitCard({ stop, order }: { stop: VisitRouteStop; order: number }) {
 
       {order > 1 ? (
         <p className="text-label-14 text-action-primary-strong">
-          이전 방문지에서 도보 {stop.minutesFromPrevious}분 · {formatDistance(stop.metersFromPrevious)}
+          이전 방문지에서 차량 {stop.minutesFromPrevious}분 · {formatDistance(stop.metersFromPrevious)}
         </p>
       ) : null}
 
@@ -298,23 +310,37 @@ export function VisitRouteView({ apiKey, initialRoute, routeApiUrl }: Props) {
     route: VisitRoute;
   } | null>(null);
   const route = resolved?.base === initialRoute ? resolved.route : initialRoute;
+  const loading =
+    initialRoute.stops.length > 0 && resolved?.base !== initialRoute;
 
   useEffect(() => {
     if (initialRoute.stops.length === 0) return;
     const controller = new AbortController();
+    let active = true;
 
     void fetch(routeApiUrl, { cache: "no-store", signal: controller.signal })
       .then(async (response) => {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const payload = (await response.json()) as { data?: VisitRoute };
-        if (payload.data) setResolved({ base: initialRoute, route: payload.data });
+        if (active) {
+          setResolved({
+            base: initialRoute,
+            route: payload.data ?? initialRoute,
+          });
+        }
       })
       .catch((error: unknown) => {
         if (error instanceof DOMException && error.name === "AbortError") return;
         console.warn("방문 경로를 갱신하지 못해 초기 예상치를 유지합니다.", error);
+        if (active) {
+          setResolved({ base: initialRoute, route: initialRoute });
+        }
       });
 
-    return () => controller.abort();
+    return () => {
+      active = false;
+      controller.abort();
+    };
   }, [initialRoute, routeApiUrl]);
 
   return (
@@ -324,7 +350,7 @@ export function VisitRouteView({ apiKey, initialRoute, routeApiUrl }: Props) {
           {GRADE_LABEL[RiskGrade.CRITICAL]} → {GRADE_LABEL[RiskGrade.HIGH]} → {GRADE_LABEL[RiskGrade.MODERATE]} 순으로 방문합니다.
         </p>
       ) : null}
-      <RouteOverview apiKey={apiKey} route={route} />
+      <RouteOverview apiKey={apiKey} loading={loading} route={route} />
       {route.stops.length > 0 ? (
         <ol className="flex flex-col gap-3">
           {route.stops.map((stop, index) => (

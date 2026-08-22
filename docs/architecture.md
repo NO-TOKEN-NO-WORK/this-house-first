@@ -132,7 +132,7 @@ stateDiagram-v2
 
 - 발령(`/api/trigger` POST)은 `[*] --> UNCHECKED`와 `[*] --> VISIT_QUEUED` 진입 화살표만 담당한다(`escalation/initial.ts`). 같은 날 재발령해도 진행 중인 상태는 보존한다
 - 방문 결과 `에어컨 없음·고장`은 상태와 별개로 `Subject.airconBroken` 플래그를 세우고 **익일 위험도에 가중**된다(FR-8) + 지원사업 연계 플래그(FR-11)
-- 방문 큐 2건 이상 → 위험도 우선 + 이동시간 최소 순서 제시(FR-7, v0는 카카오 도보 경로 API — [ADR-0007](adr/0007-kakao-map.md))
+- 방문 큐 2건 이상 → 위험 단계 우선 제약 안에서 실제 차량 도로거리 합이 가장 짧은 순서 제시(FR-7, 카카오모빌리티 자동차 길찾기 — [ADR-0018](adr/0018-kakao-driving-shortest-route.md))
 
 ## 5. 위험도 스코어링 (FR-3)
 
@@ -150,7 +150,7 @@ stateDiagram-v2
 | 국토부 건축HUB 건축물대장 | FR-2 건물 취약도 | 공공데이터포털 서비스 키 (서버 전용) | `PUBLIC_DATA_SERVICE_KEY` |
 | 행안부 행정동별 성·연령별 주민등록 인구수 | 지역 고령밀도 | 공공데이터포털 서비스 키 (서버 전용) | `PUBLIC_DATA_SERVICE_KEY` |
 | 카카오맵 JS SDK | F5 지도 | JS 앱 키 (클라이언트) | `NEXT_PUBLIC_KAKAO_MAP_KEY` |
-| 카카오 REST (로컬 주소검색·도보 경로) | 지오코딩 + 법정동코드(`b_code` → 건축HUB 조회 키), FR-7 경로 | REST 키 (서버 전용) | `KAKAO_REST_KEY` |
+| 카카오 REST (로컬 주소검색·자동차 경로) | 지오코딩 + 법정동코드(`b_code` → 건축HUB 조회 키), FR-7 차량 최단 경로 | REST 키 (서버 전용) | `KAKAO_REST_KEY` |
 
 - 서버 전용 키는 절대 `NEXT_PUBLIC_` 접두사를 붙이지 않는다. 외부 호출은 Route Handler를 거쳐 프록시
 - 키 목록은 [.env.example](../.env.example) 참조. 실제 키는 커밋 금지
@@ -173,7 +173,7 @@ stateDiagram-v2
 | `/api/checks` | 확인 기록 생성 → 상태머신 전이 (FR-5) | ✅ 구현됨 |
 | `/api/push-subscriptions` | 담당자·관리자 Web Push 구독 등록·해지 | ✅ 구현됨 |
 | `/api/notifications/dispatch` | 오전 8시 예약·실패 재시도 Push 발송 | ✅ 구현됨 |
-| `/api/visit-queue` | 방문 큐 + 위험 단계 우선 출동 순서 + 카카오 도보 경로·예상시간 (FR-7) | ✅ 구현됨 |
+| `/api/visit-queue` | 방문 큐 + 위험 단계 우선 차량 최단 순서 + 카카오 자동차 경로·예상시간 (FR-7) | ✅ 구현됨 |
 | `/api/report` | 일일 보고서 (FR-9) | 예정 (Could) |
 
 ## 8. 비기능 구현 방침
@@ -201,4 +201,3 @@ stateDiagram-v2
 |---|---|---|
 | `POST /api/trigger`가 콜드 커넥션에서 Prisma 인터랙티브 트랜잭션 5초 제한을 넘겨 500 (`A commit cannot be executed on an expired transaction`) | 그날 첫 발령이 실패한다. **데모 첫 시연에서 바로 터질 수 있다** | 재시도하면 성공. `declareTrigger`의 `$transaction`에 `timeout` 상향 또는 대상자별 쓰기를 트랜잭션 밖으로 빼는 것이 근본 대응 |
 | 비경보일에는 가구 확인 기록을 남길 수 없다 | ①-b 화면의 `연락 완료` 칩·`3 / 15` 요약을 구현하지 못함 | 명단만 표시하고 전화는 `tel:`로 바로 건다. 저장하려면 `HouseholdDayStatus`를 `AlertDay`에서 분리해야 하며 별도 ADR 필요 ([ADR-0014](adr/0014-figma-design-with-domain-terms.md)) |
-| ③ 방문 큐 & 출동 경로(`1:883`) 미구현 | 승격된 가구의 이동 순서·경로 안내가 없다 | 방문 결과 기록은 대상자 상세에서 가능. 경로는 `/api/visit-queue`(D2 예정)와 함께 |
