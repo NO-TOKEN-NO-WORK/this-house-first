@@ -1,6 +1,6 @@
 # ADR-0014: 담당자 화면은 Figma 디자인을 따르고, 화면 문구는 도메인 상수를 따른다
 
-- **상태**: 승인됨
+- **상태**: 부분 대체됨([ADR-0016](0016-alert-level-labels-advisory-watch-severe.md), [ADR-0019](0019-emergency-only-alert-banner.md))
 - **날짜**: 2026-08-22
 - **결정자**: 팀 전원
 
