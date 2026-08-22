@@ -4,6 +4,7 @@ import Link from "next/link";
 import Script from "next/script";
 import { useEffect, useRef, useState } from "react";
 import { GRADE_LABEL, HouseholdStatus, RiskGrade } from "@/lib/domain";
+import type { KakaoCircle } from "@/lib/kakao/maps-sdk";
 import type { MapBuilding } from "@/lib/map/data";
 
 interface Props {
@@ -11,55 +12,6 @@ interface Props {
   buildings: MapBuilding[];
   date: string;
   workerId?: string;
-}
-
-interface KakaoLatLng {
-  getLat(): number;
-  getLng(): number;
-}
-
-interface KakaoLatLngBounds {
-  extend(position: KakaoLatLng): void;
-}
-
-interface KakaoMapInstance {
-  setBounds(bounds: KakaoLatLngBounds): void;
-  setLevel(level: number): void;
-}
-
-interface KakaoCircle {
-  setMap(map: KakaoMapInstance | null): void;
-}
-
-interface KakaoMaps {
-  load(callback: () => void): void;
-  Map: new (
-    container: HTMLElement,
-    options: { center: KakaoLatLng; level: number },
-  ) => KakaoMapInstance;
-  LatLng: new (lat: number, lng: number) => KakaoLatLng;
-  LatLngBounds: new () => KakaoLatLngBounds;
-  Circle: new (options: {
-    map: KakaoMapInstance;
-    center: KakaoLatLng;
-    radius: number;
-    strokeWeight: number;
-    strokeColor: string;
-    strokeOpacity: number;
-    fillColor: string;
-    fillOpacity: number;
-    clickable: boolean;
-  }) => KakaoCircle;
-  event: {
-    addListener(target: KakaoCircle, type: "click", handler: () => void): void;
-    removeListener(target: KakaoCircle, type: "click", handler: () => void): void;
-  };
-}
-
-declare global {
-  interface Window {
-    kakao?: { maps: KakaoMaps };
-  }
 }
 
 const STATUS_TONE: Record<HouseholdStatus, string> = {

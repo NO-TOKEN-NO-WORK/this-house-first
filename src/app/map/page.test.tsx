@@ -71,7 +71,8 @@ describe("MapPage 방문 동선", () => {
     );
 
     expect(html).toContain("방문 동선");
-    expect(html).toContain("예상 이동 0분 · 총 1가구");
+    expect(html).toContain("심각 → 경계 → 주의 순으로 방문합니다");
+    expect(html).toContain("예상 이동 0분 · 0m · 총 1가구");
     expect(html).toContain("합성 대상자");
     expect(html).toContain("심각");
     expect(html).toContain("1938년생 (88세)·독거");
@@ -99,6 +100,6 @@ describe("MapPage 방문 동선", () => {
     );
 
     expect(html).toContain("지금 방문할 가구가 없습니다");
-    expect(html).toContain("예상 이동 0분 · 총 0가구");
+    expect(html).toContain("예상 이동 0분 · 0m · 총 0가구");
   });
 });

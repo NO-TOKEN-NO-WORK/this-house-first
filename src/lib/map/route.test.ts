@@ -90,6 +90,11 @@ describe("toVisitRoute", () => {
     expect(route.totalMinutes).toBe(
       route.stops.reduce((sum, stop) => sum + stop.minutesFromPrevious, 0),
     );
+    expect(route.totalMeters).toBe(
+      route.stops.reduce((sum, stop) => sum + stop.metersFromPrevious, 0),
+    );
+    expect(route.path).toHaveLength(3);
+    expect(route.source).toBe("estimate");
   });
 
   it("이동거리가 짧아도 더 위험한 단계를 먼저 방문한다", () => {
@@ -103,12 +108,18 @@ describe("toVisitRoute", () => {
       score: 100,
       lat: 35.8001,
     });
+    const moderate = subject("moderate", {
+      grade: RiskGrade.MODERATE,
+      score: 200,
+      lat: 35.80005,
+    });
 
-    const route = toVisitRoute(alertedBoard([high, critical]));
+    const route = toVisitRoute(alertedBoard([moderate, high, critical]));
 
     expect(route.stops.map((stop) => stop.subjectId)).toEqual([
       "critical",
       "high",
+      "moderate",
     ]);
   });
 
@@ -138,7 +149,13 @@ describe("toVisitRoute", () => {
       subjects: [],
     };
 
-    expect(toVisitRoute(board)).toEqual({ stops: [], totalMinutes: 0 });
+    expect(toVisitRoute(board)).toEqual({
+      stops: [],
+      totalMinutes: 0,
+      totalMeters: 0,
+      path: [],
+      source: "estimate",
+    });
   });
 
   it("카카오맵 목적지 길찾기 URL에 합성 이름·주소·좌표를 넣는다", () => {
