@@ -65,6 +65,23 @@ export const GRADE_PLAN: Record<RiskGrade, string> = {
 };
 
 /**
+ * 전화 확인 때 물어볼 것 — 전화 안내 다이얼로그가 그대로 읽어 준다 (Figma ④ 7:2599).
+ *
+ * 담당자가 무엇을 물을지 고민하지 않게 하는 것이 목적이다(PRD §9 — 화면당 결정 1개).
+ * 세 질문은 위험 판단이 보는 축과 맞물려 있다:
+ *  1. 냉방 가동 — 에어컨 없음·고장이 위험 가중치에 들어간다 (`scoring/weights.ts`, FR-8)
+ *  2. 온열질환 초기 증상 — "고령자는 초기 증상 자기 인지 어려움" (질병청, PRD §12)
+ *  3. 낮 외출 — 폭염 시간대 야외 활동이 가장 큰 급성 위험
+ *
+ * 폭염 기준이다. 한파를 넣을 때는 경보 종류로 갈라야 한다 (지금 범위는 폭염 — PRD §3).
+ */
+export const CALL_GUIDE_QUESTIONS: readonly string[] = [
+  "선풍기나 에어컨 켜셨어요?",
+  "어지럽거나 머리 아프진 않으세요?",
+  "오늘 밭일이나 외출 나가세요?",
+];
+
+/**
  * 위험 단계 + 위험도 한 줄 표기 — 대상자 상세 화면의 배지에 그대로 쓴다 (Figma ② 3:529).
  * 위험도 문구는 RiskGrade 주석의 정의(심각: 초고위험 / 경계: 고위험 / 주의: 중위험)와 같은 값이다.
  */
@@ -225,15 +242,26 @@ export const CallResult = {
   NO_ANSWER: "NO_ANSWER",
   /** 이상 징후 → 즉시 방문 큐 승격 */
   SYMPTOM: "SYMPTOM",
+  /** 통화 중 119를 부른 경우 → 방문의 119와 같은 상태로 간다 (Figma ⑤ 30:2763) */
+  EMERGENCY_119: "EMERGENCY_119",
   UNREACHABLE: "UNREACHABLE",
 } as const;
 export type CallResult = (typeof CallResult)[keyof typeof CallResult];
 
-/** 원터치 기록 버튼에 그대로 쓰는 라벨 — UI에서 문자열을 다시 쓰지 않는다 */
+/**
+ * 원터치 기록 버튼에 그대로 쓰는 라벨 — UI에서 문자열을 다시 쓰지 않는다.
+ *
+ * 문구는 Figma ⑤ 7:2345(통화 결과 시트)를 따른다. 담당자가 방금 한 통화를 떠올려
+ * 고르는 자리라 상태 이름(`정상`·`무응답`)보다 겪은 일을 그대로 말하는 쪽이 빠르다
+ * (60대 사용자 기준, PRD §9). 저장되는 값(`OK`·`NO_ANSWER`…)은 그대로라 DB·API는 바뀌지 않는다.
+ *
+ * `연락두절`은 Figma 시트에 버튼이 없다 — 상세 화면(RecordGrid)에서만 고를 수 있다.
+ */
 export const CALL_RESULT_LABEL: Record<CallResult, string> = {
-  OK: "정상",
-  NO_ANSWER: "무응답",
-  SYMPTOM: "이상 징후",
+  OK: "괜찮았어요",
+  NO_ANSWER: "안 받으셨어요",
+  SYMPTOM: "걱정돼요",
+  EMERGENCY_119: "119 신고",
   UNREACHABLE: "연락두절",
 };
 

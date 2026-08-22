@@ -53,24 +53,17 @@ export const HomeIcon = (props: IconProps) => (
   </Icon>
 );
 
-export const MapIcon = (props: IconProps) => (
-  <Icon {...props}>
-    <path d="M9 4 3 6.5v13L9 17l6 2.5 6-2.5v-13L15 6.5 9 4Z" />
-    <path d="M9 4v13M15 6.5v13" />
-  </Icon>
-);
-
-export const ListIcon = (props: IconProps) => (
-  <Icon {...props}>
-    <path d="M8 6h13M8 12h13M8 18h13" />
-    <path d="M3.5 6h.01M3.5 12h.01M3.5 18h.01" />
-  </Icon>
-);
-
 export const UserIcon = (props: IconProps) => (
   <Icon {...props}>
     <circle cx="12" cy="8" r="3.5" />
     <path d="M4.5 20a7.5 7.5 0 0 1 15 0" />
+  </Icon>
+);
+
+export const AlertTriangleIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M12 3.5 21.5 20H2.5L12 3.5Z" />
+    <path d="M12 9.5v4.5M12 17.2h.01" />
   </Icon>
 );
 

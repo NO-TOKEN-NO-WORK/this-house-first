@@ -37,6 +37,7 @@ function subject(over: Partial<BoardSubject> = {}): BoardSubject {
     open: true,
     nextCheckKind: CheckKind.CALL,
     lastResult: null,
+    lastCheckAtLabel: null,
     roadAddress: "전북특별자치도 남원시 춘향로 1",
     lat: 0,
     lng: 0,

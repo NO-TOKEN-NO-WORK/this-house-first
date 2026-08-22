@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { GRADE_CHIP } from "@/components/today/gradeStyles";
 import { RecordGrid } from "@/components/today/RecordGrid";
 import {
   AlertCircleIcon,
@@ -14,7 +15,7 @@ import {
 } from "@/components/today/icons";
 import type { CheckOutcome } from "@/lib/board/detail";
 import type { SubjectDetail } from "@/lib/board/subject";
-import { CheckKind, RiskGrade } from "@/lib/domain";
+import { CheckKind } from "@/lib/domain";
 import {
   NO_ANSWER_PROMOTE_AT,
   NO_ANSWER_RETRY_INTERVAL_MS,
@@ -32,12 +33,6 @@ import {
  * 보드에서 연 때와 주소로 직접 들어올 때 같은 화면을 쓴다.
  * 위험 사유는 스코어링 엔진 문장을 그대로 싣고 분류 아이콘만 붙인다 (AGENTS.md 도메인 규칙 3).
  */
-
-const GRADE_CHIP: Record<RiskGrade, string> = {
-  [RiskGrade.CRITICAL]: "bg-status-critical text-text-inverse",
-  [RiskGrade.HIGH]: "bg-status-warning text-text-primary",
-  [RiskGrade.MODERATE]: "bg-status-neutral text-text-primary",
-};
 
 const REASON_ICON: Record<ReasonCategory, typeof UserIcon> = {
   [ReasonCategory.PERSONAL]: UserIcon,

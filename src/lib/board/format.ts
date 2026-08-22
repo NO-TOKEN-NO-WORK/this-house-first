@@ -69,6 +69,18 @@ export function ageOf(birthYear: number, year: number): number {
   return year - birthYear;
 }
 
+/**
+ * 기록 시각 → `"9시 10분"` (Figma ⑥ 38:3534의 진행 배너).
+ *
+ * `CheckEvent.createdAt`은 UTC라 KST로 옮겨서 읽는다 (notifications/message.ts와 같은 방식).
+ * Figma에 오전/오후 표기가 없어 24시간제를 쓴다 — 오후 2시 30분은 `"14시 30분"`이다.
+ * 담당자가 같은 날 안에서 "언제 걸었나"만 보므로 날짜는 붙이지 않는다.
+ */
+export function formatClockTime(value: Date): string {
+  const kst = new Date(value.getTime() + 9 * 60 * 60 * 1_000);
+  return `${kst.getUTCHours()}시 ${kst.getUTCMinutes()}분`;
+}
+
 /** 행정동 이름으로 볼 수 있는 토큰 — "…동/읍/면"으로 끝나되 "…구·시"는 아니다 */
 const DONG = /(?:^|\s)([가-힣A-Za-z0-9]+[동읍면])(?=\s|$)/;
 

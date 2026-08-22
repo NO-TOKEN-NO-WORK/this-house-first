@@ -90,6 +90,19 @@ describe("전화 기록 전이", () => {
     expect(r.promoted).toBe(true);
   });
 
+  it("통화 중 119 신고는 방문의 119와 같은 상태로 종결된다", () => {
+    const r = call(HouseholdStatus.UNCHECKED, CallResult.EMERGENCY_119);
+    expect(r.status).toBe(HouseholdStatus.EMERGENCY_119);
+    // 이미 응급 체계로 넘어갔으므로 방문 큐에 다시 올리지 않는다
+    expect(r.promoted).toBe(false);
+  });
+
+  it("무응답 1회 뒤 재전화에서 119를 불러도 119 상태로 간다", () => {
+    const r = call(HouseholdStatus.NO_ANSWER_1, CallResult.EMERGENCY_119, 1);
+    expect(r.status).toBe(HouseholdStatus.EMERGENCY_119);
+    expect(r.callAttempts).toBe(2);
+  });
+
   it("연락두절은 승격이 아니라 별도 상태다", () => {
     const r = call(HouseholdStatus.UNCHECKED, CallResult.UNREACHABLE);
     expect(r.status).toBe(HouseholdStatus.UNREACHABLE);
