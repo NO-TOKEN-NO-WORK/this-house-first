@@ -3,11 +3,22 @@ import { prisma } from "../db";
 import {
   AlertLevel,
   ALERT_LEVEL_LABEL,
+  HouseholdStatus,
+  NotificationCause,
   parseHouseholdStatus,
   RiskGrade,
-  HouseholdStatus,
+  WorkerRole,
 } from "../domain";
 import { resolveStatusOnDeclare } from "../escalation/initial";
+import {
+  alertMorningAt,
+  type NotificationDraft,
+  visitPromotedDraft,
+} from "../notifications/message";
+import {
+  morningSummaryDrafts,
+  reclassificationRecipientIds,
+} from "../notifications/policy";
 import { formatKstDate, getHeatForecast } from "../public-data/kma";
 import { assessRisk } from "../scoring/score";
 import { LEVEL_MIN_FEELS_LIKE } from "../scoring/weights";
@@ -149,6 +160,7 @@ export async function declareTrigger(
   return declareAlertDay(
     { date, level, feelsLikeMax: feelsLikeMax ?? LEVEL_MIN_FEELS_LIKE[level], regionCode: input.regionCode, source },
     deps.client ?? prisma,
+    now,
   );
 }
 
@@ -161,6 +173,7 @@ async function declareAlertDay(
     source: TriggerSource;
   },
   client: PrismaClient,
+  now: Date,
 ): Promise<AlertedOutcome> {
   const { date, level, feelsLikeMax, source } = input;
   const year = yearOfCompactDate(date.replaceAll("-", ""));
@@ -191,6 +204,12 @@ async function declareAlertDay(
     });
 
     const gradeCounts: Record<RiskGrade, number> = { 1: 0, 2: 0, 3: 0 };
+    const notificationDrafts: NotificationDraft[] = [];
+    const assessedRecipients: Array<{ workerId: string; grade: RiskGrade }> = [];
+    const managers = await tx.worker.findMany({
+      where: { role: WorkerRole.MANAGER },
+      select: { id: true },
+    });
     let visitQueued = 0;
     let preserved = 0;
 
@@ -203,6 +222,7 @@ async function declareAlertDay(
         year,
       });
       gradeCounts[risk.grade] += 1;
+      assessedRecipients.push({ workerId: subject.workerId, grade: risk.grade });
 
       const key = { alertDayId_subjectId: { alertDayId: alertDay.id, subjectId: subject.id } };
 
@@ -236,18 +256,69 @@ async function declareAlertDay(
       if (existing) {
         await tx.householdDayStatus.update({
           where: key,
-          data: { status: next, promotedAt: new Date() },
+          data: { status: next, promotedAt: now },
         });
+
+        // 새 경보일의 초기 1등급은 아침 요약에만 포함한다. 이미 있던 미확인 가구가
+        // 재발령으로 1등급이 된 경우만 새로운 승격 사건이다 (ADR-0017).
+        const recipientIds = reclassificationRecipientIds({
+          current,
+          next,
+          workerId: subject.workerId,
+          managerIds: managers.map(({ id }) => id),
+        });
+        for (const recipientId of recipientIds) {
+          notificationDrafts.push(
+            visitPromotedDraft({
+              alertDayId: alertDay.id,
+              date,
+              recipientId,
+              subjectId: subject.id,
+              subjectName: subject.name,
+              workerId: subject.workerId,
+              cause: NotificationCause.RISK_RECLASSIFIED,
+              availableAt: now,
+            }),
+          );
+        }
       } else {
         await tx.householdDayStatus.create({
           data: {
             alertDayId: alertDay.id,
             subjectId: subject.id,
             status: next,
-            promotedAt: next === HouseholdStatus.VISIT_QUEUED ? new Date() : null,
+            promotedAt: next === HouseholdStatus.VISIT_QUEUED ? now : null,
           },
         });
       }
+    }
+
+    const summaryAvailableAt =
+      source === "manual" ? now : alertMorningAt(date);
+    notificationDrafts.push(
+      ...morningSummaryDrafts({
+        alertDayId: alertDay.id,
+        date,
+        level,
+        availableAt: summaryAvailableAt,
+        subjects: assessedRecipients,
+      }),
+    );
+    for (const draft of notificationDrafts) {
+      await tx.notification.upsert({
+        where: { eventKey: draft.eventKey },
+        create: draft,
+        // 오전 8시 발송 전 재예보라면 한 건인 채 최신 단계·인원으로 고친다.
+        // 이미 발송된 행의 pushSentAt은 건드리지 않으므로 재발령 Push는 생기지 않는다.
+        update: {
+          cause: draft.cause,
+          title: draft.title,
+          body: draft.body,
+          href: draft.href,
+          availableAt: draft.availableAt,
+          expiresAt: draft.expiresAt,
+        },
+      });
     }
 
     console.log(
@@ -267,5 +338,5 @@ async function declareAlertDay(
       visitQueued,
       preserved,
     };
-  });
+  }, { timeout: 15_000 });
 }

@@ -18,9 +18,9 @@
 | [0003](0003-tailwind-css.md) | 스타일링: Tailwind CSS 4 | 승인됨 |
 | [0004](0004-sqlite-prisma.md) | 데이터베이스/ORM: SQLite + Prisma | 대체됨([0013](0013-prisma-postgres.md)) |
 | [0005](0005-rule-based-risk-model.md) | 위험도 모델: 규칙 기반 (ML 배제) | 승인됨 |
-| [0006](0006-pwa-manual-service-worker.md) | PWA: Manifest + 수제 Service Worker | 승인됨 |
+| [0006](0006-pwa-manual-service-worker.md) | PWA: Manifest + 수제 Service Worker | 부분 대체됨([0017](0017-notification-events-web-push.md)) |
 | [0007](0007-kakao-map.md) | 지도: 카카오맵 JS SDK | 승인됨 |
-| [0008](0008-notification-in-app-first.md) | 알림 전달: v0 인앱, Web Push는 스트레치 | 승인됨 |
+| [0008](0008-notification-in-app-first.md) | 알림 전달: v0 인앱, Web Push는 스트레치 | 대체됨([0017](0017-notification-events-web-push.md)) |
 | [0009](0009-vitest.md) | 테스트: Vitest (핵심 로직 단위 테스트) | 승인됨 |
 | [0010](0010-npm-node20.md) | 패키지 매니저/런타임: npm + Node 20 | 승인됨 |
 | [0011](0011-deploy-local-demo-first.md) | 배포/데모 전략: 로컬 데모 우선, 수동 트리거 | 승인됨 |
@@ -29,3 +29,4 @@
 | [0014](0014-figma-design-with-domain-terms.md) | 담당자 화면: Figma 디자인 + 도메인 상수 문구 | 승인됨 |
 | [0015](0015-design-system-tokens.md) | 디자인 시스템: Figma Foundations → Primitive/Semantic 2층 토큰 | 승인됨 |
 | [0016](0016-alert-level-labels-advisory-watch-severe.md) | 경보 단계 화면 문구: 주의/경계/심각 (코드는 ADVISORY/WARNING/EMERGENCY) | 승인됨 |
+| [0017](0017-notification-events-web-push.md) | 알림: 이벤트 원장 + Web Push 전달 | 승인됨 |

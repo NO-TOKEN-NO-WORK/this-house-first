@@ -9,9 +9,13 @@ import {
   isCallResult,
   isCheckKind,
   isHouseholdStatus,
+  isNotificationCause,
+  isNotificationType,
   isRiskGrade,
   isVisitResult,
   nextCheckKindOf,
+  NotificationCause,
+  NotificationType,
   parseHouseholdStatus,
   RiskGrade,
   VisitResult,
@@ -24,6 +28,8 @@ describe("도메인 상태값 검증", () => {
     expect(isRiskGrade(RiskGrade.CRITICAL)).toBe(true);
     expect(isRiskGrade(4)).toBe(false);
     expect(isRiskGrade("1")).toBe(false);
+    expect(isNotificationType(NotificationType.ALERT_DAY_SUMMARY)).toBe(true);
+    expect(isNotificationCause(NotificationCause.SYMPTOM)).toBe(true);
   });
 
   it("경보 단계 화면 문구는 주의·경계·심각이다", () => {
@@ -37,6 +43,8 @@ describe("도메인 상태값 검증", () => {
     expect(isAlertLevel("__proto__")).toBe(false);
     expect(isHouseholdStatus("toString")).toBe(false);
     expect(isHouseholdStatus("constructor")).toBe(false);
+    expect(isNotificationType("toString")).toBe(false);
+    expect(isNotificationCause("__proto__")).toBe(false);
     expect(() => parseHouseholdStatus("toString")).toThrow(
       "알 수 없는 가구 상태값",
     );

@@ -6,6 +6,7 @@ import {
 import { getHeatForecast } from "@/lib/public-data/kma";
 import { toIsoDate } from "@/lib/trigger/alert-date";
 import { declareTrigger, TriggerError } from "@/lib/trigger/declare";
+import { dispatchDueNotifications } from "@/lib/notifications/push";
 
 /**
  * F1 트리거 (FR-1)
@@ -145,6 +146,11 @@ export async function POST(request: Request): Promise<Response> {
       level: optionalLevel(field("level")),
       feelsLikeMax: optionalTemperature(field("feelsLikeMax"), "feelsLikeMax"),
       regionCode: optionalRegionCode(field("regionCode")),
+    });
+
+    // 수동 데모 요약과 재발령 승격은 즉시, 예보 요약은 availableAt(08:00 KST) 이후에 전달된다.
+    await dispatchDueNotifications().catch((error: unknown) => {
+      console.error("[notifications] 경보 Push 전달 실패", error);
     });
 
     return Response.json({ data: outcome });

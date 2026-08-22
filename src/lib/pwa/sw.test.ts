@@ -20,6 +20,7 @@ describe("today service worker activate", () => {
             "thf-v1",
             "thf-today-v0",
             "thf-today-v1",
+            "thf-today-v2",
           ]),
         delete: remove,
       },
@@ -48,7 +49,60 @@ describe("today service worker activate", () => {
     expect(remove.mock.calls.map(([key]) => key)).toEqual([
       "thf-v1",
       "thf-today-v0",
+      "thf-today-v1",
     ]);
     expect(claim).toHaveBeenCalledOnce();
+  });
+
+  it("Push 사건을 같은 eventKey 태그의 알림으로 표시한다", async () => {
+    let push:
+      | ((event: {
+          data: { json(): unknown };
+          waitUntil(promise: Promise<void>): void;
+        }) => void)
+      | undefined;
+    let shown: Promise<void> | undefined;
+    const showNotification = vi.fn().mockResolvedValue(undefined);
+
+    runInNewContext(readFileSync("public/sw.js", "utf8"), {
+      URL,
+      Response,
+      caches: { keys: vi.fn(), delete: vi.fn() },
+      fetch: vi.fn(),
+      self: {
+        addEventListener: (type: string, handler: typeof push) => {
+          if (type === "push") push = handler;
+        },
+        clients: { claim: vi.fn() },
+        location: { origin: "https://example.com" },
+        registration: { showNotification },
+        skipWaiting: vi.fn(),
+      },
+    });
+
+    push?.({
+      data: {
+        json: () => ({
+          title: "방문 확인 대상이 추가됐습니다",
+          body: "박○○ 대상자가 방문 대기 상태가 됐습니다.",
+          tag: "VISIT_PROMOTED:a:s:m",
+          href: "/today/s",
+          urgent: true,
+        }),
+      },
+      waitUntil(promise) {
+        shown = promise;
+      },
+    });
+    await shown;
+
+    expect(showNotification).toHaveBeenCalledWith(
+      "방문 확인 대상이 추가됐습니다",
+      expect.objectContaining({
+        tag: "VISIT_PROMOTED:a:s:m",
+        renotify: true,
+        data: { href: "/today/s" },
+      }),
+    );
   });
 });

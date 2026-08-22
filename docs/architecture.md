@@ -93,6 +93,9 @@ erDiagram
     Subject ||--o{ HouseholdDayStatus : ""
     Subject ||--o{ CheckEvent : "확인 기록"
     Worker ||--o{ CheckEvent : "기록자"
+    AlertDay ||--o{ Notification : "알림 사건"
+    Worker ||--o{ Notification : "수신"
+    Worker ||--o{ PushSubscription : "기기 구독"
 
     Worker { string role "WORKER | MANAGER" }
     Building { int builtYear "건축물대장 (진짜)" }
@@ -101,6 +104,8 @@ erDiagram
     RiskAssessment { int grade "1 | 2 | 3" }
     HouseholdDayStatus { string status "상태머신 §4" }
     CheckEvent { string result "CALL·VISIT 결과 코드" }
+    Notification { string type "ALERT_DAY_SUMMARY | VISIT_PROMOTED" }
+    PushSubscription { string endpoint "브라우저별 Push endpoint" }
 ```
 
 핵심 원칙: **"건물은 진짜, 사람은 가짜"** (PRD §8) — `Building`은 실존 주소의 실제 건축물대장 값, `Subject`는 합성 인물. 실명 개인정보는 어떤 형태로도 저장 금지.
@@ -166,6 +171,8 @@ stateDiagram-v2
 | `/api/public-data/population` | 행정동 연령별 인구 정규화 | ✅ 연동됨 |
 | `/api/subjects` | 대상자 목록 + 당일 평가 (보드 조회, `/today`와 동일 함수) | ✅ 구현됨 |
 | `/api/checks` | 확인 기록 생성 → 상태머신 전이 (FR-5) | ✅ 구현됨 |
+| `/api/push-subscriptions` | 담당자·관리자 Web Push 구독 등록·해지 | ✅ 구현됨 |
+| `/api/notifications/dispatch` | 오전 8시 예약·실패 재시도 Push 발송 | ✅ 구현됨 |
 | `/api/visit-queue` | 방문 큐 + 출동 순서 (FR-7) | 예정 (D2) |
 | `/api/report` | 일일 보고서 (FR-9) | 예정 (Could) |
 
@@ -174,8 +181,8 @@ stateDiagram-v2
 - **접근성(담당자 앱)**: 기본 글자 크기 상향, 터치 타깃 최소 48px, 화면당 결정 1개, 기록 완료까지 탭 2회 이내 (PRD §9) — 공용 컴포넌트로 강제. 보드 카드 버튼(탭 1) → 상세의 결과 버튼(탭 2)이 기록 경로다
 - **담당자 화면 디자인**: Figma `junction` ①(`8:1803`)·①-b(`14:2926`)·②(`3:505`)를 따른다. 담당자·공용 Tailwind 화면의 색·글자는 `src/app/globals.css`의 2층 디자인 토큰(Primitive → Semantic, Figma `02 · Foundations` `16:25`)을 쓰고 Semantic 층만 만진다 ([ADR-0015](adr/0015-design-system-tokens.md)). 관리자 CSS Module은 기존 `tokens.css`의 `--admin-*` 체계를 유지하고 위험 등급 색만 전역 Semantic 토큰을 공유한다. 아이콘은 인라인 SVG(`src/components/today/icons.tsx`). **문구는 `src/lib/domain.ts` 상수를 쓰며 디자인과 의도적으로 다른 지점이 있다** — 근거와 목록은 [ADR-0014](adr/0014-figma-design-with-domain-terms.md)
 - **하단 탭(오늘·지도·기록)**: 오늘(`/today`)·지도(`/map`)·기록(`/today/log`)은 모두 활성. 탭 왕복은 `date`·`workerId` 검색 문맥을 유지한다. 기록은 PWA scope(`/today`) 안에 둔다
-- **알림 침묵 원칙**: 비경보일 알림 0건. 알림 생성은 도메인 로직, 전달은 v0 인앱([ADR-0008](adr/0008-notification-in-app-first.md))
-- **PWA**: manifest + 수제 SW([ADR-0006](adr/0006-pwa-manual-service-worker.md)). 오프라인 기록 큐잉은 데모에서 언급만
+- **알림 침묵 원칙**: 비경보일 알림 0건. 경보일은 담당자별 아침 요약 1건과 방문 승격만 `Notification`에 저장하고 인앱 피드·Web Push가 함께 쓴다([ADR-0017](adr/0017-notification-events-web-push.md))
+- **PWA**: manifest + 수제 SW([ADR-0006](adr/0006-pwa-manual-service-worker.md), [ADR-0017](adr/0017-notification-events-web-push.md)). 알림을 위해 SW scope는 `/`, 페이지 이동 캐시는 `/today`로 제한하고 공용 정적 자원만 함께 캐시한다. 오프라인 기록 큐잉은 데모에서 언급만
 - **배포**: Vercel([ADR-0013](adr/0013-prisma-postgres.md)) — `vercel-build`가 direct 연결(`DIRECT_URL`)로 `prisma migrate deploy` 후 빌드하고, 런타임은 pooled 연결(`DATABASE_URL`)을 쓴다. 데모 진행은 여전히 로컬 실행이 기본이고([ADR-0011](adr/0011-deploy-local-demo-first.md)) 배포 URL은 심사위원 접속용 보조 경로다. 절차는 [docs/deploy-vercel.md](deploy-vercel.md)
 
 ## 9. PRD 48h 계획 ↔ 모듈 매핑

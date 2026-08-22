@@ -58,16 +58,36 @@ printf '%s' "$DIRECT_URL"   | vercel env add DIRECT_URL preview --sensitive
 | `PUBLIC_DATA_SERVICE_KEY` | 공공데이터포털 서비스키 | 서버 전용 |
 | `KAKAO_REST_KEY` | 카카오 REST API 키 | 서버 전용 |
 | `NEXT_PUBLIC_KAKAO_MAP_KEY` | 카카오맵 JS 앱 키 | 클라이언트 노출 |
+| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | Web Push VAPID 공개키 | 클라이언트 노출 |
+| `VAPID_PRIVATE_KEY` | Web Push VAPID 비밀키 | 서버 전용 |
+| `VAPID_SUBJECT` | `mailto:` 또는 `https:` 형식의 Push 운영 연락처 | 서버 전용 |
+| `CRON_SECRET` | 오전 알림 발송 Route Handler 인증 토큰(16자 이상 권장) | 서버 전용 |
 
-`NEXT_PUBLIC_` 접두사는 카카오맵 JS 키에만 붙인다. 서버 전용 키에 붙이면 번들에 그대로 실린다(AGENTS.md 금지 사항).
+`NEXT_PUBLIC_` 접두사는 카카오맵 JS 키와 VAPID **공개키**에만 붙인다. VAPID 비밀키를 포함한 서버 전용 키에 붙이면 번들에 그대로 실린다(AGENTS.md 금지 사항).
 
-## 4. 카카오맵 도메인 등록
+VAPID 키 쌍은 로컬에서 한 번 생성해 같은 공개·비밀키를 Production 환경에 함께 넣는다.
+
+```bash
+npm run push:keys
+```
+
+## 4. 오전 8시 예약 발송
+
+`vercel.json`은 매일 `23:00 UTC`(한국시간 오전 8시)에
+`GET /api/notifications/dispatch`를 호출한다. Vercel은 `CRON_SECRET`을
+`Authorization: Bearer ...` 헤더로 전달하고 Route Handler가 같은 값인지 검증한다.
+
+Hobby 플랜의 일 단위 Cron은 호출 시각이 한 시간 범위로 지연될 수 있다. 정확한 오전 8시가
+운영 요구라면 Pro 이상의 분 단위 정밀도를 사용한다. 로컬 데모의 수동 경보는 예약을 기다리지
+않고 즉시 알림을 발송한다.
+
+## 5. 카카오맵 도메인 등록
 
 Kakao Developers → 내 애플리케이션 → 플랫폼 → Web에 **배포 도메인을 추가**한다(`https://<프로젝트>.vercel.app`). 등록하지 않으면 배포 환경에서만 지도가 뜨지 않는다([ADR-0007](adr/0007-kakao-map.md)).
 
 프리뷰 배포는 도메인이 매번 바뀌므로, 지도를 프리뷰에서 확인하려면 고정 도메인을 쓰거나 그 도메인을 추가로 등록한다.
 
-## 5. 배포 후 시드
+## 6. 배포 후 시드
 
 시드는 로컬에서 **배포 DB를 향해** 한 번만 돌린다.
 
@@ -77,7 +97,7 @@ DATABASE_URL="$DIRECT_URL" npm run db:seed
 
 건축HUB·카카오 실호출이 필요하므로 로컬 `.env`의 API 키가 채워져 있어야 한다. 시드는 기존 데이터를 모두 지우고 다시 만든다 — 배포 후 재실행하면 확인 기록도 사라진다.
 
-## 6. 확인
+## 7. 확인
 
 ```bash
 curl -X POST https://<도메인>/api/trigger \

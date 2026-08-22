@@ -149,6 +149,8 @@ async function main(): Promise<void> {
   // 4. DB 기록 (dev 전용 — 전부 지우고 다시 만든다)
   console.log("▶ DB 초기화 및 기록");
   await prisma.$transaction([
+    prisma.pushSubscription.deleteMany(),
+    prisma.notification.deleteMany(),
     prisma.checkEvent.deleteMany(),
     prisma.householdDayStatus.deleteMany(),
     prisma.riskAssessment.deleteMany(),
