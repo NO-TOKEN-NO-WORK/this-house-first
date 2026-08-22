@@ -70,8 +70,17 @@ describe("requestDemoTrigger", () => {
       pushDispatchMessage({ configured: true, claimed: 2, sent: 0, failed: 0 }),
     ).toBe("경보는 발령됐지만 구독된 기기가 없습니다.");
     expect(
-      pushDispatchMessage({ configured: true, claimed: 3, sent: 2, failed: 1 }),
-    ).toBe("경보 발령 · Push 성공 2건 · 실패 1건");
+      pushDispatchMessage({
+        configured: true,
+        claimed: 2,
+        sent: 1,
+        failed: 1,
+        attemptedDevices: 3,
+        sentDevices: 2,
+        failedDevices: 1,
+        recipientsWithoutSubscriptions: 1,
+      }),
+    ).toBe("경보 발령 · 기기 3대 중 2대 전송 · 1대 실패 · 미구독 담당자 1명");
     expect(
       pushDispatchMessage({ configured: true, claimed: 2, sent: 2, failed: 0 }),
     ).toBe("경보 발령 · Push 2건 전송");

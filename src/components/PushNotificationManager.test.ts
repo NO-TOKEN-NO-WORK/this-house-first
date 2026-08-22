@@ -7,22 +7,17 @@ type RenewPushSubscription = (
 ) => Promise<PushSubscription>;
 
 describe("renewPushSubscription", () => {
-  it("서버에 없는 기존 endpoint를 해지한 뒤 새로 구독한다", async () => {
+  it("브라우저에 남은 기존 endpoint는 해지하지 않고 서버에 다시 저장할 수 있게 재사용한다", async () => {
     const calls: string[] = [];
-    const fresh = { endpoint: "https://push.example.com/fresh" } as PushSubscription;
+    const existing = { endpoint: "https://push.example.com/existing" } as PushSubscription;
     const pushManager = {
       getSubscription: async () => {
         calls.push("get");
-        return {
-          unsubscribe: async () => {
-            calls.push("unsubscribe");
-            return true;
-          },
-        } as PushSubscription;
+        return existing;
       },
       subscribe: async () => {
         calls.push("subscribe");
-        return fresh;
+        return existing;
       },
     };
     const renewPushSubscription = (
@@ -36,7 +31,7 @@ describe("renewPushSubscription", () => {
 
     await expect(
       renewPushSubscription(pushManager, new Uint8Array([1, 2, 3])),
-    ).resolves.toBe(fresh);
-    expect(calls).toEqual(["get", "unsubscribe", "subscribe"]);
+    ).resolves.toBe(existing);
+    expect(calls).toEqual(["get"]);
   });
 });
