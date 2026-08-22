@@ -1,10 +1,10 @@
 /**
- * 수제 Service Worker (ADR-0006)
+ * 오늘의 대응 보드 전용 Service Worker (ADR-0006)
  * - 페이지 이동: network-first, 실패 시 캐시 폴백 (농촌 음영지역 오프라인 내성 — PRD §9 v0 수준)
  * - 정적 자원: cache-first
  * - 캐시를 갱신하려면 CACHE_VERSION을 올린다 (자동 precache 없음 — ADR-0006 트레이드오프)
  */
-const CACHE_VERSION = "thf-v1";
+const CACHE_VERSION = "thf-today-v1";
 
 self.addEventListener("install", () => {
   self.skipWaiting();
@@ -15,7 +15,13 @@ self.addEventListener("activate", (event) => {
     (async () => {
       const keys = await caches.keys();
       await Promise.all(
-        keys.filter((k) => k !== CACHE_VERSION).map((k) => caches.delete(k)),
+        keys
+          .filter(
+            (key) =>
+              key === "thf-v1" ||
+              (key.startsWith("thf-today-") && key !== CACHE_VERSION),
+          )
+          .map((key) => caches.delete(key)),
       );
       await self.clients.claim();
     })(),
