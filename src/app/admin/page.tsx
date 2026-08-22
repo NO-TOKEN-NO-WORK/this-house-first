@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { ReactNode } from "react";
 import {
   getAdminDashboard,
   type AdminAlertedDashboard,
@@ -14,6 +15,7 @@ import {
   RiskGrade,
 } from "../../lib/domain";
 import { AdminMap } from "../../components/admin/AdminMap";
+import { AdminControls } from "../../components/admin/AdminControls";
 import styles from "./admin.module.css";
 
 export const dynamic = "force-dynamic";
@@ -23,6 +25,14 @@ const GRADE_CLASS: Record<RiskGrade, string> = {
   [RiskGrade.HIGH]: styles.grade2,
   [RiskGrade.MODERATE]: styles.grade3,
 };
+
+const LAST_UPDATED_FORMAT = new Intl.DateTimeFormat("ko-KR", {
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  hourCycle: "h23",
+  timeZone: "Asia/Seoul",
+});
 
 export function SummaryCards({
   summary,
@@ -170,6 +180,13 @@ function SituationHeader({ dashboard }: { dashboard: AdminDashboard }) {
           </>
         ) : null}
       </div>
+      <p className={styles.refreshStatus}>
+        마지막 갱신 시각 ·{" "}
+        <time dateTime={dashboard.generatedAt}>
+          {LAST_UPDATED_FORMAT.format(new Date(dashboard.generatedAt))}
+        </time>{" "}
+        · 10초마다 자동 갱신
+      </p>
     </header>
   );
 }
@@ -177,9 +194,11 @@ function SituationHeader({ dashboard }: { dashboard: AdminDashboard }) {
 export function AdminDashboardView({
   dashboard,
   mapKey,
+  controls,
 }: {
   dashboard: AdminDashboard;
   mapKey: string;
+  controls?: ReactNode;
 }) {
   return (
     <div className={styles.page}>
@@ -214,6 +233,7 @@ export function AdminDashboardView({
             오늘은 경보가 없습니다. 경보가 내려지면 위험도와 우선 확인 대상을 안내합니다.
           </p>
         )}
+        {controls}
       </main>
       <footer className={styles.footer}>© 2026 이 집 먼저 · 관리자 관제</footer>
     </div>
@@ -232,6 +252,7 @@ export default async function AdminPage(props: PageProps<"/admin">) {
     <AdminDashboardView
       dashboard={dashboard}
       mapKey={process.env.NEXT_PUBLIC_KAKAO_MAP_KEY?.trim() ?? ""}
+      controls={<AdminControls date={dashboard.date} />}
     />
   );
 }

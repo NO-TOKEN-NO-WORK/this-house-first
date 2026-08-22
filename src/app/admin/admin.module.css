@@ -143,6 +143,14 @@
   color: var(--admin-ink-soft);
 }
 
+.refreshStatus {
+  margin: 0;
+  color: var(--admin-ink-soft);
+  font-family: var(--admin-font-meta);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+}
+
 .summaryGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -458,6 +466,45 @@
   line-height: 1.6;
 }
 
+.demoPanel {
+  display: grid;
+  min-inline-size: 0;
+  gap: var(--admin-space-2);
+  padding: var(--admin-space-3);
+  border: 1px solid var(--admin-rule);
+  background: var(--admin-surface);
+}
+
+.demoTitle,
+.demoDescription,
+.demoStatus {
+  margin: 0;
+}
+
+.demoTitle {
+  font-family: var(--admin-font-display);
+  font-size: 1.125rem;
+  letter-spacing: -0.02em;
+}
+
+.demoDescription,
+.demoStatus {
+  color: var(--admin-ink-soft);
+  line-height: 1.6;
+}
+
+.demoForm,
+.demoField {
+  display: grid;
+  gap: var(--admin-space-2);
+  min-inline-size: 0;
+}
+
+.demoButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
 .footer {
   padding-block: var(--admin-space-4);
   border-top: 1px solid var(--admin-rule);
@@ -483,6 +530,11 @@
 
   .submitButton {
     min-inline-size: 6rem;
+  }
+
+  .demoForm {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
   }
 }
 
