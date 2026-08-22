@@ -1097,6 +1097,19 @@
   overflow: hidden;
 }
 
+.buildingPanel,
+.priorityPanel {
+  display: flex;
+  max-block-size: 20.5rem;
+  flex-direction: column;
+}
+
+.buildingList,
+.priorityPanel .tableScroller {
+  min-block-size: 0;
+  overflow-y: auto;
+}
+
 .panelHeader {
   display: flex;
   min-inline-size: 0;

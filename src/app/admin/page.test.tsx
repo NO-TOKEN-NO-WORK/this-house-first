@@ -92,6 +92,15 @@ describe("관리자 관제 화면", () => {
     );
   });
 
+  it("건물과 위험도 목록은 패널 안에서 세로로 스크롤된다", () => {
+    expect(adminStyles).toMatch(
+      /\.buildingPanel,\s*\.priorityPanel\s*\{[^}]*display:\s*flex;[^}]*max-block-size:\s*20\.5rem;[^}]*flex-direction:\s*column;/,
+    );
+    expect(adminStyles).toMatch(
+      /\.buildingList,\s*\.priorityPanel \.tableScroller\s*\{[^}]*min-block-size:\s*0;[^}]*overflow-y:\s*auto;/,
+    );
+  });
+
   it("반복된 날짜나 담당자 검색값은 조회 전에 404로 막는다", async () => {
     const repeatedSearches = [
       { date: ["2026-08-22", "2026-08-23"] },
@@ -123,10 +132,10 @@ describe("관리자 관제 화면", () => {
       <>
         <SummaryCards summary={summary} />
         <PriorityList
-          subjects={[
-            {
-              subjectId: "subject-1",
-              name: "김○○",
+          subjects={Array.from({ length: 7 }, (_, index) =>
+            ({
+              subjectId: `subject-${index + 1}`,
+              name: index === 0 ? "김○○" : `대상자${index + 1}`,
               phone: "010-0000-0101",
               birthYear: 1938,
               workerId: "worker-1",
@@ -142,14 +151,15 @@ describe("관리자 관제 화면", () => {
               status: HouseholdStatus.UNCHECKED,
               statusLabel: HOUSEHOLD_STATUS_LABEL[HouseholdStatus.UNCHECKED],
               open: true,
-            },
-          ]}
+            }),
+          )}
         />
       </>,
     );
 
     expect(html).toContain("미확인 심각");
     expect(html).toContain("김○○");
+    expect(html).toContain("대상자7");
     expect(html).toContain("이담당");
     expect(html).toContain("미확인");
     expect(html).toContain("1938년생 (88세)·독거");
@@ -220,10 +230,10 @@ describe("관리자 관제 화면", () => {
               open: true,
             },
           ],
-          buildings: [
-            {
-              buildingId: "building-1",
-              address: "대구광역시 서구 비산동 1",
+          buildings: Array.from({ length: 6 }, (_, index) =>
+            ({
+              buildingId: `building-${index + 1}`,
+              address: `대구광역시 서구 비산동 ${index + 1}`,
               lat: 35.87,
               lng: 128.56,
               grade: 1,
@@ -231,14 +241,15 @@ describe("관리자 관제 화면", () => {
               statusCategory: "visit",
               openCount: 1,
               subjects: [],
-            },
-          ],
+            }),
+          ),
         }}
         mapKey=""
       />,
     );
 
     expect(html).toContain("건물별 미처리 현황");
+    expect(html).toContain("비산동 6");
     expect(html).toContain("생활지원사 관리");
     expect(html).toContain("대상자 등록");
     expect(html).toContain("생활지원사 등록");
