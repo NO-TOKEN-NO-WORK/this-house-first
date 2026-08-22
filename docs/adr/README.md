@@ -32,6 +32,7 @@
 | [0017](0017-notification-events-web-push.md) | 알림: 이벤트 원장 + Web Push 전달 | 승인됨 |
 | [0018](0018-kakao-driving-shortest-route.md) | 방문 동선: 카카오 자동차 최단 경로 | 승인됨 |
 | [0019](0019-emergency-only-alert-banner.md) | 경보 배너는 비상 단계에만 · 최고 단계 문구 `비상` | 승인됨 |
-| [0020](0020-welfare-scan-luna-responses.md) | 복지 스캔: Luna 신호 추출 + 규칙 기반 자격 판정 | 승인됨 |
+| [0020](0020-welfare-scan-luna-responses.md) | 복지 스캔: Luna 신호 추출 + 규칙 기반 자격 판정 | 부분 대체됨([0023](0023-vercel-ai-gateway-luna.md)) |
 | [0021](0021-visit-record-flow.md) | 방문 기록 흐름: 고르고 한 번 저장 · 끝난 방문은 되읽기 | 승인됨 |
 | [0022](0022-permanent-roster-alert-snapshot-separation.md) | 상시 원장과 경보 스냅샷 분리 | 승인됨 |
+| [0023](0023-vercel-ai-gateway-luna.md) | 복지 스캔 Luna 호출을 Vercel AI Gateway로 전환 | 승인됨 |

@@ -65,6 +65,10 @@ printf '%s' "$DIRECT_URL"   | vercel env add DIRECT_URL preview --sensitive
 | `VAPID_SUBJECT` | `mailto:` 또는 `https:` 형식의 Push 운영 연락처 | 서버 전용 |
 | `CRON_SECRET` | 오전 알림 발송 Route Handler 인증 토큰(16자 이상 권장) | 서버 전용 |
 
+복지 스캔의 Luna 호출은 Vercel AI Gateway를 사용한다. Vercel 배포에서는 자동 제공되는
+OIDC로 인증하므로 `OPENAI_API_KEY`나 별도 Gateway 키를 넣지 않는다. 로컬 실행만
+`AI_GATEWAY_API_KEY`가 필요하다.
+
 > **`KAKAO_REST_KEY`에 JS 앱 키를 넣지 않는다.** 두 키는 형태가 같아 눈으로 구분되지 않고, 잘못 넣어도 화면은 죽지 않는다 — 방문 동선이 조용히 `차량 경로를 불러오지 못해 직선거리 예상치`로 폴백할 뿐이다. 2026-08-22에 실제로 그렇게 배포돼 있었다. 넣은 뒤 아래 검증을 반드시 돌린다.
 
 ```bash

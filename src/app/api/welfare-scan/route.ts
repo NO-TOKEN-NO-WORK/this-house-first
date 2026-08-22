@@ -69,8 +69,8 @@ function connectionFailureMessage(
     ? String(error.code)
     : "";
   const message = error instanceof Error ? error.message : "";
-  if (code === "MISSING_SERVICE_KEY" || code === "MISSING_OPENAI_API_KEY") {
-    return service === "publicData" ? "공공데이터 API 키 미설정" : "AI API 키 미설정";
+  if (code === "MISSING_SERVICE_KEY" || code === "MISSING_AI_GATEWAY_AUTH") {
+    return service === "publicData" ? "공공데이터 API 키 미설정" : "AI Gateway 인증 미설정";
   }
   if (message.includes("시간")) {
     return service === "publicData" ? "공공데이터 응답 시간 초과" : "AI 분석 응답 시간 초과";
@@ -99,9 +99,10 @@ function connectionFailureReason(
     ? String(error.code)
     : "";
   if (message.endsWith("API 키 미설정")) {
-    return service === "publicData"
-      ? "PUBLIC_DATA_SERVICE_KEY 환경변수가 설정되지 않았습니다."
-      : "OPENAI_API_KEY 환경변수가 설정되지 않았습니다.";
+    return "PUBLIC_DATA_SERVICE_KEY 환경변수가 설정되지 않았습니다.";
+  }
+  if (message === "AI Gateway 인증 미설정") {
+    return "Vercel OIDC 또는 AI_GATEWAY_API_KEY 인증이 필요합니다.";
   }
   if (message.endsWith("응답 시간 초과")) {
     return service === "publicData"
