@@ -52,7 +52,7 @@ function board(row: BoardSubject = subject()): AlertedBoard {
     worker: { id: "w1", name: "박지원" },
     dong: "도통동",
     level: AlertLevel.EMERGENCY,
-    levelLabel: "비상",
+    levelLabel: "심각",
     feelsLikeMax: 38,
     groups: [
       {
@@ -85,7 +85,7 @@ describe("detailFromBoard", () => {
     expect(detail.name).toBe("김○○");
     expect(detail.phone).toBe("010-0000-0000");
     expect(detail.alerted).toBe(true);
-    expect(detail.levelLabel).toBe("비상");
+    expect(detail.levelLabel).toBe("심각");
     expect(detail.feelsLikeMax).toBe(38);
     expect(detail.nextCheckKind).toBe(CheckKind.CALL);
     expect(detail.assessment?.plan).toBe(GRADE_PLAN[RiskGrade.HIGH]);

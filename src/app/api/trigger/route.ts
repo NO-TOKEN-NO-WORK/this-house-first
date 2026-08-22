@@ -1,4 +1,4 @@
-import { type AlertLevel, isAlertLevel } from "@/lib/domain";
+import { type AlertLevel, ALERT_LEVEL_LABEL, isAlertLevel } from "@/lib/domain";
 import {
   invalidParameter,
   toPublicDataErrorResponse,
@@ -104,7 +104,7 @@ function optionalLevel(raw: unknown): AlertLevel | undefined {
   if (raw == null) return undefined;
   if (!isAlertLevel(raw)) {
     throw invalidParameter(
-      "level은 ADVISORY(주의) · WARNING(경보) · EMERGENCY(비상) 중 하나여야 합니다.",
+      `level은 ADVISORY(${ALERT_LEVEL_LABEL.ADVISORY}) · WARNING(${ALERT_LEVEL_LABEL.WARNING}) · EMERGENCY(${ALERT_LEVEL_LABEL.EMERGENCY}) 중 하나여야 합니다.`,
     );
   }
   return raw;

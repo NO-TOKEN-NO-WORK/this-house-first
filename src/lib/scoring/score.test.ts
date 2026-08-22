@@ -6,7 +6,7 @@ import { assessRisk } from "./score";
 const YEAR = 2026;
 
 describe("assessRisk", () => {
-  it("80세+·독거·1980년 이전 단독주택·비상일 → 1등급 (PRD F3의 전형적 1등급)", () => {
+  it("80세+·독거·1980년 이전 단독주택·심각일 → 1등급 (PRD F3의 전형적 1등급)", () => {
     const r = assessRisk({
       subject: { birthYear: 1938, livesAlone: true },
       building: { isDetached: true, builtYear: 1972, structure: "슬레이트" },
@@ -14,7 +14,7 @@ describe("assessRisk", () => {
       feelsLikeMax: 38,
       year: YEAR,
     });
-    // 3.0(80+) × 1.5(독거) × 1.4(단독) × 2.0(1980년 이전) × 2.5(비상) = 31.5
+    // 3.0(80+) × 1.5(독거) × 1.4(단독) × 2.0(1980년 이전) × 2.5(심각) = 31.5
     expect(r.score).toBe(31.5);
     expect(r.grade).toBe(RiskGrade.CRITICAL);
   });
@@ -72,7 +72,7 @@ describe("assessRisk", () => {
     expect(r.reasons).toEqual([
       "1938년생 (88세)·독거",
       "1972년 단독주택 슬레이트",
-      "오늘 비상 단계 (체감 38도)",
+      "오늘 심각 단계 (체감 38도)",
     ]);
   });
 

@@ -27,7 +27,7 @@ describe("resolveStatusOnDeclare", () => {
     );
   });
 
-  it("재발령으로 1등급이 된 미확인 가구는 방문 큐로 승격한다 (주의→비상 상승)", () => {
+  it("재발령으로 1등급이 된 미확인 가구는 방문 큐로 승격한다 (주의→심각 상승)", () => {
     expect(
       resolveStatusOnDeclare(HouseholdStatus.UNCHECKED, RiskGrade.CRITICAL),
     ).toBe(HouseholdStatus.VISIT_QUEUED);
