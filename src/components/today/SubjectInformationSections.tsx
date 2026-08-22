@@ -72,7 +72,17 @@ function historyMarker(item: SubjectHistoryItem, isLast: boolean): string {
     : "/icons/visit/timeline.svg";
 }
 
-/** 최근 전화·방문 기록 3건을 Figma 타임라인 형태로 표시한다. */
+/**
+ * 최근 전화·방문 기록 3건을 Figma 타임라인 형태로 표시한다.
+ *
+ * 카드 안(방문하기, Figma 164:8213)과 탭 안(대상자 정보, Figma 164:7693)은 글자 크기가 다르다 —
+ * 탭에서는 이 목록이 화면의 본문이라 한 단계씩 크다. 두 배치의 값은 아래 `SCALE`에만 둔다.
+ */
+const SCALE = {
+  card: { date: "text-label-16", kind: "text-body-15", result: "text-body-16", row: "pb-3" },
+  tab: { date: "text-title-17", kind: "text-label-16", result: "text-body-18", row: "pb-6" },
+} as const;
+
 export function VisitHistory({
   items,
   embedded = false,
@@ -83,6 +93,7 @@ export function VisitHistory({
   embedded?: boolean;
   onSelect?: (item: SubjectHistoryItem) => void;
 }) {
+  const scale = embedded ? SCALE.tab : SCALE.card;
   return (
     <section
       className={
@@ -115,11 +126,11 @@ export function VisitHistory({
                   type="button"
                   disabled={!onSelect}
                   onClick={() => onSelect?.(item)}
-                  className="min-w-0 flex-1 pb-3 text-left text-body-14 text-text-primary disabled:cursor-default"
+                  className={`min-w-0 flex-1 text-left text-body-14 text-text-primary disabled:cursor-default ${scale.row}`}
                 >
                   <p className="flex items-center gap-2">
-                    <strong className="text-label-16">{item.dateLabel}</strong>
-                    <span className="text-body-15 text-text-secondary">
+                    <strong className={scale.date}>{item.dateLabel}</strong>
+                    <span className={`${scale.kind} text-text-secondary`}>
                       {item.kindLabel}
                     </span>
                     {onSelect && (
@@ -131,7 +142,9 @@ export function VisitHistory({
                       />
                     )}
                   </p>
-                  <p className="mt-1 break-words text-body-16">{item.resultLabel}</p>
+                  <p className={`mt-1 break-words ${scale.result}`}>
+                    {item.resultLabel}
+                  </p>
                   {item.memo && (
                     <p className="mt-1 break-words text-body-14 text-text-secondary">
                       {item.memo}

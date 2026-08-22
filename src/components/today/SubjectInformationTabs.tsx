@@ -132,7 +132,7 @@ export function BriefingPanel({
 }
 
 /**
- * 인수인계 3줄 — 정보 화면의 `맥락 브리핑` 탭과 대상자 상세·방문 화면의 카드가 함께 쓴다.
+ * 인수인계 3줄 — 대상자 정보 화면의 `AI 요약` 탭과 대상자 상세의 카드가 함께 쓴다.
  * 줄 이름은 `BRIEFING_CATEGORY_LABEL`이 만든 값을 그대로 받고, 근거 줄은 여기 한 곳에서만 만든다.
  */
 export function HandoverList({

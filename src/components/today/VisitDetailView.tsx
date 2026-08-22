@@ -5,12 +5,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useId, useState, type ReactNode } from "react";
 import { RiskReasonsCard } from "@/components/today/RiskReasonsCard";
-import { SubjectBriefingCard } from "@/components/today/SubjectBriefingCard";
 import {
   GradeChangeNotice,
   VisitChecklist,
   VisitHistory,
 } from "@/components/today/SubjectInformationSections";
+import { VisitAttachments } from "@/components/today/VisitAttachments";
 import { SubjectSummary } from "@/components/today/SubjectSummary";
 import {
   AlertCircleIcon,
@@ -23,7 +23,6 @@ import {
   CheckKind,
   CoolingStatus,
   COOLING_STATUS_LABEL,
-  isVisitResult,
   type VisitResult,
   VisitResult as VisitResultValue,
   VISIT_RECORD_RESULTS,
@@ -32,11 +31,14 @@ import {
 
 /**
  * 담당자 · 방문 화면 — 카드의 `방문하기`로 들어온다 (FR-5).
- * 화면 설계: Figma 113:2222(기록) · 115:2534(선택 상태) · 123:2971(방문 완료 기록 보기).
+ * 화면 설계: Figma 164:8144(빈 상태) · 164:8535(고른 상태).
  *
  * 위에서 아래로 "이 사람이 왜 위험한가 → 무엇을 볼 것인가 → 무엇을 기록할 것인가" 한 방향이다.
  * 기록은 고른 뒤 `저장하기` 한 번으로 끝낸다 — 통화 결과 시트(`CallResultSheet`)와 같은 계약이라
  * 두 흐름이 서로 다른 저장 규칙을 갖지 않는다 (ADR-0021).
+ *
+ * 저장이 끝나면 보드로 돌아간다. 끝난 방문을 되읽는 자리는 여기가 아니라 `대상자 정보`의
+ * `방문 히스토리` 탭이다 — 보드 카드의 `방문 완료 기록 보기`가 그리로 간다 (Figma 164:7618).
  */
 
 const BACK_BUTTON =
@@ -99,53 +101,22 @@ function chipTone(selected: boolean): string {
     : "bg-surface-default text-text-secondary";
 }
 
-/**
- * 오늘 남긴 방문 기록 1건 — 되읽기 화면이 결과·메모를 여기서 가져온다.
- *
- * `detail.lastResult`를 쓰지 않는다. 그 값은 "오늘 마지막 확인"이라 전화 기록일 수 있고,
- * 전화·방문 결과는 문자열이 겹쳐(`OK`·`SYMPTOM`·`EMERGENCY_119`) 가드로도 못 가른다 —
- * 주소로 `?view=record`에 바로 들어오면 통화 결과가 방문 결과로 보인다.
- */
-function todayVisitRecord(
-  detail: SubjectDetail,
-): { result: VisitResult | null; memo: string | null } {
-  const record = detail.recentHistory.find(
-    (item) => item.kind === CheckKind.VISIT && item.date === detail.date,
-  );
-  if (!record) return { result: null, memo: null };
-  return {
-    result: isVisitResult(record.result) ? record.result : null,
-    memo: record.memo,
-  };
-}
-
-/**
- * 방문 기록 폼 (Figma 113:2325~113:2386).
- *
- * `readOnly`는 이미 끝난 방문을 되읽는 화면이다 (`방문 완료 기록 보기`, Figma 123:2971).
- * 상태머신이 조치 완료 가구의 방문 기록을 막으므로(`NOT_VISITABLE`) 되읽기에는 저장 버튼을 두지
- * 않는다 — 누를 수 없는 버튼을 남기면 담당자가 저장이 안 된 줄 안다.
- */
+/** 방문 기록 폼 — 결과·냉방기·첨부·메모 (Figma 164:8247~164:8325) */
 function VisitRecordForm({
   detail,
   backHref,
   onSaved,
-  readOnly = false,
 }: {
   detail: SubjectDetail;
   backHref: string;
   /** 있으면 저장 뒤 Next 내비게이션 없이 보드로 되돌린다 (보드에서 연 방문 화면) */
   onSaved?: () => void;
-  readOnly?: boolean;
 }) {
   const router = useRouter();
   const memoId = useId();
-  const saved = readOnly
-    ? todayVisitRecord(detail)
-    : { result: null, memo: null };
-  const [result, setResult] = useState<VisitResult | null>(saved.result);
+  const [result, setResult] = useState<VisitResult | null>(null);
   const [coolingStatus, setCoolingStatus] = useState<CoolingStatus | null>(null);
-  const [memo, setMemo] = useState(saved.memo ?? "");
+  const [memo, setMemo] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
 
@@ -203,7 +174,7 @@ function VisitRecordForm({
                 key={option.value}
                 type="button"
                 aria-pressed={selected}
-                disabled={pending || readOnly}
+                disabled={pending}
                 onClick={() => setResult(option.value)}
                 className={`flex h-[86px] flex-col items-center justify-center gap-[5px] rounded-lg border border-border-soft text-title-17 ${chipTone(selected)}`}
               >
@@ -229,7 +200,7 @@ function VisitRecordForm({
                 key={option}
                 type="button"
                 aria-pressed={selected}
-                disabled={pending || readOnly}
+                disabled={pending}
                 onClick={() => setCoolingStatus(option)}
                 className={`flex h-12 items-center justify-center rounded-lg border border-border-soft text-label-16 ${chipTone(selected)}`}
               >
@@ -239,6 +210,8 @@ function VisitRecordForm({
           })}
         </div>
       </section>
+
+      <VisitAttachments disabled={pending} />
 
       <section className="flex flex-col gap-5 pt-3">
         <label htmlFor={memoId} className="text-heading-18 text-text-subtle">
@@ -253,7 +226,7 @@ function VisitRecordForm({
           type="text"
           value={memo}
           maxLength={500}
-          disabled={pending || readOnly}
+          disabled={pending}
           onChange={(event) => setMemo(event.target.value)}
           placeholder="목소리가 기운 없으심"
           className="h-12 w-full rounded-lg border border-border-soft bg-surface-default px-4 text-body-15 text-text-primary placeholder:text-text-tertiary"
@@ -261,20 +234,18 @@ function VisitRecordForm({
       </section>
 
       {/* 결과·냉방기 상태를 고르기 전에는 저장할 것이 없다 — 빈 기록이 남지 않게 막는다 */}
-      {!readOnly && (
-        <button
-          type="button"
-          disabled={incomplete || pending}
-          onClick={save}
-          className={`flex h-14 w-full items-center justify-center rounded-lg text-heading-19 ${
-            incomplete || pending
-              ? "bg-surface-soft text-text-secondary"
-              : "bg-action-primary text-text-inverse active:bg-action-primary-strong"
-          }`}
-        >
-          {pending ? "저장 중…" : "저장하기"}
-        </button>
-      )}
+      <button
+        type="button"
+        disabled={incomplete || pending}
+        onClick={save}
+        className={`flex h-14 w-full items-center justify-center rounded-lg text-heading-19 ${
+          incomplete || pending
+            ? "bg-surface-soft text-text-secondary"
+            : "bg-action-primary text-text-inverse active:bg-action-primary-strong"
+        }`}
+      >
+        {pending ? "저장 중…" : "저장하기"}
+      </button>
 
       {/*
         실패 문구는 버튼 *아래*에 붙인다. 위에 끼우면 오류가 뜨는 순간 버튼이 밀려
@@ -296,24 +267,17 @@ export function VisitDetailView({
   detail,
   backHref,
   onBack,
-  readOnly = false,
 }: {
   detail: SubjectDetail;
   backHref: string;
   onBack?: () => void;
-  /** 이미 끝난 방문을 되읽는 화면 (`방문 완료 기록 보기`, Figma 123:2971) */
-  readOnly?: boolean;
 }) {
   const assessment = detail.assessment;
-  /*
-    Figma 123:2971의 머리글에는 글자가 없지만 제목 없는 화면은 어디에 있는지 말해 주지 못한다.
-    되읽기 화면에는 카드 버튼과 같은 말(`방문 기록`)을 넣는다 (ADR-0021).
-  */
-  const title = readOnly ? "방문 기록" : "방문하기";
 
   return (
     <div className="mx-auto flex w-full max-w-[520px] flex-1 flex-col bg-surface-default">
-      <header className="sticky top-0 z-30 grid h-[calc(53px_+_var(--safe-top))] grid-cols-[44px_1fr_44px] items-center pt-[var(--safe-top)] border-b border-border-default bg-surface-default px-1.5">
+      {/* 제목 줄 아래 선은 없다 — Figma 164:8144·164:7618의 담당자 화면 머리글이 모두 그렇다 */}
+      <header className="sticky top-0 z-30 grid h-[calc(53px_+_var(--safe-top))] grid-cols-[44px_1fr_44px] items-center bg-surface-default px-1.5 pt-[var(--safe-top)]">
         {onBack ? (
           <button
             type="button"
@@ -332,7 +296,7 @@ export function VisitDetailView({
             <ChevronLeftIcon className="size-[22px]" />
           </Link>
         )}
-        <h1 className="text-center text-label-15 text-text-primary">{title}</h1>
+        <h1 className="text-center text-label-15 text-text-primary">방문하기</h1>
         <span aria-hidden />
       </header>
 
@@ -352,16 +316,13 @@ export function VisitDetailView({
 
         {assessment && <RiskReasonsCard assessment={assessment} />}
 
-        <SubjectBriefingCard subjectId={detail.subjectId} />
-
+        {/*
+          맥락 브리핑 카드는 이 화면에 없다 (Figma 164:8144). 문 앞에서 읽을 것은 위험 사유와
+          체크리스트고, 브리핑은 `대상자 정보`의 탭에 있다 — 카드 chevron으로 한 번에 연다.
+        */}
         <VisitChecklist />
         <VisitHistory items={detail.recentHistory} />
-        <VisitRecordForm
-          detail={detail}
-          backHref={backHref}
-          onSaved={onBack}
-          readOnly={readOnly}
-        />
+        <VisitRecordForm detail={detail} backHref={backHref} onSaved={onBack} />
       </main>
     </div>
   );

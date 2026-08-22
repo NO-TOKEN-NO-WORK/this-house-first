@@ -102,6 +102,16 @@ export const PaperclipIcon = (props: IconProps) => (
   </Icon>
 );
 
+/** 사진 — 방문 기록의 `사진 기록` (Figma 164:8307 tabler-icon-photo) */
+export const PhotoIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M15 8h.01" />
+    <rect x="3" y="4" width="18" height="16" rx="3" />
+    <path d="m4 15 4-4a3 3 0 0 1 4 0l4 4" />
+    <path d="m14 14 1-1a3 3 0 0 1 4 0l1 1" />
+  </Icon>
+);
+
 export const ChevronLeftIcon = (props: IconProps) => (
   <Icon {...props}>
     <path d="M15 5 8 12l7 7" />

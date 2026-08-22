@@ -50,7 +50,7 @@ interface Props {
   retryNote?: string;
   /**
    * 방문으로 오늘 대응이 끝난 가구 — 두 버튼 대신 `방문 완료 기록 보기` 하나만 둔다
-   * (Figma 115:2855). 남은 결정이 없는 카드에 누를 수 없는 버튼 두 개를 남기지 않는다.
+   * (Figma 163:4155). 남은 결정이 없는 카드에 누를 수 없는 버튼 두 개를 남기지 않는다.
    */
   visitRecorded?: boolean;
 }
@@ -75,9 +75,6 @@ export function SubjectCard({
   const infoQuery = new URLSearchParams(query);
   infoQuery.set("view", "info");
   const infoHref = `/today/${subject.subjectId}?${infoQuery.toString()}`;
-  const recordQuery = new URLSearchParams(query);
-  recordQuery.set("view", "record");
-  const recordHref = `/today/${subject.subjectId}?${recordQuery.toString()}`;
   /*
     경보일의 `전화하기`는 상세 대신 전화 안내(④)를 연다 — 걸기 전에 무엇을 물을지 보여 주고,
     통화가 끝나면 결과 시트(⑤)로 이어진다 (FR-5).
@@ -129,9 +126,13 @@ export function SubjectCard({
 
       <div className="flex w-full gap-3">
         {visitRecorded ? (
-          // 끝난 방문은 되읽기 하나만 남는다 (Figma 123:2971로 이동)
+          /*
+            끝난 방문은 되읽기 하나만 남는다. 여는 곳은 chevron과 같은 `대상자 정보`다 —
+            그 화면의 `방문 히스토리` 탭에서 오늘 기록 줄을 누르면 결과·메모가 열린다
+            (Figma 163:4155 → 164:7618).
+          */
           <Link
-            href={recordHref}
+            href={infoHref}
             className="flex h-12 flex-1 items-center justify-center rounded-lg border border-border-strong bg-background-default text-label-15 text-text-secondary active:bg-surface-soft"
           >
             방문 완료 기록 보기
