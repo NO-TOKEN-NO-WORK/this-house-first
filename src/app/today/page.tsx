@@ -170,7 +170,7 @@ export default async function TodayPage(props: PageProps<"/today">) {
 
   return (
     <TodayWorkspace
-      key={`${board.alerted ? "alerted" : "silent"}:${board.date}`}
+      key={`${board.alerted ? `alerted:${board.isDemo ? "demo" : "real"}` : "silent"}:${board.date}`}
       board={board}
       workerId={workerId}
       returnGrade={selectedGrade}

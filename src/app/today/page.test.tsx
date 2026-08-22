@@ -232,9 +232,28 @@ describe("TodayPage 위험 단계 필터", () => {
     }
 
     expect(keys).toEqual([
-      `alerted:${board.date}`,
+      `alerted:demo:${board.date}`,
       `silent:${board.date}`,
-      `alerted:${board.date}`,
+      `alerted:demo:${board.date}`,
+    ]);
+  });
+
+  it("데모 경보가 실제 경보로 교체되면 기록 상세 상태를 새로 마운트한다", async () => {
+    const realBoard = { ...board, isDemo: false };
+    const keys: Array<string | null> = [];
+
+    for (const currentBoard of [board, realBoard]) {
+      getBoard.mockResolvedValue(currentBoard);
+      const page = await TodayPage({
+        params: Promise.resolve({}),
+        searchParams: Promise.resolve({ date: board.date }),
+      });
+      keys.push(findTodayWorkspace(page)?.key ?? null);
+    }
+
+    expect(keys).toEqual([
+      `alerted:demo:${board.date}`,
+      `alerted:real:${board.date}`,
     ]);
   });
 
