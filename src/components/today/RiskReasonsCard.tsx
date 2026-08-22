@@ -31,11 +31,11 @@ function ReasonRow({ reason }: { reason: LabeledReason }) {
         />
       )}
       {reason.category && (
-        <span className="font-bold">
+        <span className="shrink-0 font-bold">
           {REASON_CATEGORY_LABEL[reason.category]}
         </span>
       )}
-      <span>{reason.text}</span>
+      <span className="min-w-0 flex-1 break-words">{reason.text}</span>
     </li>
   );
 }
@@ -48,7 +48,7 @@ export function RiskReasonsCard({
   showPlan?: boolean;
 }) {
   return (
-    <section className="flex w-full flex-col gap-2.5 rounded-[10px] border border-border-default bg-surface-default p-6">
+    <section className="flex w-full flex-col gap-4 rounded-[10px] border border-border-default bg-surface-default p-6">
       <h2 className="text-label-15 text-text-secondary">위험 사유</h2>
       <ul className="flex flex-col gap-2.5">
         {assessment.reasons.map((reason) => (

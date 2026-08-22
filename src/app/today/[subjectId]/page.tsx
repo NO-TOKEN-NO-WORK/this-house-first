@@ -24,6 +24,7 @@ export default async function SubjectDetailPage(
     typeof params.workerId === "string" ? params.workerId : undefined;
   const gradeValue = typeof params.grade === "string" ? Number(params.grade) : null;
   const returnGrade = isRiskGrade(gradeValue) ? gradeValue : null;
+  const informationOnly = params.view === "info";
 
   const detail = await getSubjectDetail({ subjectId, date });
   if (!detail) notFound();
@@ -34,5 +35,11 @@ export default async function SubjectDetailPage(
   if (returnGrade) backQuery.set("grade", String(returnGrade));
   const backHref = backQuery.size > 0 ? `/today?${backQuery}` : "/today";
 
-  return <SubjectDetailView detail={detail} backHref={backHref} />;
+  return (
+    <SubjectDetailView
+      detail={detail}
+      backHref={backHref}
+      informationOnly={informationOnly}
+    />
+  );
 }

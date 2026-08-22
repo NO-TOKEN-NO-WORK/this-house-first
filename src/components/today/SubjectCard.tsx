@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { CheckKind, RiskGrade } from "@/lib/domain";
 import type { RosterSubject } from "@/lib/board/today";
@@ -65,6 +66,9 @@ export function SubjectCard({
   if (workerId) query.set("workerId", workerId);
   if (returnGrade) query.set("grade", String(returnGrade));
   const href = `/today/${subject.subjectId}?${query.toString()}`;
+  const infoQuery = new URLSearchParams(query);
+  infoQuery.set("view", "info");
+  const infoHref = `/today/${subject.subjectId}?${infoQuery.toString()}`;
   /*
     경보일의 `전화하기`는 상세 대신 전화 안내(④)를 연다 — 걸기 전에 무엇을 물을지 보여 주고,
     통화가 끝나면 결과 시트(⑤)로 이어진다 (FR-5).
@@ -80,7 +84,7 @@ export function SubjectCard({
     <li
       className={`flex flex-col gap-4 rounded-[10px] border bg-surface-default px-5 py-6 ${border}`}
     >
-      <div className="flex w-full items-center gap-4">
+      <div className="flex w-full items-center gap-1.5">
         <p className="flex flex-1 items-baseline gap-2.5">
           <span className="text-heading-24 text-text-primary">{subject.name}</span>
           <span className="text-body-16 text-text-secondary">
@@ -92,6 +96,18 @@ export function SubjectCard({
             {statusLabel}
           </span>
         )}
+        <Link
+          href={infoHref}
+          aria-label={`${subject.name} 대상자 정보`}
+          className="-mr-2.5 flex size-11 shrink-0 items-center justify-center rounded-lg active:bg-surface-soft"
+        >
+          <Image
+            src="/figma/chevron-right.svg"
+            alt=""
+            width={24}
+            height={24}
+          />
+        </Link>
       </div>
 
       {retryNote && (
