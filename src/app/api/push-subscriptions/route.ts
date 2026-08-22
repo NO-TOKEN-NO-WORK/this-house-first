@@ -89,7 +89,10 @@ export async function POST(request: Request): Promise<Response> {
         console.error("[notifications] 구독 직후 Push 전달 실패", error);
       },
     );
-    return Response.json({ data: { subscribed: true } });
+    const count = await prisma.pushSubscription.count({
+      where: { workerId, endpoint },
+    });
+    return Response.json({ data: { subscribed: count > 0 } });
   } catch (error) {
     return toErrorResponse(error);
   }

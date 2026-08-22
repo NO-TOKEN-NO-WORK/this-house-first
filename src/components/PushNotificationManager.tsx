@@ -19,6 +19,26 @@ async function registration(): Promise<ServiceWorkerRegistration> {
   return navigator.serviceWorker.ready;
 }
 
+export async function renewPushSubscription(
+  pushManager: Pick<PushManager, "getSubscription" | "subscribe">,
+  applicationServerKey: Uint8Array<ArrayBuffer>,
+): Promise<PushSubscription> {
+  await (await pushManager.getSubscription())?.unsubscribe();
+  return pushManager.subscribe({ userVisibleOnly: true, applicationServerKey });
+}
+
+function subscribedOf(payload: unknown): boolean {
+  return Boolean(
+    payload &&
+      typeof payload === "object" &&
+      "data" in payload &&
+      payload.data &&
+      typeof payload.data === "object" &&
+      "subscribed" in payload.data &&
+      payload.data.subscribed === true,
+  );
+}
+
 export function PushNotificationManager({
   workerId,
   publicKey,
@@ -57,15 +77,7 @@ export function PushNotificationManager({
         const response = await fetch(`/api/push-subscriptions?${query}`);
         if (!response.ok) return false;
         const payload: unknown = await response.json();
-        return Boolean(
-          payload &&
-            typeof payload === "object" &&
-            "data" in payload &&
-            payload.data &&
-            typeof payload.data === "object" &&
-            "subscribed" in payload.data &&
-            payload.data.subscribed,
-        );
+        return subscribedOf(payload);
       } catch {
         return false;
       }
@@ -91,10 +103,10 @@ export function PushNotificationManager({
         return;
       }
       const registered = await registration();
-      const subscription = await registered.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(publicKey),
-      });
+      const subscription = await renewPushSubscription(
+        registered.pushManager,
+        urlBase64ToUint8Array(publicKey),
+      );
       const serialized = subscription.toJSON();
       const response = await fetch("/api/push-subscriptions", {
         method: "POST",
@@ -105,7 +117,8 @@ export function PushNotificationManager({
           keys: serialized.keys,
         }),
       });
-      if (!response.ok) {
+      const payload: unknown = await response.json().catch(() => null);
+      if (!response.ok || !subscribedOf(payload)) {
         await subscription.unsubscribe();
         throw new Error("구독 저장 실패");
       }
