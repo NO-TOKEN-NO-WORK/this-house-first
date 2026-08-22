@@ -8,7 +8,6 @@ window.addEventListener("beforeinstallprompt", function (event) {
 `;
 
 export const metadata: Metadata = {
-  title: "오늘의 대응 보드",
   manifest: "/today.webmanifest",
   appleWebApp: {
     capable: true,

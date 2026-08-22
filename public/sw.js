@@ -1,5 +1,5 @@
 /**
- * 오늘의 대응 보드 전용 Service Worker (ADR-0006)
+ * 담당자 PWA 전용 Service Worker (ADR-0006)
  * - 페이지 이동: network-first, 실패 시 캐시 폴백 (농촌 음영지역 오프라인 내성 — PRD §9 v0 수준)
  * - 정적 자원: cache-first
  * - 캐시를 갱신하려면 CACHE_VERSION을 올린다 (자동 precache 없음 — ADR-0006 트레이드오프)

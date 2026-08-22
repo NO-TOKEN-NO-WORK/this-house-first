@@ -20,7 +20,7 @@ export default function Home() {
           className="rounded-2xl border border-border-default p-5 active:bg-background-subtle"
         >
           <p className="text-label-14 text-text-tertiary">담당자 (생활지원사)</p>
-          <p className="mt-1 text-heading-20">오늘의 대응 보드</p>
+          <p className="mt-1 text-heading-20">담당자 화면</p>
         </Link>
         <Link
           href="/admin"

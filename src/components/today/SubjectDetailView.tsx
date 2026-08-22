@@ -159,7 +159,7 @@ export function SubjectDetailView({
         {onBack ? (
           <button
             type="button"
-            aria-label="오늘의 대응 보드로"
+            aria-label="담당자 화면으로"
             onClick={onBack}
             className={BACK_BTN}
           >
@@ -168,7 +168,7 @@ export function SubjectDetailView({
         ) : (
           <Link
             href={backHref}
-            aria-label="오늘의 대응 보드로"
+            aria-label="담당자 화면으로"
             className={BACK_BTN}
           >
             <ChevronLeftIcon className="size-[22px]" />

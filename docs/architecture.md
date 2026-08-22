@@ -42,7 +42,7 @@ src/
 ├── app/
 │   ├── layout.tsx            # 루트 레이아웃 (ko)
 │   ├── page.tsx              # 홈 (진입점 안내)
-│   ├── today/                # 담당자: 오늘의 대응 보드 + PWA 등록 + [subjectId] 상세·기록 + log(기록 탭) (F3, F4)
+│   ├── today/                # 담당자 화면 + PWA 등록 + [subjectId] 상세·기록 + log(기록 탭) (F3, F4)
 │   ├── map/                  # 담당자: 담당 가구 지도 (F5)
 │   ├── admin/                # 관리자: 관제 대시보드 (F5) — ✅ 구현됨
 │   └── api/                  # Route Handlers (공공데이터 프록시 포함)
