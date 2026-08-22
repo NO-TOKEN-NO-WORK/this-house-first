@@ -78,6 +78,8 @@ export async function getAdminSubjectDetail(subjectId: string, date = todayInKst
     ? parseHouseholdStatus(subject.dayStatuses[0].status)
     : null;
   const reasons = assessment ? parseAdminReasons(assessment.reasons) : [];
+  // checkEvents는 최신순이라 처음 만나는 메모가 가장 최근 것이다
+  const latestMemo = subject.checkEvents.find((event) => event.memo?.trim());
   const address = subject.building.roadAddress ?? subject.building.address;
 
   return {
@@ -106,6 +108,23 @@ export async function getAdminSubjectDetail(subjectId: string, date = todayInKst
     date,
     workers,
     buildings,
+    /*
+     * 위험 사유 옆에 함께 읽히는 현장 메모 — 스코어링이 만든 사유가 "왜 위험한가"라면
+     * 이것은 담당자가 통화에서 실제로 본 것이다. 둘을 섞지 않고 나란히 둔다
+     * (AGENTS.md 도메인 규칙 3 — 위험 사유 문장은 엔진 출력 그대로).
+     *
+     * 최근 기록이 아니라 **메모가 남은 가장 최근 기록**을 고른다. 상세 화면의 원터치 기록
+     * (`RecordGrid`)은 메모를 받지 않으므로, 최근 1건만 보면 메모가 있어도 "미등록"이 된다.
+     */
+    latestMemo: latestMemo
+      ? {
+          text: latestMemo.memo!,
+          createdAt: DATE_TIME.format(latestMemo.createdAt)
+            .replace(/\. (?=\d{2}:\d{2}$)/, " ")
+            .replaceAll(". ", "."),
+          workerName: latestMemo.worker.name,
+        }
+      : null,
     checks: subject.checkEvents.map((event) => ({
       id: event.id,
       date: event.alertDay.date,

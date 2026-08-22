@@ -134,7 +134,14 @@ export function AdminSubjectDetailView({
                 <div><dt>상태</dt><dd><StatusBadge detail={detail} /></dd></div>
                 <div><dt>최근 상태 변경</dt><dd>{detail.checks[0]?.createdAt ?? "기록 없음"}</dd></div>
                 <div><dt>위험 사유</dt><dd>{detail.reasons.join(" / ") || "평가 전"}</dd></div>
-                <div><dt>메모</dt><dd>{detail.checks[0]?.memo ?? "미등록"}</dd></div>
+                {/*
+                  현장 메모는 위험 사유 바로 아래에 둔다 — 스코어링이 만든 사유가 "왜 위험한가"라면
+                  이것은 담당자가 통화에서 본 것이다. 언제·누가 남겼는지를 함께 보여야
+                  오래된 메모를 오늘 관찰로 읽지 않는다.
+                */}
+                <div><dt>현장 메모</dt><dd>{detail.latestMemo
+                  ? `${detail.latestMemo.text} (${detail.latestMemo.createdAt} · ${detail.latestMemo.workerName})`
+                  : "미등록"}</dd></div>
               </dl>
             </section>
             <section className={styles.infoCard}>
@@ -263,7 +270,7 @@ export function AdminSubjectFormView({
                 <label><span>점검 일시</span><input disabled value={detail?.checks[0]?.createdAt ?? "기록 없음"} /></label>
                 <label><span>점검자</span><input disabled value={detail?.checks[0]?.workerName ?? "미등록"} /></label>
                 <fieldset disabled><legend>난방기 정상작동 유무</legend><label><input type="radio" />정상</label><label><input type="radio" />점검 필요</label><label><input checked readOnly type="radio" />기록 없음</label></fieldset>
-                <label className={styles.wideField}><span>점검 메모</span><textarea disabled rows={2} value={detail?.checks[0]?.memo ?? "점검 기록에서 관리됩니다."} /></label>
+                <label className={styles.wideField}><span>현장 메모</span><textarea disabled rows={2} value={detail?.latestMemo?.text ?? "점검 기록에서 관리됩니다."} /></label>
               </div>
             </section>
           </div>
