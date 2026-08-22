@@ -35,10 +35,8 @@ type KakaoMaps = {
   }) => KakaoOverlay;
 };
 
-declare global {
-  interface Window {
-    kakao?: { maps: KakaoMaps };
-  }
+function getKakaoMaps(): KakaoMaps | undefined {
+  return (window as Window & { kakao?: { maps: KakaoMaps } }).kakao?.maps;
 }
 
 export function cleanupKakaoMap(
@@ -94,14 +92,15 @@ export function adminMapBuildingsSignature(
 }
 
 export function loadKakaoSdk(mapKey: string): Promise<KakaoMaps> {
-  if (window.kakao?.maps) return Promise.resolve(window.kakao.maps);
+  const loadedMaps = getKakaoMaps();
+  if (loadedMaps) return Promise.resolve(loadedMaps);
 
   return new Promise((resolve, reject) => {
     const subscribe = (script: HTMLScriptElement) => {
       script.addEventListener(
         "load",
         () => {
-          const maps = window.kakao?.maps;
+          const maps = getKakaoMaps();
           if (maps) resolve(maps);
           else {
             script.remove();
