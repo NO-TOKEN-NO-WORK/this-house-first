@@ -190,7 +190,7 @@ stateDiagram-v2
 | 근거 대조 | `lib/briefing/evidence.ts` | 그 대상자의 기록인지 확인 · 근거 문구 생성 · 저장 모양 변환 |
 | 캐시·조회 | `lib/briefing/service.ts` | 최신 기록 id 비교 → 재생성 여부 결정. DB만 맡는다 |
 | 조회 경로 | `app/api/subjects/[subjectId]/briefing/route.ts` | 유일한 조회 경로. 클라이언트는 모델을 직접 부르지 않는다 |
-| 화면 | `SubjectBriefingCard`(상세·방문) · `SubjectInformationTabs`(정보 탭·기록 상세) · `ConversationSuggestions`(전화 안내) | 페이지가 먼저 뜨고 브리핑만 나중에 채워진다 (`useSubjectBriefing`) |
+| 화면 | `SubjectBriefingCard`(상세) · `SubjectInformationTabs`(정보 탭·기록 상세) · `ConversationSuggestions`(전화 안내) | 페이지가 먼저 뜨고 브리핑만 나중에 채워진다 (`useSubjectBriefing`) |
 | 입력 시드 | `prisma/seed/history.ts` | 과거 경보일 3일 + 대상자별 합성 확인 기록 (브리핑의 유일한 입력) |
 
 산출물 상한은 전부 `domain.ts` 상수다 — `BRIEFING_MAX_LINES`(3) · `CONVERSATION_SUGGESTION_MAX`(2) ·

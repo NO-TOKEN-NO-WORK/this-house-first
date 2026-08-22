@@ -137,6 +137,9 @@
   --color-status-success-subtle: var(--green-50); /* 안전 결과 배경 */
   --color-status-neutral: var(--neutral-400); /* 주의 칩 배경·지도 마커 */
 
+  /* 확장 — Figma 164:8695 방문 첨부 썸네일. 변수 컬렉션 승격 전 잠정 토큰 */
+  --spacing-visit-attachment-thumbnail: 58px;
+
   /*
    * Typography (Figma 16:31) — 역할/크기 이름을 그대로 쓴다.
    * lineHeight 100(=Auto)은 `normal`, 명시 수치는 px 그대로 옮겼다.

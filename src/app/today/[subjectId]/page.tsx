@@ -25,7 +25,6 @@ export default async function SubjectDetailPage(
   const gradeValue = typeof params.grade === "string" ? Number(params.grade) : null;
   const returnGrade = isRiskGrade(gradeValue) ? gradeValue : null;
   const informationOnly = params.view === "info";
-  const visitRecordOnly = params.view === "record";
 
   const detail = await getSubjectDetail({ subjectId, date });
   if (!detail) notFound();
@@ -41,7 +40,6 @@ export default async function SubjectDetailPage(
       detail={detail}
       backHref={backHref}
       informationOnly={informationOnly}
-      visitRecordOnly={visitRecordOnly}
     />
   );
 }

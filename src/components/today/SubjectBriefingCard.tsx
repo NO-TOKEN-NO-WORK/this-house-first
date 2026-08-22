@@ -7,9 +7,10 @@ import { useSubjectBriefing } from "@/components/today/useSubjectBriefing";
 import { SUBJECT_INFORMATION_LABELS } from "@/lib/domain";
 
 /**
- * 인수인계 카드 — 대상자 상세·방문 화면 상단의 세 줄 (FR-12 · ADR-0024, PRD F6).
+ * 인수인계 카드 — 대상자 상세 상단의 세 줄 (FR-12 · ADR-0024, PRD F6).
+ * 방문 화면에는 두지 않는다 (Figma 164:8144 · ADR-0014 결과 10).
  *
- * "담당 교체·대체 근무가 이 화면 한 장으로 끝난다"는 것이 목적이라, 방문·전화를 하러 들어온
+ * "담당 교체·대체 근무가 이 화면 한 장으로 끝난다"는 것이 목적이라, 전화를 하러 들어온
  * 화면에서도 맥락이 보여야 한다. 대상자 정보 화면(`SubjectInfoView`)에는 두지 않는다 —
  * 거기서는 `맥락 브리핑` 탭이 같은 내용을 더 넓게 보여 준다.
  *

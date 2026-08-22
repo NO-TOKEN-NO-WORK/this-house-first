@@ -290,7 +290,13 @@ export const CALL_RESULT_LABEL: Record<CallResult, string> = {
   UNREACHABLE: "연락두절",
 };
 
-/** 통화 결과 시트의 음성 파일 선택 문구 — 현재는 데모 UI이며 파일을 저장하지 않는다. */
+/**
+ * 통화 결과 시트의 음성 파일 선택 문구 (Figma 163:3468 · 붙인 상태 164:9043).
+ *
+ * 데모 UI라 고른 파일은 서버로 가지 않는다. 저장된 것으로 오해하지 않도록 비저장 안내를
+ * 함께 표시한다 (ADR-0014 결과 9).
+ * `REMOVE`는 화면에 보이지 않는 `aria-label`이라 Figma에 대응하는 글자가 없다.
+ */
 export const CALL_RECORDING_LABELS = {
   SECTION: "기록 추가 (선택)",
   EMPTY: "전화 음성 파일 (최대 1개)",
@@ -298,6 +304,27 @@ export const CALL_RECORDING_LABELS = {
   GUIDE: "‘전화 앱 → 통화기록 → 해당 통화 → 녹음 확인’에서 확인",
   NOT_SAVED: "현재 음성 파일은 저장되지 않습니다.",
 } as const;
+
+/**
+ * 방문 화면 `기록 추가 (선택)`의 사진·음성 첨부 문구 (Figma 164:8300 · 선택 상태 164:8691).
+ *
+ * 전화 시트(`CALL_RECORDING_LABELS`)와 자리는 같지만 방문에는 사진이 함께 붙고 음성 문구에
+ * `전화`가 없다. 한 상수를 나눠 쓰면 한쪽 화면 문구를 고칠 때 다른 화면이 같이 바뀐다.
+ *
+ * 통화 음성과 마찬가지로 화면만 있고 저장은 없다 (ADR-0014 결과 9). `*_REMOVE`는 화면에
+ * 보이지 않는 `aria-label`이라 Figma에 대응하는 글자가 없다.
+ */
+export const VISIT_ATTACHMENT_LABELS = {
+  SECTION: "기록 추가 (선택)",
+  PHOTO_EMPTY: "사진 기록 (최대 5장)",
+  PHOTO_REMOVE: "첨부한 사진 지우기",
+  AUDIO_EMPTY: "음성 파일 (최대 1개)",
+  AUDIO_REMOVE: "첨부한 음성 파일 지우기",
+  NOT_SAVED: "현재 사진과 음성 파일은 저장되지 않습니다.",
+} as const;
+
+/** 방문 기록에 붙일 수 있는 사진 수 — Figma 164:8695의 5칸과 `PHOTO_EMPTY` 문구가 함께 따른다 */
+export const VISIT_PHOTO_MAX = 5;
 
 export function isCallResult(value: unknown): value is CallResult {
   // `in`은 프로토타입 체인까지 본다 — "toString"이 통과하면 DB에 쓰레기 결과값이 들어간다
@@ -454,7 +481,12 @@ export const CONVERSATION_SUMMARY_MAX = 3;
 /** 대화 요약 하나에 붙는 `진행 중인 사항` 상한. */
 export const CONVERSATION_ONGOING_MAX = 3;
 
-/** 대상자 정보 화면의 새 탭·상세 문구 — Figma 용어를 제품 용어(ADR-0024)로 맞춘다. */
+/**
+ * 대상자 정보 화면의 탭·상세 문구 (Figma 164:7618 · 기록 상세 모달 167:9539).
+ *
+ * Figma의 `AI 요약` 대신 제품 용어 `맥락 브리핑`을 쓴다. AI는 근거 기록을 바탕으로 일부
+ * 문장을 만들 뿐이고 기능 전체가 단순 요약은 아니다 (FR-12 · ADR-0024).
+ */
 export const SUBJECT_INFORMATION_LABELS = {
   HISTORY_TAB: "방문 히스토리",
   BRIEFING_TAB: "맥락 브리핑",
